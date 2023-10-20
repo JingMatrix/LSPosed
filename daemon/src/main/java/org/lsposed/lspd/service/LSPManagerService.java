@@ -546,4 +546,14 @@ public class LSPManagerService extends ILSPManagerService.Stub {
             return 0;
         }
     }
+
+    @Override
+    public void setLogWatchdog(boolean enabled) {
+        ConfigManager.getInstance().setLogWatchdog(enabled);
+    }
+
+    @Override
+    public boolean isLogWatchdogEnabled() {
+        return ConfigManager.getInstance().isLogWatchdogEnabled();
+    }
 }

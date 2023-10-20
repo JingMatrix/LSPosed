@@ -160,6 +160,13 @@ public class SettingsFragment extends BaseFragment {
                 prefVerboseLogs.setOnPreferenceChangeListener((preference, newValue) -> ConfigManager.setVerboseLogEnabled(!(boolean) newValue));
             }
 
+            MaterialSwitchPreference prefEnableLog = findPreference("force_enable_log");
+            if (prefEnableLog != null) {
+                prefEnableLog.setEnabled(!BuildConfig.DEBUG && installed);
+                prefEnableLog.setChecked(!installed || ConfigManager.isLogWatchdogEnabled());
+                prefEnableLog.setOnPreferenceChangeListener((preference, newValue) -> ConfigManager.setLogWatchdog((boolean) newValue));
+            }
+
             MaterialSwitchPreference prefDexObfuscate = findPreference("enable_dex_obfuscate");
             if (prefDexObfuscate != null) {
                 prefDexObfuscate.setEnabled(installed);
