@@ -33,6 +33,7 @@ namespace SandHook {
 
 namespace lspd {
     std::unique_ptr<const SandHook::ElfImg> &GetArt(bool release=false);
+    std::unique_ptr<const SandHook::ElfImg> &GetLibBinder(bool release=false);
     std::unique_ptr<const SandHook::ElfImg> &GetLinker(bool release=false);
 }
 

@@ -59,6 +59,7 @@ namespace lspd {
 #endif
 
     inline static constexpr auto kLibArtName = "libart.so";
+    inline static constexpr auto kLibBinderName = "libbinder.so";
     inline static constexpr auto kLibFwName = "libandroidfw.so";
     inline static constexpr auto kLinkerName = "/linker";
 
