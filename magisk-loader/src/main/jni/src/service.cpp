@@ -23,6 +23,7 @@
 
 #include <dobby.h>
 #include <thread>
+#include <atomic>
 #include "loader.h"
 #include "service.h"
 #include "context.h"
@@ -35,6 +36,50 @@ using namespace lsplant;
 
 namespace lspd {
     std::unique_ptr<Service> Service::instance_ = std::make_unique<Service>();
+
+    std::atomic<uint64_t> last_failed_id = ~0;
+
+    class IPCThreadState {
+        static IPCThreadState* (*selfOrNullFn)();
+        static pid_t (*getCallingPidFn)(IPCThreadState*);
+        static uid_t (*getCallingUidFn)(IPCThreadState*);
+
+    public:
+
+        uint64_t getCallingId() {
+            if (getCallingUidFn != nullptr && getCallingPidFn != nullptr) [[likely]] {
+                auto pid = getCallingUidFn(this);
+                auto uid = getCallingPidFn(this);
+                return (static_cast<uint64_t>(uid) << 32) | pid;
+            }
+            return ~0;
+        }
+
+        static IPCThreadState* selfOrNull() {
+            if (selfOrNullFn != nullptr) [[likely]] {
+                return selfOrNullFn();
+            }
+            return nullptr;
+        }
+
+        static void Init(const SandHook::ElfImg *binder) {
+            if (binder == nullptr) {
+                LOGE("libbinder not found");
+                return;
+            }
+            selfOrNullFn = reinterpret_cast<decltype(selfOrNullFn)>(
+                    binder->getSymbAddress("_ZN7android14IPCThreadState10selfOrNullEv"));
+            getCallingPidFn = reinterpret_cast<decltype(getCallingPidFn)>(
+                    binder->getSymbAddress("_ZNK7android14IPCThreadState13getCallingPidEv"));
+            getCallingUidFn = reinterpret_cast<decltype(getCallingUidFn)>(
+                    binder->getSymbAddress("_ZNK7android14IPCThreadState13getCallingUidEv"));
+            LOGI("libbinder selfOrNull {} getCallingPid {} getCallingUid {}", (void*) selfOrNullFn, (void*) getCallingPidFn, (void*) getCallingUidFn);
+        }
+    };
+
+    IPCThreadState* (*IPCThreadState::selfOrNullFn)() = nullptr;
+    uid_t (*IPCThreadState::getCallingUidFn)(IPCThreadState*) = nullptr;
+    pid_t (*IPCThreadState::getCallingPidFn)(IPCThreadState*) = nullptr;
 
     jboolean
     Service::exec_transact_replace(jboolean *res, JNIEnv *env, [[maybe_unused]] jobject obj,
@@ -51,6 +96,13 @@ namespace lspd {
             *res = JNI_CallStaticBooleanMethod(env, instance()->bridge_service_class_,
                                                instance()->exec_transact_replace_methodID_,
                                                obj, code, data_obj, reply_obj, flags);
+            if (!*res) {
+                auto self = IPCThreadState::selfOrNull();
+                if (self != nullptr) {
+                    auto id = self->getCallingId();
+                    last_failed_id.store(id, std::memory_order_relaxed);
+                }
+            }
             return true;
         } else if (SET_ACTIVITY_CONTROLLER_CODE != -1 &&
                    code == SET_ACTIVITY_CONTROLLER_CODE) [[unlikely]] {
@@ -78,7 +130,13 @@ namespace lspd {
     jboolean
     Service::call_boolean_method_va_replace(JNIEnv *env, jobject obj, jmethodID methodId,
                                             va_list args) {
-        if (methodId == instance()->exec_transact_backup_methodID_) [[unlikely]] {
+        bool need_skip = false;
+        if (auto self = IPCThreadState::selfOrNull(); self != nullptr) {
+            auto last = last_failed_id.load(std::memory_order_relaxed);
+            auto current = self->getCallingId();
+            need_skip = last == current;
+        }
+        if (!need_skip && methodId == instance()->exec_transact_backup_methodID_) [[unlikely]] {
             jboolean res = false;
             if (exec_transact_replace(&res, env, obj, args)) [[unlikely]] return res;
             // else fallback to backup
@@ -220,6 +278,10 @@ namespace lspd {
                                                                      set_activity_controller_field);
             }
         }
+
+        auto &binder = lspd::GetLibBinder(false);
+        IPCThreadState::Init(binder.get());
+        lspd::GetLibBinder(true);
 
         LOGD("Done InitService");
     }
