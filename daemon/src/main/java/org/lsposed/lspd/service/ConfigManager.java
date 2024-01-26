@@ -60,6 +60,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -91,6 +92,9 @@ import hidden.HiddenApiBridge;
 
 public class ConfigManager {
     private static ConfigManager instance = null;
+    private final SharedMemory accessMatrixMemory;
+    // appid bitmap
+    private final ByteBuffer accessMatrix;
 
     private final SQLiteDatabase db = openDb();
 
@@ -340,6 +344,12 @@ public class ConfigManager {
         HandlerThread cacheThread = new HandlerThread("cache");
         cacheThread.start();
         cacheHandler = new Handler(cacheThread.getLooper());
+        try {
+            accessMatrixMemory = SharedMemory.create("access", 1250);
+            accessMatrix = accessMatrixMemory.mapReadWrite();
+        } catch (ErrnoException e) {
+            throw new RuntimeException(e);
+        }
 
         initDB();
         updateConfig();
@@ -524,6 +534,13 @@ public class ConfigManager {
         }
         cachedModule.clear();
         cachedScope.clear();
+        clearAccessMatrix();
+    }
+
+    private void clearAccessMatrix() {
+        for (var i = 0; i < accessMatrix.capacity(); i++) {
+            accessMatrix.put(i, (byte) 0);
+        }
     }
 
     private synchronized void cacheModules() {
@@ -639,6 +656,7 @@ public class ConfigManager {
             else lastScopeCacheTime = SystemClock.elapsedRealtime();
         }
         cachedScope.clear();
+        clearAccessMatrix();
         try (Cursor cursor = db.query("scope INNER JOIN modules ON scope.mid = modules.mid", new String[]{"app_pkg_name", "module_pkg_name", "user_id"},
                 "enabled = 1", null, null, null, null)) {
             int appPkgNameIdx = cursor.getColumnIndex("app_pkg_name");
@@ -732,6 +750,12 @@ public class ConfigManager {
         cachedScope.forEach((ps, modules) -> {
             Log.d(TAG, ps.processName + "/" + ps.uid);
             modules.forEach(module -> Log.d(TAG, "\t" + module.packageName));
+            var appId = ps.uid % PER_USER_RANGE;
+            if (appId >= 10000 && appId <= 19999) {
+                int idx = (appId - 10000) >> 3;
+                byte bit = (byte) (1 << ((appId - 10000) & 7));
+                accessMatrix.put(idx, (byte) (accessMatrix.get(idx) | bit));
+            }
         });
     }
 
@@ -1201,5 +1225,9 @@ public class ConfigManager {
 
     synchronized SharedMemory getPreloadDex() {
         return ConfigFileManager.getPreloadDex(dexObfuscate);
+    }
+
+    SharedMemory getAccessMatrixMemory() {
+        return accessMatrixMemory;
     }
 }

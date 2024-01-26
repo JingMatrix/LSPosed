@@ -26,9 +26,11 @@ import android.app.ActivityThread;
 import android.app.IApplicationThread;
 import android.content.Context;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.os.SharedMemory;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -109,6 +111,19 @@ public class BridgeService {
                 case ACTION_SEND_BINDER: {
                     if (Binder.getCallingUid() == 0) {
                         receiveFromBridge(data.readStrongBinder());
+                        try {
+                            SharedMemory sm;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                sm = data.readParcelable(ClassLoader.getSystemClassLoader(), SharedMemory.class);
+                            } else {
+                                sm = data.readParcelable(ClassLoader.getSystemClassLoader());
+                            }
+                            assert sm != null;
+                            initializeAccessMatrix(sm);
+                            sm.close();
+                        } catch (Throwable t) {
+                            Log.e(TAG, "initialize shared memory", t);
+                        }
                         if (reply != null) {
                             reply.writeNoException();
                         }
@@ -217,4 +232,6 @@ public class BridgeService {
             reply.recycle();
         }
     }
+
+    private static native void initializeAccessMatrix(SharedMemory sm);
 }
