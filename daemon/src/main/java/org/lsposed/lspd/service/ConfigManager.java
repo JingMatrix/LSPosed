@@ -306,14 +306,15 @@ public class ConfigManager {
 
     public synchronized void updateManager(boolean uninstalled) {
         if (uninstalled) {
+            setAccessMatrixAppId(managerUid, false);
             managerUid = -1;
-            return;
         }
         if (!PackageService.isAlive()) return;
         try {
             PackageInfo info = PackageService.getPackageInfo(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0);
             if (info != null) {
                 managerUid = info.applicationInfo.uid;
+                setAccessMatrixAppId(managerUid, true);
             } else {
                 managerUid = -1;
                 Log.i(TAG, "manager is not installed");
@@ -537,10 +538,20 @@ public class ConfigManager {
         clearAccessMatrix();
     }
 
-    private void clearAccessMatrix() {
+    private synchronized void clearAccessMatrix() {
         for (var i = 0; i < accessMatrix.capacity(); i++) {
             accessMatrix.put(i, (byte) 0);
         }
+    }
+
+    private synchronized void setAccessMatrixAppId(int appId, boolean set) {
+        if (appId < 10000 || appId > 19999) return;
+        int idx = (appId - 10000) >> 3;
+        byte bit = (byte) (1 << ((appId - 10000) & 7));
+        if (set)
+            accessMatrix.put(idx, (byte) (accessMatrix.get(idx) | bit));
+        else
+            accessMatrix.put(idx, (byte) (accessMatrix.get(idx) & ~bit));
     }
 
     private synchronized void cacheModules() {
@@ -752,11 +763,12 @@ public class ConfigManager {
             modules.forEach(module -> Log.d(TAG, "\t" + module.packageName));
             var appId = ps.uid % PER_USER_RANGE;
             if (appId >= 10000 && appId <= 19999) {
-                int idx = (appId - 10000) >> 3;
-                byte bit = (byte) (1 << ((appId - 10000) & 7));
-                accessMatrix.put(idx, (byte) (accessMatrix.get(idx) | bit));
+                setAccessMatrixAppId(appId, true);
             }
         });
+        if (managerUid != -1) {
+            setAccessMatrixAppId(managerUid, true);
+        }
     }
 
     // This is called when a new process created, use the cached result
