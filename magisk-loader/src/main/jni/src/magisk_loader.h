@@ -36,7 +36,7 @@ namespace lspd {
             return static_cast<MagiskLoader*>(instance_.get());
         }
 
-        void OnNativeForkAndSpecializePre(JNIEnv *env, jint uid, jintArray &gids, jstring nice_name,
+        void OnNativeForkAndSpecializePre(JNIEnv *env, jint uid, jintArray &gids, jstring &nice_name,
                                           jboolean is_child_zygote, jstring app_data_dir);
 
         void OnNativeForkAndSpecializePost(JNIEnv *env, jstring nice_name, jstring app_dir);

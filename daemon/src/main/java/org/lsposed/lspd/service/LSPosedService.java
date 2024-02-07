@@ -221,12 +221,6 @@ public class LSPosedService extends ILSPosedService.Stub {
 
     private void dispatchBootCompleted(Intent intent) {
         bootCompleted = true;
-        try {
-            var am = ActivityManagerService.getActivityManager();
-            if (am != null) am.setActivityController(null, false);
-        } catch (RemoteException e) {
-            Log.e(TAG, "setActivityController", e);
-        }
         var configManager = ConfigManager.getInstance();
         if (configManager.enableStatusNotification()) {
             LSPNotificationManager.notifyStatusNotification();
@@ -463,8 +457,12 @@ public class LSPosedService extends ILSPosedService.Stub {
     }
 
     @Override
-    public boolean preStartManager(String pkgName, Intent intent) {
-        Log.d(TAG, "checking manager intent");
-        return ServiceManager.getManagerService().preStartManager(pkgName, intent, false);
+    public boolean preStartManager() {
+        return ServiceManager.getManagerService().preStartManager();
+    }
+
+    @Override
+    public boolean setManagerEnabled(boolean enabled) throws RemoteException {
+        return ServiceManager.getManagerService().setEnabled(enabled);
     }
 }

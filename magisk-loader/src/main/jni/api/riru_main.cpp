@@ -63,6 +63,7 @@ namespace lspd {
                                                                  nice_name,
                                                                  *start_child_zygote,
                                                                  *_app_data_dir);
+            *_nice_name = nice_name;
         }
 
         void nativeForkAndSpecializePost(JNIEnv *env, jclass, jint res) {

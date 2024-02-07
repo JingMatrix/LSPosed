@@ -206,9 +206,11 @@ public class ConfigManager {
             Log.e(TAG, "skip injecting into android because sepolicy was not loaded properly");
             return true; // skip
         }
+        /*
         try (Cursor cursor = db.query("scope INNER JOIN modules ON scope.mid = modules.mid", new String[]{"modules.mid"}, "app_pkg_name=? AND enabled=1", new String[]{"system"}, null, null, null)) {
             return cursor == null || !cursor.moveToNext();
-        }
+        }*/
+        return false;
     }
 
     @SuppressLint("BlockedPrivateApi")
