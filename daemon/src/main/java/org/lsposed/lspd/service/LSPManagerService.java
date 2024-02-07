@@ -21,7 +21,6 @@ package org.lsposed.lspd.service;
 
 import static android.content.Context.BIND_AUTO_CREATE;
 import static org.lsposed.lspd.service.ServiceManager.TAG;
-import static org.lsposed.lspd.service.ServiceManager.getExecutorService;
 
 import android.annotation.SuppressLint;
 import android.app.IServiceConnection;
@@ -59,7 +58,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import hidden.HiddenApiBridge;
@@ -67,10 +65,9 @@ import io.github.libxposed.service.IXposedService;
 import rikka.parcelablelist.ParcelableListSlice;
 
 public class LSPManagerService extends ILSPManagerService.Stub {
-    // this maybe useful when obtaining the manager binder
-    private static String RANDOM_UUID = null;
 
     private static Intent managerIntent = null;
+    private boolean enabled = true;
 
     public class ManagerGuard implements IBinder.DeathRecipient {
         private final @NonNull
@@ -163,7 +160,11 @@ public class LSPManagerService extends ILSPManagerService.Stub {
         if (intent == null) return;
         intent = new Intent(intent);
         intent.setData(withData);
-        ServiceManager.getManagerService().preStartManager(BuildConfig.MANAGER_INJECTED_PKG_NAME, intent, true);
+        try {
+            ActivityManagerService.startActivityAsUserWithFeature("android", null, intent, intent.getType(), null, null, 0, 0, null, null, 0);
+        } catch (RemoteException e) {
+            Log.e(TAG, "failed to open manager");
+        }
     }
 
     @SuppressLint("WrongConstant")
@@ -186,11 +187,6 @@ public class LSPManagerService extends ILSPManagerService.Stub {
         } catch (RemoteException t) {
             Log.e(TAG, "Broadcast to manager failed: ", t);
         }
-    }
-
-    public ManagerGuard guardSnapshot() {
-        var snapshot = guard;
-        return snapshot != null && snapshot.isAlive() ? snapshot : null;
     }
 
     private void ensureWebViewPermission(File f) {
@@ -222,136 +218,46 @@ public class LSPManagerService extends ILSPManagerService.Stub {
         }
     }
 
-    // To start injected manager, we should take care about conflict
-    // with the target app since we won't inject into it
-    // if we are not going to display manager.
-    // Thus, when someone launching manager, we should no matter
-    // stop any process of the target app
-    // Ideally we should call force stop package here,
-    // however it's not feasible because it will cause deadlock
-    // Thus we will cancel the launch of the activity
-    // and manually start activity with force stopping
-    // However, the intent we got here is not complete since
-    // there's no extras. We cannot do the same thing
-    // where starting the target app while the manager is
-    // still running.
-    // We instead let the manager to restart the activity.
-    synchronized boolean preStartManager(String pkgName, Intent intent, boolean doResume) {
-        // first, check if it's our target app, if not continue the start
-        if (BuildConfig.MANAGER_INJECTED_PKG_NAME.equals(pkgName)) {
-            Log.d(TAG, "starting target app of parasitic manager");
-            // check if it's launching our manager
-            if (intent.getCategories() != null &&
-                    intent.getCategories().contains("org.lsposed.manager.LAUNCH_MANAGER")) {
-                Log.d(TAG, "requesting launch of manager");
-                // a new launch for the manager
-                // check if there's one running
-                // or it's run by ourselves after force stopping
-                var snapshot = guardSnapshot();
-                if ((RANDOM_UUID != null && intent.getCategories().contains(RANDOM_UUID)) ||
-                        (snapshot != null && snapshot.isAlive() && snapshot.uid == BuildConfig.MANAGER_INJECTED_UID)) {
-                    Log.d(TAG, "manager is still running or is on its way");
-                    // there's one running parasitic manager
-                    // or it's run by ourself after killing, resume it
-                    if (doResume) {
-                        // if doResume is true, we help do the resumption
-                        try {
-                            ActivityManagerService.startActivityAsUserWithFeature("android", null, intent, intent.getType(), null, null, 0, 0, null, null, 0);
-                        } catch (Throwable e) {
-                            Log.w(TAG, "resume manager", e);
-                        }
-                    }
-                    return true;
-                } else if (pendingManager) {
-                    // Check the flag in case new launch comes before finishing
-                    // the previous one to avoid racing.
-                    Log.d(TAG, "manager is still on its way when new launch comes, skipping");
-                    return false;
-                } else {
-                    // new parasitic manager launch, set the flag and kill
-                    // old processes
-                    // we do it by cancelling the launch (return false)
-                    // and start activity in a new thread
-                    pendingManager = true;
-                    getExecutorService().submit(() -> {
-                        ensureWebViewPermission();
-                        stopAndStartActivity(pkgName, intent, true);
-                    });
-                    Log.d(TAG, "requested to launch manager");
-                    return false;
-                }
-            } else if (pendingManager) {
-                // there's still parasitic manager, cancel a normal launch until
-                // the parasitic manager is launch
-                Log.d(TAG, "previous request is not yet done");
-                return false;
-            }
-            // this is a normal launch of the target app
-            // send it to the manager and let it to restart the package
-            // if the manager is running
-            // or normally restart without injecting
-            Log.d(TAG, "launching the target app normally");
-            return true;
-        }
+    synchronized boolean preStartManager() {
+        pendingManager = true;
+        managerPid = -1;
         return true;
-    }
-
-    synchronized void stopAndStartActivity(String packageName, Intent intent, boolean addUUID) {
-        try {
-            ActivityManagerService.forceStopPackage(packageName, 0);
-            Log.d(TAG, "stopped old package");
-            if (addUUID) {
-                intent = new Intent(intent);
-                RANDOM_UUID = UUID.randomUUID().toString();
-                intent.addCategory(RANDOM_UUID);
-            }
-            ActivityManagerService.startActivityAsUserWithFeature("android", null, intent, intent.getType(), null, null, 0, 0, null, null, 0);
-            Log.d(TAG, "relaunching");
-        } catch (RemoteException e) {
-            Log.e(TAG, "stop and start activity", e);
-        }
     }
 
     // return true to inject manager
     synchronized boolean shouldStartManager(int pid, int uid, String processName) {
-        if (uid != BuildConfig.MANAGER_INJECTED_UID || !BuildConfig.MANAGER_INJECTED_PKG_NAME.equals(processName) || !pendingManager)
+        if (!enabled || uid != BuildConfig.MANAGER_INJECTED_UID || !BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME.equals(processName) || !pendingManager)
             return false;
-        // pending parasitic manager launch it processes
-        // now we have its pid so we allow it to be killed
-        // and thus reset the pending flag and mark its pid
         pendingManager = false;
         managerPid = pid;
         Log.d(TAG, "starting injected manager: pid = " + pid + " uid = " + uid + " processName = " + processName);
         return true;
     }
 
+    synchronized boolean setEnabled(boolean newValue) {
+        enabled = newValue;
+        Log.i(TAG, "manager enabled = " + enabled);
+        return enabled;
+    }
+
     // return true to send manager binder
-    synchronized boolean postStartManager(int pid, int uid) {
-        if (pid == managerPid && uid == BuildConfig.MANAGER_INJECTED_UID) {
-            RANDOM_UUID = null;
-            return true;
-        }
-        return false;
+    boolean postStartManager(int pid, int uid) {
+        return enabled && uid == BuildConfig.MANAGER_INJECTED_UID && pid == managerPid;
     }
 
     public @NonNull
     IBinder obtainManagerBinder(@NonNull IBinder heartbeat, int pid, int uid) {
         new ManagerGuard(heartbeat, pid, uid);
-        if (postStartManager(pid, uid)) {
-            managerPid = 0;
-        }
+        if (uid == BuildConfig.MANAGER_INJECTED_UID)
+            ensureWebViewPermission();
         return this;
     }
 
     public boolean isRunningManager(int pid, int uid) {
-        var snapshotPid = managerPid;
-        var snapshotGuard = guardSnapshot();
-        return (pid == snapshotPid && uid == BuildConfig.MANAGER_INJECTED_UID) || (snapshotGuard != null && snapshotGuard.pid == pid && snapshotGuard.uid == uid);
+        return false;
     }
 
     void onSystemServerDied() {
-        pendingManager = false;
-        managerPid = 0;
         guard = null;
     }
 
@@ -564,8 +470,6 @@ public class LSPManagerService extends ILSPManagerService.Stub {
 
     @Override
     public void restartFor(Intent intent) throws RemoteException {
-        forceStopPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME, 0);
-        stopAndStartActivity(BuildConfig.MANAGER_INJECTED_PKG_NAME, intent, false);
     }
 
     @Override

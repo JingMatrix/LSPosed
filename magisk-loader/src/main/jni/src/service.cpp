@@ -95,25 +95,6 @@ namespace lspd {
                                                instance()->exec_transact_replace_methodID_,
                                                obj, code, data_obj, reply_obj, flags);
             return true;
-        } else if (SET_ACTIVITY_CONTROLLER_CODE != -1 &&
-                   code == SET_ACTIVITY_CONTROLLER_CODE) [[unlikely]] {
-            va_copy(copy, args);
-            if (instance()->replace_activity_controller_methodID_) {
-                *res = JNI_CallStaticBooleanMethod(env, instance()->bridge_service_class_,
-                                                   instance()->replace_activity_controller_methodID_,
-                                                   obj, code, data_obj, reply_obj, flags);
-            }
-            va_end(copy);
-            // fallback the backup
-        } else if (code == (('_' << 24) | ('C' << 16) | ('M' << 8) | 'D')) {
-            va_copy(copy, args);
-            if (instance()->replace_shell_command_methodID_) {
-                *res = JNI_CallStaticBooleanMethod(env, instance()->bridge_service_class_,
-                                                   instance()->replace_shell_command_methodID_,
-                                                   obj, code, data_obj, reply_obj, flags);
-            }
-            va_end(copy);
-            return *res;
         }
         return false;
     }
@@ -245,21 +226,6 @@ namespace lspd {
         if (!exec_transact_replace_methodID_) {
             LOGE("execTransact class not found");
             return;
-        }
-
-
-        replace_activity_controller_methodID_ = JNI_GetStaticMethodID(env, bridge_service_class_,
-                                                                      "replaceActivityController",
-                                                                      hooker_sig);
-        if (!replace_activity_controller_methodID_) {
-            LOGE("replaceActivityShell class not found");
-        }
-
-        replace_shell_command_methodID_ = JNI_GetStaticMethodID(env, bridge_service_class_,
-                                                                "replaceShellCommand",
-                                                                hooker_sig);
-        if (!replace_shell_command_methodID_) {
-            LOGE("replaceShellCommand class not found");
         }
 
         auto binder_class = JNI_FindClass(env, "android/os/Binder");

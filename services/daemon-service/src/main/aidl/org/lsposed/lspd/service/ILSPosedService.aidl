@@ -7,5 +7,7 @@ interface ILSPosedService {
 
     oneway void dispatchSystemServerContext(in IBinder activityThread, in IBinder activityToken, String api);
 
-    boolean preStartManager(String pkgName, in Intent intent);
+    boolean preStartManager();
+
+    boolean setManagerEnabled(boolean enabled);
 }

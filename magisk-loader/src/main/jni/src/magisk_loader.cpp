@@ -37,6 +37,7 @@ static_assert(FS_IOC_SETFLAGS == LP_SELECT(0x40046602, 0x40086602));
 
 namespace lspd {
     extern int *allowUnload;
+    jboolean is_parasitic_manager = JNI_FALSE;
 
     constexpr int FIRST_ISOLATED_UID = 99000;
     constexpr int LAST_ISOLATED_UID = 99999;
@@ -114,52 +115,55 @@ namespace lspd {
             close(dex_fd);
             instance->HookBridge(*this, env);
 
-            if (application_binder) {
-                lsplant::InitInfo initInfo{
-                    .inline_hooker = [](auto t, auto r) {
-                        void* bk = nullptr;
-                        return HookFunction(t, r, &bk) == 0 ? bk : nullptr;
-                    },
-                    .inline_unhooker = [](auto t) {
-                        return UnhookFunction(t) == 0 ;
-                    },
-                    .art_symbol_resolver = [](auto symbol) {
-                        return GetArt()->getSymbAddress(symbol);
-                    },
-                    .art_symbol_prefix_resolver = [](auto symbol) {
-                        return GetArt()->getSymbPrefixFirstAddress(symbol);
-                    },
-                };
-                InitArtHooker(env, initInfo);
-                InitHooks(env);
-                SetupEntryClass(env);
-                FindAndCall(env, "forkCommon",
-                            "(ZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V",
-                            JNI_TRUE, JNI_NewStringUTF(env, "system"), nullptr, application_binder);
-                GetArt(true);
-            } else {
-                LOGI("skipped system server");
-                GetArt(true);
-            }
+            // always inject into system server
+            lsplant::InitInfo initInfo{
+                .inline_hooker = [](auto t, auto r) {
+                    void* bk = nullptr;
+                    return HookFunction(t, r, &bk) == 0 ? bk : nullptr;
+                },
+                .inline_unhooker = [](auto t) {
+                    return UnhookFunction(t) == 0 ;
+                },
+                .art_symbol_resolver = [](auto symbol) {
+                    return GetArt()->getSymbAddress(symbol);
+                },
+                .art_symbol_prefix_resolver = [](auto symbol) {
+                    return GetArt()->getSymbPrefixFirstAddress(symbol);
+                },
+            };
+            InitArtHooker(env, initInfo);
+            InitHooks(env);
+            SetupEntryClass(env);
+            FindAndCall(env, "forkCommon",
+                        "(ZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V",
+                        JNI_TRUE, JNI_NewStringUTF(env, "system"), nullptr, application_binder, is_parasitic_manager);
+            GetArt(true);
         }
     }
 
     void MagiskLoader::OnNativeForkAndSpecializePre(JNIEnv *env,
                                                jint uid,
                                                jintArray &gids,
-                                               jstring nice_name,
+                                               jstring &nice_name,
                                                jboolean is_child_zygote,
                                                jstring app_data_dir) {
+        jboolean is_manager = JNI_FALSE;
         if (uid == kAidInjected) {
-            int array_size = gids ? env->GetArrayLength(gids) : 0;
-            auto region = std::make_unique<jint[]>(array_size + 1);
-            auto *new_gids = env->NewIntArray(array_size + 1);
-            if (gids) env->GetIntArrayRegion(gids, 0, array_size, region.get());
-            region.get()[array_size] = kAidInet;
-            env->SetIntArrayRegion(new_gids, 0, array_size + 1, region.get());
-            if (gids) env->SetIntArrayRegion(gids, 0, 1, region.get() + array_size);
-            gids = new_gids;
+            const JUTFString name(env, nice_name);
+            if (name.get() == "org.lsposed.manager"sv) {
+                int array_size = gids ? env->GetArrayLength(gids) : 0;
+                auto region = std::make_unique<jint[]>(array_size + 1);
+                auto *new_gids = env->NewIntArray(array_size + 1);
+                if (gids) env->GetIntArrayRegion(gids, 0, array_size, region.get());
+                region.get()[array_size] = kAidInet;
+                env->SetIntArrayRegion(new_gids, 0, array_size + 1, region.get());
+                if (gids) env->SetIntArrayRegion(gids, 0, 1, region.get() + array_size);
+                gids = new_gids;
+                nice_name = JNI_NewStringUTF(env, "com.android.shell").release();
+                is_manager = JNI_TRUE;
+            }
         }
+        is_parasitic_manager = is_manager;
         Service::instance()->InitService(env);
         const auto app_id = uid % PER_USER_RANGE;
         JUTFString process_name(env, nice_name);
@@ -187,6 +191,7 @@ namespace lspd {
     MagiskLoader::OnNativeForkAndSpecializePost(JNIEnv *env, jstring nice_name, jstring app_dir) {
         const JUTFString process_name(env, nice_name);
         auto *instance = Service::instance();
+        if (is_parasitic_manager) nice_name = JNI_NewStringUTF(env, "org.lsposed.manager").release();
         auto binder = skip_ ? ScopedLocalRef<jobject>{env, nullptr}
                             : instance->RequestBinder(env, nice_name);
         if (binder) {

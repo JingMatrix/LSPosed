@@ -17,15 +17,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.os.Process;
-import android.os.RemoteException;
 import android.util.AndroidRuntimeException;
 import android.util.ArrayMap;
 import android.webkit.WebViewDelegate;
 import android.webkit.WebViewFactory;
 import android.webkit.WebViewFactoryProvider;
 
-import org.lsposed.lspd.BuildConfig;
 import org.lsposed.lspd.ILSPManagerService;
 
 import java.io.FileInputStream;
@@ -157,7 +154,6 @@ public class ParasiticManagerHooker {
                     }
                     if (param.args[i] instanceof Intent) {
                         var intent = (Intent) param.args[i];
-                        checkIntent(managerService, intent);
                         intent.setComponent(new ComponentName(intent.getComponent().getPackageName(), "org.lsposed.manager.ui.activity.MainActivity"));
                     }
                 }
@@ -257,16 +253,6 @@ public class ParasiticManagerHooker {
             }
         });
 
-        XposedHelpers.findAndHookMethod(ActivityThread.class, "deliverNewIntents", activityClientRecordClass, List.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) {
-                if (param.args[1] == null) return;
-                for (var intent : (List<?>) param.args[1]) {
-                    checkIntent(managerService, (Intent) intent);
-                }
-            }
-        });
-
         XposedHelpers.findAndHookMethod(WebViewFactory.class, "getProvider", new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) {
@@ -321,21 +307,6 @@ public class ParasiticManagerHooker {
         XposedBridge.hookAllMethods(ActivityThread.class, "performStopActivityInner", stateHooker);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1)
             XposedHelpers.findAndHookMethod(ActivityThread.class, "performDestroyActivity", IBinder.class, boolean.class, int.class, boolean.class, stateHooker);
-    }
-
-    private static void checkIntent(ILSPManagerService managerService, Intent intent) {
-        if (managerService == null) return;
-        if (Process.myUid() != BuildConfig.MANAGER_INJECTED_UID) return;
-        if (intent.getCategories() == null || !intent.getCategories().contains("org.lsposed.manager.LAUNCH_MANAGER")) {
-            Hookers.logD("Launching the original app, restarting");
-            try {
-                managerService.restartFor(intent);
-            } catch (RemoteException e) {
-                Hookers.logE("restart failed", e);
-            } finally {
-                Process.killProcess(Process.myPid());
-            }
-        }
     }
 
 
