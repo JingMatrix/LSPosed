@@ -79,6 +79,8 @@ public class ParasiticManagerHooker {
                 }
                 HiddenApiBridge.ApplicationInfo_resourceDirs(newAppInfo, HiddenApiBridge.ApplicationInfo_resourceDirs(appInfo));
                 newAppInfo.uid = appInfo.uid;
+                // FIXME: It seems the parsed flags is incorrect (0) on A14 QPR3
+                newAppInfo.flags = newAppInfo.flags | ApplicationInfo.FLAG_HAS_CODE;
             } catch (Throwable e) {
                 Utils.logE("get manager pkginfo", e);
             }
