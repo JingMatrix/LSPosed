@@ -36,19 +36,21 @@ public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHo
     private static class Hooker implements XposedInterface.Hooker {
         @AfterInvocation
         public static void afterHookedMethod(XposedInterface.AfterHookCallback callback) throws Throwable {
-            Log.d("LSPosed", "checking new activity");
             var intent = (Intent) callback.getArgs()[0];
-            Log.d("LSPosed", "intent=" + intent);
             if (intent == null) return;
-            // TODO: keep sync with LSPManagerService getManagerIntent
             if (!intent.hasCategory("org.lsposed.manager.LAUNCH_MANAGER")) return;
             var aInfo = (ActivityInfo) callback.getResult();
             if (aInfo == null || !"com.android.shell".equals(aInfo.packageName)) return;
+            // We shouldn't pollute system's object
+            aInfo = new ActivityInfo(aInfo);
+            // use a different process name
             aInfo.processName = "org.lsposed.manager";
+            // choose a theme that has transition animation
             aInfo.theme = android.R.style.Theme_Material_Light_NoActionBar;
+            // remove some annoying flags
             aInfo.flags = aInfo.flags & ~(ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS | ActivityInfo.FLAG_FINISH_ON_CLOSE_SYSTEM_DIALOGS);
             BridgeService.getService().preStartManager();
-            Log.d("LSPosed", "replaced activity");
+            callback.setResult(aInfo);
         }
     }
 
@@ -58,9 +60,16 @@ public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHo
         try {
             Class<?> supervisorClass;
             try {
+                // 14-12.0
                 supervisorClass = Class.forName("com.android.server.wm.ActivityTaskSupervisor", false, classLoader);
             } catch (ClassNotFoundException ignore) {
-                supervisorClass = Class.forName("com.android.server.wm.ActivityStackSupervisor", false, classLoader);
+                try {
+                    // 11-10
+                    supervisorClass = Class.forName("com.android.server.wm.ActivityStackSupervisor", false, classLoader);
+                } catch (ClassNotFoundException ignore2) {
+                    // 9-8.1
+                    supervisorClass = Class.forName("com.android.server.am.ActivityStackSupervisor", false, classLoader);
+                }
             }
             LSPosedHelper.hookMethod(Hooker.class, supervisorClass, "resolveActivity", Intent.class, ResolveInfo.class, int.class, ProfilerInfo.class);
             /*
