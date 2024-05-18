@@ -5,6 +5,7 @@ add_subdirectory(${EXTERNAL_ROOT} external)
 
 aux_source_directory(src SRC_LIST)
 aux_source_directory(src/jni SRC_LIST)
+aux_source_directory(src/xz SRC_LIST)
 
 add_library(${PROJECT_NAME} STATIC ${SRC_LIST})
 
