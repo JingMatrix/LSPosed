@@ -6,6 +6,7 @@ endmacro()
 
 SET_OPTION(DOBBY_GENERATE_SHARED OFF)
 SET_OPTION(Plugin.SymbolResolver OFF)
+SET_OPTION(FMT_INSTALL OFF)
 
 set(LIBCXX_SOURCES
         algorithm.cpp
