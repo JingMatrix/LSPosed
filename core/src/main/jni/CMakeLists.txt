@@ -1,5 +1,5 @@
+cmake_minimum_required(VERSION 3.8)
 project(core)
-cmake_minimum_required(VERSION 3.4.1)
 
 add_subdirectory(${EXTERNAL_ROOT} external)
 
