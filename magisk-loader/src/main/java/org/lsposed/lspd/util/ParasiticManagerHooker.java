@@ -123,7 +123,17 @@ public class ParasiticManagerHooker {
                     protected void afterHookedMethod(MethodHookParam param) {
                         var pkgInfo = getManagerPkgInfo(null);
                         if (pkgInfo != null && XposedHelpers.getObjectField(param.thisObject, "mApplicationInfo") == pkgInfo.applicationInfo) {
-                            sendBinderToManager((ClassLoader) param.getResult(), managerService.asBinder());
+                            var sSourceDir = pkgInfo.applicationInfo.sourceDir;
+                            var pathClassLoader = param.getResult();
+
+                            Hookers.logD("LoadedApk getClassLoader " + pathClassLoader);
+                            var pathList = XposedHelpers.getObjectField(pathClassLoader, "pathList");
+                            List<String> lstDexPath = (List<String>)XposedHelpers.callMethod(pathList, "getDexPaths");
+                            if (!lstDexPath.contains(sSourceDir)) {
+                                Utils.logW("Could not find manager apk injected in classloader");
+                                XposedHelpers.callMethod(pathClassLoader, "addDexPath", sSourceDir);
+                            }
+                            sendBinderToManager((ClassLoader) pathClassLoader, managerService.asBinder());
                             unhooks[0].unhook();
                         }
                     }
