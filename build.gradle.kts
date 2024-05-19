@@ -35,7 +35,8 @@ cmaker {
             arrayOf(
                 "-DEXTERNAL_ROOT=${File(rootDir.absolutePath, "external")}",
                 "-DCORE_ROOT=${File(rootDir.absolutePath, "core/src/main/jni")}",
-                "-DANDROID_STL=none"
+                "-DANDROID_STL=none",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             )
         )
         val flags = arrayOf(
@@ -88,6 +89,7 @@ subprojects {
             externalNativeBuild {
                 cmake {
                     version = "3.28.1+"
+                    buildStagingDirectory = layout.buildDirectory.get().asFile
                 }
             }
 
