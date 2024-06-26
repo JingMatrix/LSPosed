@@ -46,7 +46,7 @@ public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHo
             // use a different process name
             aInfo.processName = "org.lsposed.manager";
             // choose a theme that has transition animation
-            aInfo.theme = android.R.style.Theme_Material_Light_NoActionBar;
+            aInfo.theme = android.R.style.Theme_DeviceDefault_Settings;
             // remove some annoying flags
             aInfo.flags = aInfo.flags & ~(ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS | ActivityInfo.FLAG_FINISH_ON_CLOSE_SYSTEM_DIALOGS);
             BridgeService.getService().preStartManager();
