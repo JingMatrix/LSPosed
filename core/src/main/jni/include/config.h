@@ -31,7 +31,6 @@ namespace lspd {
 
 //#define LOG_DISABLED
 //#define DEBUG
-    using lsplant::operator""_tstr;
 
     inline bool constexpr Is64() {
 #if defined(__LP64__)
@@ -59,8 +58,8 @@ namespace lspd {
 # define LP_SELECT(lp32, lp64) lp32
 #endif
 
-    inline static constexpr auto kLibArtName = "libart.so"_tstr;
-    inline static constexpr auto kLibFwName = "libandroidfw.so"_tstr;
+    inline static constexpr auto kLibArtName = "libart.so";
+    inline static constexpr auto kLibFwName = "libandroidfw.so";
 
     inline constexpr const char *BoolToString(bool b) {
         return b ? "true" : "false";
