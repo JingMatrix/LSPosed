@@ -40,4 +40,14 @@ namespace lspd {
         }
         return kArtImg;
     }
+
+    std::unique_ptr<const SandHook::ElfImg> &GetLinker(bool release) {
+        static std::unique_ptr<const SandHook::ElfImg> kImg = nullptr;
+        if (release) {
+            kImg.reset();
+        } else if (!kImg) {
+            kImg = std::make_unique<SandHook::ElfImg>(kLinkerName);
+        }
+        return kImg;
+    }
 }  // namespace lspd
