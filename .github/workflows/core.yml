@@ -64,13 +64,15 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup ninja
         uses: seanmiddleditch/gha-setup-ninja@master
         with:
           version: 1.12.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2

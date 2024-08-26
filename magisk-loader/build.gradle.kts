@@ -126,6 +126,46 @@ val zipAll = task("zipAll") {
     group = "LSPosed"
 }
 
+val generateWebRoot = tasks.register<Copy>("generateWebRoot") {
+    group = "LSPosed"
+    val webroottmp = File("$projectDir/build/intermediates/generateWebRoot")
+    val webrootsrc = File(webroottmp, "src")
+
+    onlyIf {
+        val os = org.gradle.internal.os.OperatingSystem.current()
+        if (os.isWindows) {
+            exec {
+                commandLine("cmd", "/c", "where", "pnpm")
+                isIgnoreExitValue = true
+            }.exitValue == 0
+        } else {
+            exec {
+                commandLine("which", "pnpm")
+                isIgnoreExitValue = true
+            }.exitValue == 0
+        }
+    }
+
+    doFirst {
+        webroottmp.mkdirs()
+        webrootsrc.mkdirs()
+    }
+
+    from("$projectDir/src/webroot")
+    into(webrootsrc)
+
+    doLast {
+        exec {
+            workingDir = webroottmp
+            commandLine("pnpm", "add", "-D", "parcel-bundler", "kernelsu")
+        }
+        exec {
+            workingDir = webroottmp
+            commandLine("./node_modules/.bin/parcel", "build", "src/index.html")
+        }
+    }
+}
+
 fun afterEval() = android.applicationVariants.forEach { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
     val variantLowered = variant.name.lowercase()
@@ -145,7 +185,8 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             "assemble$variantCapped",
             ":app:package$buildTypeCapped",
             ":daemon:package$buildTypeCapped",
-            ":dex2oat:externalNativeBuild${buildTypeCapped}"
+            ":dex2oat:externalNativeBuild${buildTypeCapped}",
+            generateWebRoot
         )
         into(magiskDir)
         from("${rootProject.projectDir}/README.md")
@@ -217,6 +258,14 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
         into("framework") {
             from(dexOutPath)
             rename("classes.dex", "lspd.dex")
+        }
+        into("webroot") {
+            if (flavorLowered.startsWith("zygisk")) {
+                from("$projectDir/build/intermediates/generateWebRoot/dist") {
+                    include("**/*.js")
+                    include("**/*.html")
+                }
+            }
         }
 
         val injected = objects.newInstance<Injected>(magiskDir.get().asFile.path)
