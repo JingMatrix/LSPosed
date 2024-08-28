@@ -24,7 +24,6 @@
 
 #include "symbol_cache.h"
 #include "elf_util.h"
-#include <dobby.h>
 #include "macros.h"
 #include "config.h"
 #include <vector>

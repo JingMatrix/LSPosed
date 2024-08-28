@@ -26,7 +26,6 @@
 #include "logging.h"
 #include "utils/hook_helper.hpp"
 #include <sys/mman.h>
-#include <dobby.h>
 #include <list>
 #include <dlfcn.h>
 #include "native_util.h"

@@ -12,5 +12,5 @@ add_library(${PROJECT_NAME} STATIC ${SRC_LIST})
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC dobby_static lsplant_static log fmt-header-only)
+target_link_libraries(${PROJECT_NAME} PUBLIC lsplt_static lsplant_static log fmt-header-only)
 target_link_libraries(${PROJECT_NAME} PRIVATE dex_builder_static)
