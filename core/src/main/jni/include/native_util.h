@@ -19,13 +19,13 @@
  */
 
 #include <dlfcn.h>
+#include "lsplt.hpp"
 #include <sys/mman.h>
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-value"
 #pragma once
 
 #include <context.h>
-#include "macros.h"
 #include "utils/jni_helper.hpp"
 #include "logging.h"
 #include "config.h"
@@ -74,28 +74,60 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env,
 #define REGISTER_LSP_NATIVE_METHODS(class_name) \
   RegisterNativeMethodsInternal(env, GetNativeBridgeSignature() + #class_name, gMethods, arraysize(gMethods))
 
-inline int HookFunction(void *original, void *replace, void **backup) {
-    if constexpr (isDebug) {
-        Dl_info info;
-        if (dladdr(original, &info))
-        LOGD("Hooking {} ({}) from {} ({})",
-             info.dli_sname ? info.dli_sname : "(unknown symbol)", info.dli_saddr,
-             info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
+static std::vector<std::tuple<dev_t, ino_t, const char *, void **>> plt_hook_list = {};
+static auto scan_maps = lsplt::MapInfo::Scan();
+
+inline int plt_hook(const char *lib, const char *symbol, void *callback, void **backup) {
+    dev_t dev = 0;
+    ino_t inode = 0;
+    for (auto map : scan_maps) {
+        if (map.path == lib) {
+            inode = map.inode;
+            dev = map.dev;
+            break;
+        }
     }
-    /* return DobbyHook(original, reinterpret_cast<dobby_dummy_func_t>(replace), reinterpret_cast<dobby_dummy_func_t *>(backup)); */
-	return 1;
+
+    auto result = lsplt::RegisterHook(dev, inode, symbol, callback, backup) && lsplt::CommitHook();
+    if (result) {
+        plt_hook_list.emplace_back(dev, inode, symbol, backup);
+        return 0;
+    }
+    return 1;
+}
+
+inline int HookFunction(void *original, void *replace, void **backup) {
+    Dl_info info;
+    if (dladdr(original, &info)) {
+        if constexpr (isDebug) {
+            LOGD("Hooking {} ({}) from {} ({})",
+                 info.dli_sname ? info.dli_sname : "(unknown symbol)", info.dli_saddr,
+                 info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
+        }
+        if (info.dli_sname != NULL && info.dli_fname != NULL)
+            return plt_hook(info.dli_fname, info.dli_sname, replace, backup);
+    }
+    return 1;
 }
 
 inline int UnhookFunction(void *original) {
-    if constexpr (isDebug) {
-        Dl_info info;
-        if (dladdr(original, &info))
-        LOGD("Unhooking {} ({}) from {} ({})",
-             info.dli_sname ? info.dli_sname : "(unknown symbol)", info.dli_saddr,
-             info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
+    Dl_info info;
+    if (dladdr(original, &info)) {
+        if constexpr (isDebug) {
+            LOGD("Unhooking {} ({}) from {} ({})",
+                 info.dli_sname ? info.dli_sname : "(unknown symbol)", info.dli_saddr,
+                 info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
+        }
+
+        for (const auto [dev, inode, symbol, backup] : plt_hook_list) {
+            if (info.dli_sname == symbol) {
+                auto result = lsplt::RegisterHook(dev, inode, symbol, backup, nullptr)
+                    && lsplt::CommitHook();
+                return 1 - result;
+            }
+        }
     }
-    /* return DobbyDestroy(original); */
-	return 1;
+    return 1;
 }
 
 inline std::string GetNativeBridgeSignature() {
