@@ -76,11 +76,11 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env,
 
 static std::vector<std::tuple<dev_t, ino_t, const char *, void **>> *plt_hook_list = {};
 
-inline int plt_hook(const char *lib, const char *symbol, void *callback, void **backup) {
+inline int plt_hook(const char *symbol, void *callback, void **backup) {
     dev_t dev = 0;
     ino_t inode = 0;
     for (auto &map : lsplt::MapInfo::Scan()) {
-        if (map.path == lib) {
+        if (map.path.ends_with("libandroid_runtime.so")) {
             inode = map.inode;
             dev = map.dev;
             break;
@@ -96,15 +96,7 @@ inline int plt_hook(const char *lib, const char *symbol, void *callback, void **
 }
 
 inline int HookFunction(void *original, void *replace, void **backup) {
-    Dl_info info;
-    if (dladdr(original, &info)) {
-        if constexpr (isDebug) {
-            LOGD("Hooking {} ({}) from {} ({})",
-                 info.dli_sname ? info.dli_sname : "(unknown symbol)", info.dli_saddr,
-                 info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
-        }
-        return plt_hook(info.dli_fname, info.dli_sname, replace, backup);
-    }
+    return plt_hook(info.dli_sname, replace, backup);
     return 1;
 }
 
