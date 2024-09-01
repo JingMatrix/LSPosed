@@ -88,7 +88,7 @@ subprojects {
 
             externalNativeBuild {
                 cmake {
-                    version = "3.28.1+"
+                    version = "3.29.8+"
                     buildStagingDirectory = layout.buildDirectory.get().asFile
                 }
             }
