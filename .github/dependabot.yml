@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: monthly
     groups:
       actions:
         patterns:
@@ -11,7 +11,7 @@ updates:
   - package-ecosystem: gitsubmodule
     directory: /
     schedule:
-      interval: daily
+      interval: monthly
     groups:
       submodule:
         patterns:
