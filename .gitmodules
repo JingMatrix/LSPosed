@@ -16,3 +16,6 @@
 [submodule "patch/libs/manifest-editor"]
     path = axml/libs/manifest-editor
     url = https://github.com/WindySha/ManifestEditor.git
+[submodule "external/xz-embedded"]
+	path = external/xz-embedded
+	url = https://github.com/tukaani-project/xz-embedded

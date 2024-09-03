@@ -100,6 +100,17 @@ target_compile_options(cxx PRIVATE ${LIBCXX_FLAGS} ${LIBCXXABI_FLAGS} -ffunction
 target_include_directories(cxx PUBLIC ${LIBCXX_EXPORT_INCLUDES})
 target_include_directories(cxx PRIVATE ${LIBCXX_INCLUDES} ${LIBCXXABI_INCLUDES})
 
+set(XZ_SOURCES
+	xz_crc32.c
+	xz_crc64.c
+	# xz_dec_bcj.c
+	xz_dec_lzma2.c
+	xz_dec_stream.c)
+set(XZ_INCLUDES xz-embedded/linux/include/linux xz-embedded/userspace)
+list(TRANSFORM XZ_SOURCES PREPEND xz-embedded/linux/lib/xz/)
+add_library(xz_static STATIC ${XZ_SOURCES})
+target_include_directories(xz_static PRIVATE ${XZ_INCLUDES})
+
 link_libraries(cxx)
 
 OPTION(LSPLANT_BUILD_SHARED OFF)
