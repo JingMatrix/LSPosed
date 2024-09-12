@@ -62,9 +62,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Grant Execute Permission for gradlew
-        run: chmod +x gradlew
-
       - name: Setup ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
         with:
