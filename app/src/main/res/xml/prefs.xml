@@ -93,6 +93,14 @@
 
         <rikka.material.preference.MaterialSwitchPreference
             android:defaultValue="true"
+            android:icon="@drawable/ic_outline_assignment_24"
+            android:key="force_enable_log"
+            android:persistent="false"
+            android:summary="@string/settings_force_enable_log_summary"
+            android:title="@string/settings_force_enable_log" />
+
+        <rikka.material.preference.MaterialSwitchPreference
+            android:defaultValue="true"
             android:icon="@drawable/ic_outline_shield_24"
             android:key="enable_dex_obfuscate"
             android:persistent="false"
