@@ -178,6 +178,25 @@ public class ConfigManager {
         }
     }
 
+    public static boolean isLogWatchdogEnabled() {
+        try {
+            return LSPManagerServiceHolder.getService().isLogWatchdogEnabled();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return false;
+        }
+    }
+
+    public static boolean setLogWatchdog(boolean enabled) {
+        try {
+            LSPManagerServiceHolder.getService().setLogWatchdog(enabled);
+            return true;
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return false;
+        }
+    }
+
     public static ParcelFileDescriptor getLog(boolean verbose) {
         try {
             return verbose ? LSPManagerServiceHolder.getService().getVerboseLog() : LSPManagerServiceHolder.getService().getModulesLog();
