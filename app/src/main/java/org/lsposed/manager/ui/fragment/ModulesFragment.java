@@ -608,7 +608,9 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
                 holder.root.setAlpha(moduleUtil.isModuleEnabled(item.packageName) ? 1.0f : .5f);
                 holder.itemView.setOnClickListener(v -> {
                     searchView.clearFocus();
-                    safeNavigate(ModulesFragmentDirections.actionModulesFragmentToAppListFragment(item.packageName, item.userId));
+                    if (isLoaded()) {
+                        safeNavigate(ModulesFragmentDirections.actionModulesFragmentToAppListFragment(item.packageName, item.userId));
+                    }
                 });
                 holder.itemView.setOnLongClickListener(v -> {
                     searchView.clearFocus();
