@@ -113,11 +113,13 @@ int main(int argc, char **argv) {
     new_argv[argc] = "--inline-max-code-units=0";
     new_argv[argc + 1] = NULL;
 
-    char const *libenv =
-        "LD_LIBRARY_PATH=/system/lib64:/system/lib:"
-        "/apex/com.android.art/lib64:/apex/com.android.art/lib:"
-        "/apex/com.android.os.statsd/lib64:/apex/com.android.os.statsd/lib";
-    putenv((char *)libenv);
+    if (getenv("LD_LIBRARY_PATH") == NULL) {
+        char const *libenv =
+            "LD_LIBRARY_PATH=/system/lib64:/system/lib:"
+            "/apex/com.android.art/lib64:/apex/com.android.art/lib:"
+            "/apex/com.android.os.statsd/lib64:/apex/com.android.os.statsd/lib";
+        putenv((char *)libenv);
+    }
     fexecve(stock_fd, (char **)new_argv, environ);
     PLOGE("fexecve failed");
     return 2;
