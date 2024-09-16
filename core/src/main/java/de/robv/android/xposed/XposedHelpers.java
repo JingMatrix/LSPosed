@@ -26,8 +26,8 @@ import android.content.res.Resources;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.apache.commons.lang3.local.ClassUtils;
-import org.apache.commons.lang3.local.reflect.MemberUtilsX;
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.reflect.MemberUtilsX;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;

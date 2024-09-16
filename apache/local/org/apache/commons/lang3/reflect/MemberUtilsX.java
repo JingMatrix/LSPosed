@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.commons.lang3.local.reflect;
+package org.apache.commons.lang3.reflect;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
