@@ -19,3 +19,6 @@
 [submodule "external/xz-embedded"]
 	path = external/xz-embedded
 	url = https://github.com/tukaani-project/xz-embedded
+[submodule "apache/commons-lang"]
+	path = apache/commons-lang
+	url = https://github.com/apache/commons-lang
