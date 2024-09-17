@@ -23,6 +23,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -31,9 +32,9 @@
 #include "logging.h"
 
 #if defined(__LP64__)
-# define LP_SELECT(lp32, lp64) lp64
+#define LP_SELECT(lp32, lp64) lp64
 #else
-# define LP_SELECT(lp32, lp64) lp32
+#define LP_SELECT(lp32, lp64) lp32
 #endif
 
 #define ID_VEC(is64, is_debug) (((is64) << 1) | (is_debug))
@@ -50,23 +51,17 @@ static ssize_t xrecvmsg(int sockfd, struct msghdr *msg, int flags) {
 
 static void *recv_fds(int sockfd, char *cmsgbuf, size_t bufsz, int cnt) {
     struct iovec iov = {
-            .iov_base = &cnt,
-            .iov_len  = sizeof(cnt),
+        .iov_base = &cnt,
+        .iov_len = sizeof(cnt),
     };
     struct msghdr msg = {
-            .msg_iov        = &iov,
-            .msg_iovlen     = 1,
-            .msg_control    = cmsgbuf,
-            .msg_controllen = bufsz
-    };
+        .msg_iov = &iov, .msg_iovlen = 1, .msg_control = cmsgbuf, .msg_controllen = bufsz};
 
     xrecvmsg(sockfd, &msg, MSG_WAITALL);
     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 
-    if (msg.msg_controllen != bufsz ||
-        cmsg == NULL ||
-        cmsg->cmsg_len != CMSG_LEN(sizeof(int) * cnt) ||
-        cmsg->cmsg_level != SOL_SOCKET ||
+    if (msg.msg_controllen != bufsz || cmsg == NULL ||
+        cmsg->cmsg_len != CMSG_LEN(sizeof(int) * cnt) || cmsg->cmsg_level != SOL_SOCKET ||
         cmsg->cmsg_type != SCM_RIGHTS) {
         return NULL;
     }
@@ -78,8 +73,7 @@ static int recv_fd(int sockfd) {
     char cmsgbuf[CMSG_SPACE(sizeof(int))];
 
     void *data = recv_fds(sockfd, cmsgbuf, sizeof(cmsgbuf), 1);
-    if (data == NULL)
-        return -1;
+    if (data == NULL) return -1;
 
     int result;
     memcpy(&result, data, sizeof(int));
@@ -88,8 +82,7 @@ static int recv_fd(int sockfd) {
 
 static int read_int(int fd) {
     int val;
-    if (read(fd, &val, sizeof(val)) != sizeof(val))
-        return -1;
+    if (read(fd, &val, sizeof(val)) != sizeof(val)) return -1;
     return val;
 }
 
@@ -105,7 +98,7 @@ int main(int argc, char **argv) {
     strlcpy(sock.sun_path + 1, kSockName, sizeof(sock.sun_path) - 1);
     int sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
     size_t len = sizeof(sa_family_t) + strlen(sock.sun_path + 1) + 1;
-    if (connect(sock_fd, (struct sockaddr *) &sock, len)) {
+    if (connect(sock_fd, (struct sockaddr *)&sock, len)) {
         PLOGE("failed to connect to %s", sock.sun_path + 1);
         return 1;
     }
@@ -119,7 +112,14 @@ int main(int argc, char **argv) {
     for (int i = 0; i < argc; i++) new_argv[i] = argv[i];
     new_argv[argc] = "--inline-max-code-units=0";
     new_argv[argc + 1] = NULL;
-    fexecve(stock_fd, (char **) new_argv, environ);
+
+    if (getenv("LD_LIBRARY_PATH") == NULL) {
+        char const *libenv =
+            "LD_LIBRARY_PATH=/apex/com.android.art/lib64:/apex/com.android.art/lib"
+            ":/apex/com.android.os.statsd/lib64:/apex/com.android.os.statsd/lib";
+        putenv((char *)libenv);
+    }
+    fexecve(stock_fd, (char **)new_argv, environ);
     PLOGE("fexecve failed");
     return 2;
 }
