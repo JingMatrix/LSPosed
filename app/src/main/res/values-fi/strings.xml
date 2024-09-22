@@ -54,6 +54,8 @@
     <string name="system_prop_incorrect"><![CDATA[Jotkut tarvittavat järjestelmän ominaisuudet poistettu tai muokattu.<br/>Moduulit voivat mitätöidä satunnaisesti.]]></string>
     <string name="need_update">Täytyy päivittää</string>
     <string name="please_update_summary">Asenna LSPosedin uusin versio</string>
+    <string name="developer_warning_title">Tips for module developer</string>
+    <string name="developer_warning_summary">Please disable deploy optimizations on Android Studio, or use `gradlew installDebug` command to install. Otherwise the module apk will not be updated.</string>
     <string name="info_api_version">API versio</string>
     <string name="info_framework_version">Kehyksen versio</string>
     <string name="info_manager_package_name">Manager-paketin nimi</string>
@@ -166,6 +168,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Sanallisten lokien poistaminen käytöstä</string>
     <string name="settings_disable_verbose_log_summary">Raportti pyytää sisällyttämään sanalliset lokit</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Musta tumma teema</string>
     <string name="pure_black_dark_theme_summary">Käytä puhdas musta teema, jos tumma teema on käytössä</string>
     <string name="settings_group_theme">Teema</string>
