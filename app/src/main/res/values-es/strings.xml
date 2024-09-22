@@ -48,12 +48,14 @@
     <string name="partial_activated">Parcialmente activado</string>
     <string name="selinux_policy_not_loaded_summary">Selinux policy no está cargado correctamente</string>
     <string name="selinux_policy_not_loaded"><![CDATA[Algunas funciones no funcionarán.<br/>Informa de ello al desarrollador de <a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a> .]]></string>
-    <string name="system_inject_fail_summary">System Framework injection failed</string>
-    <string name="system_inject_fail"><![CDATA[This is rare and may be caused by <b>Magisk</b> or some low-quality Magisk modules.<br/>Please try to disable Magisk modules other than Riru and LSPosed or submit full log to developers.]]></string>
-    <string name="system_prop_incorrect_summary">System prop incorrect</string>
-    <string name="system_prop_incorrect"><![CDATA[Some necessary system properties deleted or modified.<br/>Modules may invalidate occasionally.]]></string>
-    <string name="need_update">Need to update</string>
+    <string name="system_inject_fail_summary">Error al modificar el framework del sistema</string>
+    <string name="system_inject_fail"><![CDATA[Se ha producido un error poco frecuente que podría estar relacionado con <b>Magisk</b> o con algunos módulos inestables.<br/>Por favor, desactiva todos los módulos Magisk excepto Riru y LSPosed, si el error persiste, envía un registro completo a los desarrolladores.]]></string>
+    <string name="system_prop_incorrect_summary">Propiedad del sistema incorrecta</string>
+    <string name="system_prop_incorrect"><![CDATA[Se han eliminado o modificado algunas propiedades necesarias del sistema.<br/>Los módulos pueden causar inestabilidad ocasionalmente.]]></string>
+    <string name="need_update">Es necesario actualizar</string>
     <string name="please_update_summary">Por favor instale la última versión de LSPosed</string>
+    <string name="developer_warning_title">Sugerencias para desarrolladores de módulos</string>
+    <string name="developer_warning_summary">Por favor, desactiva las optimizaciones de implementación en Android Studio, o ejecuta el comando `gradlew installDebug` para instalar el módulo. De lo contrario, el apk del módulo no se actualizará.</string>
     <string name="info_api_version">Versión de la API</string>
     <string name="info_framework_version">Versión del framework</string>
     <string name="info_manager_package_name">Nombre del paquete de gestión</string>
@@ -166,6 +168,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Desactivar registros detallados</string>
     <string name="settings_disable_verbose_log_summary">Solicitud de inclusión de registros detallados en los informes de incidencias</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Tema negro oscuro</string>
     <string name="pure_black_dark_theme_summary">Usar el tema negro puro si el tema oscuro está activado</string>
     <string name="settings_group_theme">Tema</string>
@@ -213,7 +217,7 @@
     <string name="module_release_load_more">Mostrar versiones anteriores</string>
     <string name="module_release_no_more">No hay más versiones</string>
     <string name="repo_load_failed">Fallo al cargar el módulo de repositorio: %s</string>
-    <string name="sort_upgradable_first">Upgradable first</string>
+    <string name="sort_upgradable_first">Actualizar primero</string>
     <string name="installed">Instalado</string>
     <plurals name="module_release_assets_download_count">
         <item quantity="one">%d descargar</item>
@@ -225,11 +229,11 @@
     <string name="color_pink">Rosa</string>
     <string name="color_purple">Morado</string>
     <string name="color_deep_purple">Morado profundo</string>
-    <string name="color_indigo">Indigo</string>
+    <string name="color_indigo">Índigo</string>
     <string name="color_blue">Azul</string>
     <string name="color_light_blue">Azul claro</string>
     <string name="color_cyan">Cian</string>
-    <string name="color_teal">Teal</string>
+    <string name="color_teal">Azul verdoso</string>
     <string name="color_green">Verde</string>
     <string name="color_light_green">Verde claro</string>
     <string name="color_lime">Lima</string>
