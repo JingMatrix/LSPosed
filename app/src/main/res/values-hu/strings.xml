@@ -55,6 +55,8 @@
     <string name="system_prop_incorrect"><![CDATA[Néhány szükséges rendszertulajdonság törlése vagy módosítása.<br/>A modulok időnként érvénytelenné válhatnak.]]></string>
     <string name="need_update">Frissítésre van szükség</string>
     <string name="please_update_summary">Kérjük, telepítse az LSPosed legújabb verzióját</string>
+    <string name="developer_warning_title">Tips for module developer</string>
+    <string name="developer_warning_summary">Please disable deploy optimizations on Android Studio, or use `gradlew installDebug` command to install. Otherwise the module apk will not be updated.</string>
     <string name="info_api_version">API verzió</string>
     <string name="info_framework_version">Keretrendszer verzió</string>
     <string name="info_manager_package_name">Menedzser csomag neve</string>
@@ -167,6 +169,8 @@
     <string name="settings_group_framework">Keretrendszer</string>
     <string name="settings_disable_verbose_log">A szöveges naplózás kikapcsolása</string>
     <string name="settings_disable_verbose_log_summary">Jelentési kérdések kérése a verbózus naplók felvételére</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Fekete sötét téma</string>
     <string name="pure_black_dark_theme_summary">Teljesen fekete téma használata, ha a sötét téma engedélyezve van</string>
     <string name="settings_group_theme">Téma</string>
