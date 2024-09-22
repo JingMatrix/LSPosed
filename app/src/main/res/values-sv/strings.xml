@@ -54,6 +54,8 @@
     <string name="system_prop_incorrect"><![CDATA[Vissa nödvändiga systemegenskaper är raderade eller ändrade.<br/>Moduler kan komma att ogiltigförklara.]]></string>
     <string name="need_update">Behöver uppdateras</string>
     <string name="please_update_summary">Vänligen installera den senaste versionen av LSPosed</string>
+    <string name="developer_warning_title">Tips for module developer</string>
+    <string name="developer_warning_summary">Please disable deploy optimizations on Android Studio, or use `gradlew installDebug` command to install. Otherwise the module apk will not be updated.</string>
     <string name="info_api_version">API version</string>
     <string name="info_framework_version">Ramverk version</string>
     <string name="info_manager_package_name">Namn på managerpaket</string>
@@ -166,6 +168,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Inaktivera utförliga loggar</string>
     <string name="settings_disable_verbose_log_summary">Begäran om att inkludera verbose-loggar i rapporten</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Svart mörkt tema</string>
     <string name="pure_black_dark_theme_summary">Använd det rena svarta temat om mörkt tema är aktiverat</string>
     <string name="settings_group_theme">Tema</string>
