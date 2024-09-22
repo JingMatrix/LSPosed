@@ -20,9 +20,12 @@ jobs:
       with:
         upload_translations: true
         download_translations: false
+        create_pull_request: true
         upload_sources: true
         config: 'crowdin.yml'
+        pull_request_base_branch_name: master
         crowdin_branch_name: master
       env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
         CROWDIN_API_TOKEN: ${{ secrets.CROWDIN_API_TOKEN }}
