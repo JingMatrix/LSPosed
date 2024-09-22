@@ -10,7 +10,7 @@
     <string name="xposed_module_updated_notification_content_system">%s ha sido actualizado, ya que el ámbito contiene la estructura del sistema, requiere reiniciar para aplicar cambios</string>
     <string name="module_updated_channel_name">Módulo de actualización completo</string>
     <string name="status_channel_name">LSPosición de estado</string>
-    <string name="lsposed_running_notification_title">LSPosed loaded</string>
+    <string name="lsposed_running_notification_title">LSPosed cargado</string>
     <string name="lsposed_running_notification_content">Toca la notificación para abrir el gestor</string>
     <string name="xposed_module_request_scope_title">Solicitud de alcance</string>
     <string name="xposed_module_request_scope_content">%1$s cuando el usuario %2$s solicita añadir %3$s a su ámbito.</string>
