@@ -52,8 +52,11 @@
     <string name="system_prop_incorrect"><![CDATA[部分必須的系統屬性被刪除或被修改，<br/>模組可能會隨機失效。]]></string>
     <string name="need_update">需要更新</string>
     <string name="please_update_summary">請安裝最新版本的 LSPosed</string>
+    <string name="developer_warning_title">Tips for module developer</string>
+    <string name="developer_warning_summary">Please disable deploy optimizations on Android Studio, or use `gradlew installDebug` command to install. Otherwise the module apk will not be updated.</string>
     <string name="info_api_version">API版本</string>
     <string name="info_framework_version">架構版本</string>
+    <string name="info_manager_package_name">Manager package name</string>
     <string name="info_system_version">系統版本</string>
     <string name="info_device">裝置版本</string>
     <string name="info_system_abi">系統架構</string>
@@ -82,6 +85,7 @@
     <string name="menuSaveToSd">儲存</string>
     <string name="nav_item_logs_verbose">詳細記錄</string>
     <string name="nav_item_logs_module">模組記錄</string>
+    <string name="logs_saving">Saving log, please wait</string>
     <string name="logs_saved">記錄已儲存</string>
     <string name="logs_save_failed2">儲存失敗：\n%s</string>
     <string name="menuClearLog">立即清理記錄</string>
@@ -162,6 +166,8 @@
     <string name="settings_group_framework">框架</string>
     <string name="settings_disable_verbose_log">禁用詳細紀錄檔</string>
     <string name="settings_disable_verbose_log_summary">回報問題要求包含詳細記錄檔</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">使用純黑深色主題</string>
     <string name="pure_black_dark_theme_summary">使用純黑色背景當深色模式已啟用</string>
     <string name="settings_group_theme">主題</string>
@@ -210,6 +216,7 @@
     <string name="module_release_no_more">沒有更舊版本</string>
     <string name="repo_load_failed">模組存放庫載入失敗：%s</string>
     <string name="sort_upgradable_first">可更新優先</string>
+    <string name="installed">Installed</string>
     <plurals name="module_release_assets_download_count">
         <item quantity="other">%d 次下載</item>
     </plurals>
