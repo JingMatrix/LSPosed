@@ -104,9 +104,7 @@ inline int HookPLT(void *art_symbol, void *callback, void **backup, bool save = 
     }
 
     if (auto addr = GetArt()->getSymbAddress(symbol); addr) {
-        Dl_info info;
-        if (dladdr(addr, &info) && info.dli_sname != nullptr && strcmp(info.dli_sname, symbol) == 0)
-            HookInline(addr, callback, backup);
+        HookInline(addr, callback, backup);
     } else if (*backup == nullptr && isDebug) {
         LOGW("Failed to {} Art symbol {}", save ? "hook" : "unhook", symbol);
     }
