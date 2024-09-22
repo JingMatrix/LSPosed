@@ -166,6 +166,8 @@
     <string name="settings_group_framework">框架</string>
     <string name="settings_disable_verbose_log">禁用详细日志</string>
     <string name="settings_disable_verbose_log_summary">报告问题要求包含详细日志</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">纯黑主题</string>
     <string name="pure_black_dark_theme_summary">当深色主题启用时使用纯黑主题</string>
     <string name="settings_group_theme">主题</string>
