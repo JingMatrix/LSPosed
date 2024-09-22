@@ -55,6 +55,8 @@ https://github.com/tclement0922</string>
     <string name="system_prop_incorrect"><![CDATA[Certaines propriétés nécessaires au système ont été supprimées ou modifiées.<br/>Des modules peuvent s\'invalider occasionnellement.]]></string>
     <string name="need_update">Mise à jour nécessaire</string>
     <string name="please_update_summary">Merci d\’installer la dernière version de LSPosed</string>
+    <string name="developer_warning_title">Conseils pour les développeurs de modules</string>
+    <string name="developer_warning_summary">Veuillez désactiver les optimisations de déploiement sur Android Studio, ou utilisez la commande `gradlew installDebug` pour installer. Sinon, l\'APK du module ne sera pas mis à jour.</string>
     <string name="info_api_version">Version de l\’API</string>
     <string name="info_framework_version">Version du framework</string>
     <string name="info_manager_package_name">Nom de paquet du gestionnaire</string>
@@ -139,7 +141,7 @@ https://github.com/tclement0922</string>
     <string name="menu_show_modules">Modules</string>
     <string name="menu_show_denylist">Liste de refus</string>
     <string name="failed_to_save_scope_list">Échec de l\'enregistrement de la liste des périmètres d\'applications</string>
-    <string name="app_version">Version: %1$s</string>
+    <string name="app_version">Version : %1$s</string>
     <string name="use_recommended">Recommandé</string>
     <string name="no_scope_selected_has_recommended">Vous n\'avez sélectionné aucune application. Sélectionner les applications recommandées ?</string>
     <string name="use_recommended_message">Sélectionner les applications recommandées ?</string>
@@ -167,6 +169,8 @@ https://github.com/tclement0922</string>
     <string name="settings_group_framework">Sous-système</string>
     <string name="settings_disable_verbose_log">Désactiver les journaux détaillés</string>
     <string name="settings_disable_verbose_log_summary">Demande de rapports sur les problèmes pour inclure les journaux détaillés</string>
+    <string name="settings_enable_log_watchdog">Activer le chien de garde de journal</string>
+    <string name="settings_enable_log_watchdog_summary">Le chien de garde du journal LSPosed modifie les propriétés du système, qui peuvent être exploitées pour détecter LSPoed</string>
     <string name="pure_black_dark_theme">Thème noir et sombre</string>
     <string name="pure_black_dark_theme_summary">Utiliser le thème noir pur si le thème noir est activé</string>
     <string name="settings_group_theme">Thème</string>
