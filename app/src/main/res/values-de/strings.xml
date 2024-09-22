@@ -169,6 +169,8 @@ JJ108</string>
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Ausführliche Protokolle deaktivieren</string>
     <string name="settings_disable_verbose_log_summary">Ausführliche Protokolle in Problemberichtsmeldungen einschließen</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Dunkelschwarzes Thema</string>
     <string name="pure_black_dark_theme_summary">Schwarzes Thema verwenden, wenn dunkles Thema aktiviert ist</string>
     <string name="settings_group_theme">Design</string>
