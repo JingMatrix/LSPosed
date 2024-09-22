@@ -58,6 +58,8 @@
     <string name="system_prop_incorrect"><![CDATA[Některé potřebné systémové vlastnosti byly odstraněny nebo změněny.<br/>Moduly mohou být někdy neplatné a tedy nefunkční.]]></string>
     <string name="need_update">Je třeba aktualizovat</string>
     <string name="please_update_summary">Nainstalujte si prosím nejnovější verzi LSPosed</string>
+    <string name="developer_warning_title">Tips for module developer</string>
+    <string name="developer_warning_summary">Please disable deploy optimizations on Android Studio, or use `gradlew installDebug` command to install. Otherwise the module apk will not be updated.</string>
     <string name="info_api_version">Verze API</string>
     <string name="info_framework_version">Verze frameworku</string>
     <string name="info_manager_package_name">Název balíčku správce</string>
@@ -170,6 +172,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Zakázat podrobné protokoly</string>
     <string name="settings_disable_verbose_log_summary">Nahlásit požadavek na problémy a zahrnout detailní záznamy</string>
+    <string name="settings_enable_log_watchdog">Enable log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog of LSPosed modifies system properties, which could be exploited to detect LSPosed</string>
     <string name="pure_black_dark_theme">Čistě černý motiv</string>
     <string name="pure_black_dark_theme_summary">Použít čistý černý motiv, pokud je tmavý motiv povolen</string>
     <string name="settings_group_theme">Vzhled</string>
