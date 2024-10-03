@@ -18,6 +18,8 @@
 #
 
 MODDIR=${0%/*}
+
 cd "$MODDIR"
-# post-fs-data.sh may be blocked by other modules. retry to start this
-unshare --propagation slave -m sh -c "$MODDIR/daemon --from-service $@&"
+
+# Start daemon in service.sh as early start can cause Play Integrity detection
+unshare --propagation slave -m sh -c "$MODDIR/daemon $@&"
