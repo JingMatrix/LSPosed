@@ -117,7 +117,8 @@ materialThemeBuilder {
         }
     }
     // Add Material Design 3 color tokens (such as palettePrimary100) in generated theme
-    // rikka.material >= 2.0.0 provides such attributes
+    // rikka.material:material >= 2.0.0 provides such attributes
+    // Enable this if your are using rikka.material:material
     generatePalette = true
 }
 
@@ -144,7 +145,6 @@ dependencies {
     implementation(libs.rikkax.insets)
     implementation(libs.rikkax.material)
     implementation(libs.rikkax.material.preference)
-    implementation(libs.rikkax.preference)
     implementation(libs.rikkax.recyclerview)
     implementation(libs.rikkax.widget.borderview)
     implementation(libs.rikkax.widget.mainswitchbar)
