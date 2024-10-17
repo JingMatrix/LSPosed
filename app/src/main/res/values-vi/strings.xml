@@ -20,14 +20,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/xposed_module_updated_notification_*,@string/module_is_not_activated_*">
     <!-- MainActivity -->
     <string name="overview">Tổng quan</string>
-    <string name="Modules">Tiện ích bổ sung</string>
+    <string name="Modules">Mô-đun</string>
     <plurals name="modules_enabled_count">
-        <item quantity="other">%d Modules đã được kích hoạt</item>
+        <item quantity="other">%d Mô-đun đã bật</item>
     </plurals>
     <string name="Logs">Nhật ký</string>
     <string name="Settings">Cài đặt</string>
     <string name="feedback_or_suggestion">Phản hồi hoặc góp ý</string>
-    <string name="About">Về chúng tôi</string>
+    <string name="About">Giới thiệu</string>
     <string name="report_issue">Báo cáo sự cố</string>
     <string name="module_repo">Kho</string>
     <string name="module_repo_up_to_date">Tất cả các modules đã được cập nhật</string>
@@ -52,6 +52,8 @@
     <string name="system_prop_incorrect"><![CDATA[Một số thuộc tính hệ thống cần thiết đã bị xóa hoặc sửa đổi.<br/> Đôi khi, các mô-đun có thể sẽ mất hiệu lực.]]></string>
     <string name="need_update">Cần được cập nhật</string>
     <string name="please_update_summary">Vui lòng cài đặt phiên bản mới nhất của LSPosed</string>
+    <string name="developer_warning_title">Mẹo cho module developer</string>
+    <string name="developer_warning_summary">Vui lòng tắt tối ưu hóa triển khai trên Android Studio hoặc sử dụng lệnh `gradlew installDebug` để cài đặt. Nếu không, apk mô-đun sẽ không được cập nhật.</string>
     <string name="info_api_version">Phiên bản API</string>
     <string name="info_framework_version">Phiên bản Framework</string>
     <string name="info_manager_package_name">Tên gói quản lý</string>
@@ -60,16 +62,16 @@
     <string name="info_system_abi">Hệ thống ABI</string>
     <string name="info_dex2oat_wrapper">Trình tối ưu Dex Wrapper</string>
     <string name="enabled">Đã bật</string>
-    <string name="not_enabled">Đã tắt</string>
+    <string name="not_enabled">Chưa bật</string>
     <string name="supported">Được hỗ trợ</string>
     <string name="unsupported">Không được hỗ trợ</string>
     <string name="android_version_unsatisfied">Phiên bản Android không hỗ trợ</string>
     <string name="crashed">Bị lỗi</string>
-    <string name="mount_failed">Gắn kết không thành công</string>
-    <string name="selinux_permissive">SELinux tình trạng dễ dãi</string>
+    <string name="mount_failed">Mount thất bại</string>
+    <string name="selinux_permissive">Cho phép SELinux</string>
     <string name="sepolicy_incorrect">Chính sách SELinux không chính xác</string>
     <string name="update_lsposed">Cập nhật LSPosed</string>
-    <string name="update_lsposed_msg">Xác nhận để cập nhật LSPosed? Thiết bị sẽ khởi động lại sau khi cập nhật hoàn tất</string>
+    <string name="update_lsposed_msg">Xác nhận cập nhật LSPosed? Thiết bị này sẽ khởi động lại sau khi hoàn tất cập nhật</string>
     <string name="info_copied">Đã sao chép vào bảng nhớ tạm</string>
     <!-- WelcomeDialog -->
     <string name="parasitic_welcome">Chào mừng</string>
@@ -165,6 +167,8 @@ Nên gỡ cài đặt ứng dụng hiện tại.</string>
     <string name="settings_group_framework">Khung hệ thống</string>
     <string name="settings_disable_verbose_log">Vô hiệu hoá nhật ký chi tiết</string>
     <string name="settings_disable_verbose_log_summary">Báo cáo sự cố yêu cầu bao gồm nhật ký chi tiết</string>
+    <string name="settings_enable_log_watchdog">Bật chức năng giám sát nhật ký</string>
+    <string name="settings_enable_log_watchdog_summary">Log watchdog sửa đổi các thuộc tính hệ thống của LSPosed, có thể được khai thác để phát hiện LSPosed</string>
     <string name="pure_black_dark_theme">Chủ đề Đen - Tối</string>
     <string name="pure_black_dark_theme_summary">Sử dụng chủ đề đen nếu chủ đề tối được bật</string>
     <string name="settings_group_theme">Chủ đề</string>
