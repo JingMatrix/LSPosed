@@ -23,9 +23,6 @@
 
 #include <thread>
 #include <atomic>
-#include <android/sharedmem.h>
-#include <android/sharedmem_jni.h>
-#include <sys/mman.h>
 #include "loader.h"
 #include "service.h"
 #include "context.h"
@@ -33,26 +30,28 @@
 #include "symbol_cache.h"
 #include "config_bridge.h"
 #include "elf_util.h"
-#include "native_util.h"
 
 using namespace lsplant;
 
 namespace lspd {
     std::unique_ptr<Service> Service::instance_ = std::make_unique<Service>();
 
-    uint8_t* access_matrix = nullptr;
+    std::atomic<uint64_t> last_failed_id = ~0;
 
     class IPCThreadState {
         static IPCThreadState* (*selfOrNullFn)();
+        static pid_t (*getCallingPidFn)(IPCThreadState*);
         static uid_t (*getCallingUidFn)(IPCThreadState*);
 
     public:
 
-        uid_t getCallingUid() {
-            if (getCallingUidFn != nullptr) [[likely]] {
-                return getCallingUidFn(this);
+        uint64_t getCallingId() {
+            if (getCallingUidFn != nullptr && getCallingPidFn != nullptr) [[likely]] {
+                auto pid = getCallingUidFn(this);
+                auto uid = getCallingPidFn(this);
+                return (static_cast<uint64_t>(uid) << 32) | pid;
             }
-            return 0;
+            return ~0;
         }
 
         static IPCThreadState* selfOrNull() {
@@ -69,14 +68,17 @@ namespace lspd {
             }
             selfOrNullFn = reinterpret_cast<decltype(selfOrNullFn)>(
                     binder->getSymbAddress("_ZN7android14IPCThreadState10selfOrNullEv"));
+            getCallingPidFn = reinterpret_cast<decltype(getCallingPidFn)>(
+                    binder->getSymbAddress("_ZNK7android14IPCThreadState13getCallingPidEv"));
             getCallingUidFn = reinterpret_cast<decltype(getCallingUidFn)>(
                     binder->getSymbAddress("_ZNK7android14IPCThreadState13getCallingUidEv"));
-            LOGD("libbinder selfOrNull {} getCallingUid {}", (void*) selfOrNullFn, (void*) getCallingUidFn);
+            LOGI("libbinder selfOrNull {} getCallingPid {} getCallingUid {}", (void*) selfOrNullFn, (void*) getCallingPidFn, (void*) getCallingUidFn);
         }
     };
 
     IPCThreadState* (*IPCThreadState::selfOrNullFn)() = nullptr;
     uid_t (*IPCThreadState::getCallingUidFn)(IPCThreadState*) = nullptr;
+    pid_t (*IPCThreadState::getCallingPidFn)(IPCThreadState*) = nullptr;
 
     jboolean
     Service::exec_transact_replace(jboolean *res, JNIEnv *env, [[maybe_unused]] jobject obj,
@@ -93,6 +95,13 @@ namespace lspd {
             *res = JNI_CallStaticBooleanMethod(env, instance()->bridge_service_class_,
                                                instance()->exec_transact_replace_methodID_,
                                                obj, code, data_obj, reply_obj, flags);
+            if (!*res) {
+                auto self = IPCThreadState::selfOrNull();
+                if (self != nullptr) {
+                    auto id = self->getCallingId();
+                    last_failed_id.store(id, std::memory_order_relaxed);
+                }
+            }
             return true;
         }
         return false;
@@ -103,14 +112,9 @@ namespace lspd {
                                             va_list args) {
         bool need_skip = false;
         if (auto self = IPCThreadState::selfOrNull(); self != nullptr) {
-            auto uid = self->getCallingUid();
-            auto appId = uid % 100000;
-            if (appId >= 10000 && appId <= 19999 && access_matrix != nullptr) {
-                need_skip = (access_matrix[(appId - 10000) >> 3] & (1 << ((appId - 10000) & 7))) == 0;
-            } else {
-                // isolated
-                need_skip = appId >= 90000 && appId <= 99999;
-            }
+            auto last = last_failed_id.load(std::memory_order_relaxed);
+            auto current = self->getCallingId();
+            need_skip = last == current;
         }
         if (!need_skip && methodId == instance()->exec_transact_backup_methodID_) [[unlikely]] {
             jboolean res = false;
@@ -118,19 +122,6 @@ namespace lspd {
             // else fallback to backup
         }
         return instance()->call_boolean_method_va_backup_(env, obj, methodId, args);
-    }
-
-    LSP_DEF_NATIVE_METHOD(void, BridgeService, initializeAccessMatrix, jobject shared_memory) {
-        if (access_matrix != nullptr) return;
-        auto fd = ASharedMemory_dupFromJava(env, shared_memory);
-        auto addr = mmap(nullptr, 1250, PROT_READ, MAP_SHARED, fd, 0);
-        if (addr == MAP_FAILED) {
-            PLOGE("map access matrix");
-        } else {
-            LOGD("access matrix at {}", addr);
-            access_matrix = reinterpret_cast<uint8_t*>(addr);
-        }
-        close(fd);
     }
 
     void Service::InitService(JNIEnv *env) {
@@ -256,12 +247,6 @@ namespace lspd {
         auto &binder = lspd::GetLibBinder(false);
         IPCThreadState::Init(binder.get());
         lspd::GetLibBinder(true);
-
-        JNINativeMethod m[] = {
-                LSP_NATIVE_METHOD(BridgeService, initializeAccessMatrix, "(Landroid/os/SharedMemory;)V")
-        };
-
-        JNI_RegisterNatives(env, bridge_service_class_, m, 1);
 
         LOGD("Done InitService");
     }
