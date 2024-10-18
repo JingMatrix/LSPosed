@@ -168,6 +168,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Disabilita il log verboso</string>
     <string name="settings_disable_verbose_log_summary">La segnalazione di problemi richiede l\'inclusione di log dettagliati</string>
+    <string name="settings_enable_log_watchdog">Abilita log watchdog</string>
+    <string name="settings_enable_log_watchdog_summary">Il watchdog log di LSPosed modifica le proprietà del sistema, che potrebbero essere sfruttate per rilevare LSPosed</string>
     <string name="pure_black_dark_theme">Tema nero scuro</string>
     <string name="pure_black_dark_theme_summary">Usa il tema nero puro quando è abilitato il tema scuro</string>
     <string name="settings_group_theme">Tema</string>
