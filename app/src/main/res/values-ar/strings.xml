@@ -19,7 +19,7 @@
   -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/xposed_module_updated_notification_*,@string/module_is_not_activated_*">
     <!-- MainActivity -->
-    <string name="overview">نظرة عامة</string>
+    <string name="overview">ملخص</string>
     <string name="Modules">الوحدات</string>
     <plurals name="modules_enabled_count">
         <item quantity="zero">%d وحدة مفعلة</item>
@@ -62,6 +62,8 @@
     <string name="system_prop_incorrect"><![CDATA[بعض خصائص النظام الضرورية تم حذفها أو تعديلها.<br/>قد تبطل الوحدات أحيانا.]]></string>
     <string name="need_update">تحتاج إلى التحديث</string>
     <string name="please_update_summary">يرجى تثبيت أحدث إصدار من LSPosed</string>
+    <string name="developer_warning_title">نصائح لمطور الوحدة</string>
+    <string name="developer_warning_summary">يرجى تعطيل تحسينات النشر على Android Studio، أو استخدام الأمر `gradlew installDebug` للتثبيت. وإلا فلن يتم تحديث ملف Apk للوحدة.</string>
     <string name="info_api_version">إصدار API</string>
     <string name="info_framework_version">إصدار إطار العمل</string>
     <string name="info_manager_package_name">Lاسم حزمة المديرo</string>
@@ -174,6 +176,8 @@
     <string name="settings_group_framework">إطار العمل</string>
     <string name="settings_disable_verbose_log">تعطيل السجلات المفصّلة</string>
     <string name="settings_disable_verbose_log_summary">الإبلاغ عن مشاكل طلب لتضمين السجلات المفصولة</string>
+    <string name="settings_enable_log_watchdog">تمكين مراقبة السجل</string>
+    <string name="settings_enable_log_watchdog_summary">يقوم مراقب السجل الخاص بـ LSPosed بتعديل خصائص النظام، والتي يمكن استغلالها للكشف عن LSPosed</string>
     <string name="pure_black_dark_theme">السمة السوداء المظلمة</string>
     <string name="pure_black_dark_theme_summary">استخدام السمة السوداء الخالصة إذا تم تمكين السمة المظلمة</string>
     <string name="settings_group_theme">السمة</string>
