@@ -36,22 +36,24 @@
     <plurals name="module_repo_upgradable">
         <item quantity="other">%d 個のモジュールがアップグレード可能</item>
     </plurals>
-    <string name="about_view_source_code"><![CDATA[%1$s でソースコードを閲覧<br/>%2$s チャンネルに参加]]></string>
-    <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">yoshi818, a1678991</string>
+    <string name="about_view_source_code">%1$s でソースコードを閲覧<br/>%2$s チャンネルに参加</string>
+    <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">yoshi818, a1678991, りお(koko0628)</string>
     <string name="install">インストール</string>
     <string name="install_summary">タップして LSPosed をインストールする</string>
-    <string name="not_installed">未インストール</string>
+    <string name="not_installed">インストールされていません</string>
     <string name="not_install_summary">LSPosedはインストールされていません</string>
     <string name="activated">有効化済み</string>
     <string name="partial_activated">部分的に有効化済み</string>
     <string name="selinux_policy_not_loaded_summary">SEPolicyが正しく読み込まれていません</string>
-    <string name="selinux_policy_not_loaded"><![CDATA[一部の機能が動作しない。<br/><a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a>開発者にご報告ください。]]></string>
+    <string name="selinux_policy_not_loaded">一部の機能が動作しない。<br/><a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a>開発者にご報告ください。</string>
     <string name="system_inject_fail_summary">システムフレームワークへのパッチに失敗しました</string>
-    <string name="system_inject_fail"><![CDATA[本現象はごく稀に発生し、<b>Magisk</b>もしくは低品質な Magiskモジュールが原因で発生します。<br/>RiruとLSPosed以外のMagiskモジュールを一時的に無効化してみるか、開発者へすべてのログを提出して下さい。]]></string>
+    <string name="system_inject_fail">本現象はごく稀に発生し、<b>Magisk</b>もしくは低品質な Magiskモジュールが原因で発生します。<br/>RiruとLSPosed以外のMagiskモジュールを一時的に無効化してみるか、開発者へすべてのログを提出して下さい。</string>
     <string name="system_prop_incorrect_summary">システム設定が正しくありません</string>
-    <string name="system_prop_incorrect"><![CDATA[必須のシステム設定が変更もしくは削除されています。<br/>モジュールが無効化される場合があります。]]></string>
+    <string name="system_prop_incorrect">必須のシステム設定が変更もしくは削除されています。<br/>モジュールが無効化される場合があります。</string>
     <string name="need_update">更新が必要です</string>
     <string name="please_update_summary">最新バージョンの LSPosedをインストールして下さい</string>
+    <string name="developer_warning_title">モジュール開発者向けのヒント</string>
+    <string name="developer_warning_summary">Android Studio でデプロイの最適化を無効にするか、「gradlew installDebug」コマンドを使用してインストールしてください。この操作を行わないとモジュールの apk は更新できません。</string>
     <string name="info_api_version">APIバージョン</string>
     <string name="info_framework_version">フレームワークバージョン</string>
     <string name="info_manager_package_name">マネージャーパッケージ名</string>
@@ -164,6 +166,8 @@
     <string name="settings_group_framework">フレームワーク</string>
     <string name="settings_disable_verbose_log">詳細ログの無効化</string>
     <string name="settings_disable_verbose_log_summary">レポートに冗長ログを含めるように要求する</string>
+    <string name="settings_enable_log_watchdog">ログウォッチドッグを有効化</string>
+    <string name="settings_enable_log_watchdog_summary">LSPosedのログウォッチドッグはシステムプロパティを変更し、LSPosedを検出するために悪用される可能性があります。</string>
     <string name="pure_black_dark_theme">ブラックダークテーマ</string>
     <string name="pure_black_dark_theme_summary">ダークテーマ有効時にピュアブラックのテーマを使用</string>
     <string name="settings_group_theme">テーマ</string>
