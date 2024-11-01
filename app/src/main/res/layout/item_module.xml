@@ -64,6 +64,19 @@
             tools:text="LSPosed Manager" />
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/moduleStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Status: Inactive"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toTopOf="@id/app_Version_Name"
+            app:layout_constraintStart_toEndOf="@id/app_name"
+            app:layout_constraintTop_toBottomOf="@id/app_name"
+            app:layout_constraintWidth_max="wrap" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/app_Package_Name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
