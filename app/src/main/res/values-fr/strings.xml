@@ -38,7 +38,7 @@
         <item quantity="one">%d modules évolutifs</item>
         <item quantity="other">%d modules évolutifs</item>
     </plurals>
-    <string name="about_view_source_code"><![CDATA[Voir le code source sur %1$s<br/>Rejoindre notre canal %2$s]]></string>
+    <string name="about_view_source_code">Voir le code source sur %1$s<br/>Rejoindre notre canal %2$s</string>
     <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">https://github.com/xerta555
 https://github.com/tclement0922
 JingMatrix</string>
@@ -51,9 +51,9 @@ JingMatrix</string>
     <string name="selinux_policy_not_loaded_summary">SEPolicy n\’est pas chargé correctement</string>
     <string name="selinux_policy_not_loaded"><![CDATA[Certaines fonctions ne fonctionneront pas.<br/>Merci de ne pas remonter celà vers le développeur <a href="https://github.com/topjohnwu/Magisk/issues">Magisk</b></a>.]]></string>
     <string name="system_inject_fail_summary">Échec de l\’injection du sous système</string>
-    <string name="system_inject_fail"><![CDATA[Ceci est rare et peut être causé par <b>Magisk</b> ou certains modules Magisk de basse qualité.<br/>Essayez de désactiver les modules Magisk autres que Riru et LSPosed ou envoyez le journal complet aux développeurs.]]></string>
+    <string name="system_inject_fail">Ceci est rare et peut être causé par <b>Magisk</b> ou certains modules Magisk de basse qualité.<br/>Essayez de désactiver les modules Magisk autres que Riru et LSPosed ou envoyez le journal complet aux développeurs.</string>
     <string name="system_prop_incorrect_summary">Propriétés système incorrectes</string>
-    <string name="system_prop_incorrect"><![CDATA[Certaines propriétés nécessaires au système ont été supprimées ou modifiées.<br/>Des modules peuvent s\'invalider occasionnellement.]]></string>
+    <string name="system_prop_incorrect">Certaines propriétés nécessaires au système ont été supprimées ou modifiées.<br/>Des modules peuvent s\'invalider occasionnellement.</string>
     <string name="need_update">Mise à jour nécessaire</string>
     <string name="please_update_summary">Merci d\’installer la dernière version de LSPosed</string>
     <string name="developer_warning_title">Conseils pour les développeurs de modules</string>
@@ -171,7 +171,7 @@ JingMatrix</string>
     <string name="settings_disable_verbose_log">Désactiver les journaux détaillés</string>
     <string name="settings_disable_verbose_log_summary">Demande de rapports sur les problèmes pour inclure les journaux détaillés</string>
     <string name="settings_enable_log_watchdog">Activer le chien de garde de journal</string>
-    <string name="settings_enable_log_watchdog_summary">Le chien de garde du journal LSPosed modifie les propriétés du système, qui peuvent être exploitées pour détecter LSPoed</string>
+    <string name="settings_enable_log_watchdog_summary">Le chien de garde du journal LSPosed modifie les propriétés du système, qui peuvent être exploitées pour détecter LSPosed</string>
     <string name="pure_black_dark_theme">Thème noir et sombre</string>
     <string name="pure_black_dark_theme_summary">Utiliser le thème noir pur si le thème noir est activé</string>
     <string name="settings_group_theme">Thème</string>
