@@ -38,7 +38,7 @@
         <item quantity="one">%d modülü güncellenebilir</item>
         <item quantity="other">%d modülleri güncellenebilir</item>
     </plurals>
-    <string name="about_view_source_code"><![CDATA[%1$s adresinden kaynak kodu görüntüleyin<br/>%2$s kanalımıza katılın]]></string>
+    <string name="about_view_source_code">%1$s adresinden kaynak kodu görüntüleyin<br/>%2$s kanalımıza katılın</string>
     <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">Bedircan AYAYDIN, Furkan KARCIOĞLU, Ahmet AÇIKGÖZ, Sir-C</string>
     <string name="install">Yükle</string>
     <string name="install_summary">LSPosed\'i yüklemek için dokunun</string>
@@ -47,13 +47,15 @@
     <string name="activated">Aktif edildi</string>
     <string name="partial_activated">Kısmen etkinleştirildi</string>
     <string name="selinux_policy_not_loaded_summary">SEPolicy düzgün yüklenmemiş</string>
-    <string name="selinux_policy_not_loaded"><![CDATA[Bazı özellikler çalışmayacaktır.<br/>Lütfen bunu <a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a> geliştiricisine bildirin.]]></string>
+    <string name="selinux_policy_not_loaded">Bazı özellikler çalışmayacaktır.<br/>Lütfen bunu <a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a> geliştiricisine bildirin.</string>
     <string name="system_inject_fail_summary">Sistem Çerçevesi enjeksiyonu başarısız oldu</string>
-    <string name="system_inject_fail"><![CDATA[Bu nadiren yaşanır ve <b>Magisk</b> veya düşük kaliteli modüller yüzünden olabilir.<br/>Lütfen Riru ve LSPosed dışında bütün modülleri devre dışı bırakmayı deneyin veya geliştiricilere tam bir hata kaydı gönderin.]]></string>
+    <string name="system_inject_fail">Bu nadiren yaşanır ve <b>Magisk</b> veya düşük kaliteli modüller yüzünden olabilir.<br/>Lütfen Riru ve LSPosed dışında bütün modülleri devre dışı bırakmayı deneyin veya geliştiricilere tam bir hata kaydı gönderin.</string>
     <string name="system_prop_incorrect_summary">Sistem desteği yanlış</string>
-    <string name="system_prop_incorrect"><![CDATA[Bazı gerekli sistem özellikleri silindi veya değiştirildi.<br/>Modüller zaman zaman düzgün çalışmayabilir.]]></string>
+    <string name="system_prop_incorrect">Bazı gerekli sistem özellikleri silindi veya değiştirildi.<br/>Modüller zaman zaman düzgün çalışmayabilir.</string>
     <string name="need_update">Güncelleme gerekiyor</string>
     <string name="please_update_summary">Lütfen LSPosed\'in en son sürümünü yükleyin</string>
+    <string name="developer_warning_title">Modül geliştiricisi için ipuçları</string>
+    <string name="developer_warning_summary">Lütfen Android Studio\'da dağıtım optimizasyonlarını devre dışı bırakın veya yüklemek için `gradlew installDebug` komutunu kullanın. Aksi takdirde modül apk\'sı güncellenmeyecektir.</string>
     <string name="info_api_version">API sürümü</string>
     <string name="info_framework_version">Çerçeve sürümü</string>
     <string name="info_manager_package_name">Yönetici paket adı</string>
@@ -166,6 +168,8 @@
     <string name="settings_group_framework">Çerçeve</string>
     <string name="settings_disable_verbose_log">Ayrıntılı günlükleri devre dışı bırak</string>
     <string name="settings_disable_verbose_log_summary">Ayrıntılı günlükleri dahil etme isteğini raporlayın</string>
+    <string name="settings_enable_log_watchdog">Watchdog log\'u etkinleştir</string>
+    <string name="settings_enable_log_watchdog_summary">LSPosed\'in watchdog log\'u, LSPosed\'i tespit etmek için kullanılabilecek sistem özelliklerini değiştirir</string>
     <string name="pure_black_dark_theme">Siyah koyu tema</string>
     <string name="pure_black_dark_theme_summary">Koyu tema etkinse saf siyah temayı kullanın</string>
     <string name="settings_group_theme">Tema</string>
