@@ -22,7 +22,7 @@
     <string name="overview">概要</string>
     <string name="Modules">モジュール</string>
     <plurals name="modules_enabled_count">
-        <item quantity="other">%d個のモジュールが有効化済み</item>
+        <item quantity="other">%d個のモジュールが有効</item>
     </plurals>
     <string name="Logs">ログ</string>
     <string name="Settings">設定</string>
@@ -190,7 +190,7 @@
     <string name="settings_language">言語</string>
     <string name="settings_translation_contributors">翻訳貢献者</string>
     <string name="settings_translation">翻訳に貢献</string>
-    <string name="settings_translation_summary">%sの翻訳に協力してください</string>
+    <string name="settings_translation_summary">%sの翻訳にご協力ください</string>
     <string name="settings_create_shortcut_summary">パラサイトマネージャーを開くことができるショートカットを作成します</string>
     <string name="settings_shortcut_pinned_hint">ショートカットのピン留め</string>
     <string name="settings_unsupported_pin_shortcut_summary">現在のデフォルトランチャーはショートカットのピン留めをサポートしていません</string>
@@ -209,7 +209,7 @@
     <string name="module_information">情報</string>
     <string name="module_information_homepage">ホームページ</string>
     <string name="module_information_source_url">ソースコード</string>
-    <string name="module_information_collaborators">協力</string>
+    <string name="module_information_collaborators">協力者</string>
     <string name="module_release_view_assets">アセット</string>
     <string name="menu_open_in_browser">ブラウザで表示</string>
     <string name="module_release_load_more">以前のバージョンを表示</string>
@@ -236,7 +236,7 @@
     <string name="color_lime">ライム</string>
     <string name="color_yellow">黄色</string>
     <string name="color_amber">アンバー</string>
-    <string name="color_orange">オレンジ</string>
+    <string name="color_orange">オレンジ色</string>
     <string name="color_deep_orange">ディープオレンジ</string>
     <string name="color_brown">茶色</string>
     <string name="color_blue_grey">ブルーグレー</string>
