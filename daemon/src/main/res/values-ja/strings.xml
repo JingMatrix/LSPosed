@@ -17,5 +17,5 @@
     <string name="scope_channel_name">スコープのリクエスト</string>
     <string name="scope_approve">許可</string>
     <string name="scope_deny">拒否</string>
-    <string name="nerver_ask_again">二度と聞かない</string>
+    <string name="nerver_ask_again">再度表示しない</string>
 </resources>
