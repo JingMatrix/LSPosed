@@ -43,7 +43,7 @@
         <item quantity="other">%d modułów z możliwością aktualizacji</item>
     </plurals>
     <string name="about_view_source_code"><![CDATA[Zobacz kod źródłowy na %1$s<br/>Dołącz do naszego kanału %2$s]]></string>
-    <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">Adiker</string>
+    <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">Adiker, xAzvest</string>
     <string name="install">Instaluj</string>
     <string name="install_summary">Dotknij, aby zainstalować LSPosed</string>
     <string name="not_installed">Nie zainstalowano</string>
@@ -58,6 +58,8 @@
     <string name="system_prop_incorrect"><![CDATA[Niektóre niezbędne właściwości systemowe zostały usunięte lub zmienione.<br/>Moduły mogą czasami działać niepoprawnie.]]></string>
     <string name="need_update">Konieczna aktualizacja</string>
     <string name="please_update_summary">Proszę zainstalować najnowszą wersję LSPosed</string>
+    <string name="developer_warning_title">Porady dla programisty modułów</string>
+    <string name="developer_warning_summary">Wyłącz optymalizacje wdrażania w Android Studio lub użyj polecenia `gradlew installDebug`, aby zainstalować. W przeciwnym razie moduł APK nie zostanie zaktualizowany.</string>
     <string name="info_api_version">Wersja API</string>
     <string name="info_framework_version">Wersja frameworka</string>
     <string name="info_manager_package_name">Nazwa pakietu menedżera</string>
@@ -170,6 +172,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Wyłącz logi</string>
     <string name="settings_disable_verbose_log_summary">Zgłaszanie problemów wymaga dołączenia pełnych dzienników</string>
+    <string name="settings_enable_log_watchdog">Włącz nadzór dziennika</string>
+    <string name="settings_enable_log_watchdog_summary">Nadzór dziennika LSPosed modyfikuje właściwości systemowe, które mogą być wykorzystywane do wykrywania LSPosed</string>
     <string name="pure_black_dark_theme">Czarny ciemny motyw</string>
     <string name="pure_black_dark_theme_summary">Użyj czarnego motywu, jeśli ciemny motyw jest włączony</string>
     <string name="settings_group_theme">Motyw</string>
