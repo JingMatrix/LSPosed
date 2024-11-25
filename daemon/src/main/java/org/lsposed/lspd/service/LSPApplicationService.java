@@ -127,6 +127,11 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
     }
 
     @Override
+    public boolean isLogMuted() throws RemoteException {
+        return !ServiceManager.getManagerService().isVerboseLog();
+    }
+
+    @Override
     public List<Module> getLegacyModulesList() throws RemoteException {
         return getAllModulesList().stream().filter(m -> m.file.legacy).collect(Collectors.toList());
     }

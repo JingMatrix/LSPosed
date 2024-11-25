@@ -34,14 +34,14 @@ public class Utils {
     public static final boolean isLENOVO = !TextUtils.isEmpty(SystemProperties.get("ro.lenovo.region"));
 
     public class Log {
-        public static boolean beSilent = false;
+        public static boolean muted = false;
 
         public static String getStackTraceString(Throwable tr) {
             return android.util.Log.getStackTraceString(tr);
         }
 
         public static void d(String tag, String msg) {
-            if (beSilent) return;
+            if (muted) return;
             android.util.Log.d(tag, msg);
         }
 
@@ -50,7 +50,7 @@ public class Utils {
         }
 
         public static void v(String tag, String msg) {
-            if (beSilent) return;
+            if (muted) return;
             android.util.Log.v(tag, msg);
         }
 
@@ -59,7 +59,7 @@ public class Utils {
         }
 
         public static void i(String tag, String msg) {
-            if (beSilent) return;
+            if (muted) return;
             android.util.Log.i(tag, msg);
         }
 
@@ -68,12 +68,12 @@ public class Utils {
         }
 
         public static void w(String tag, String msg) {
-            if (beSilent) return;
+            if (muted) return;
             android.util.Log.w(tag, msg);
         }
 
         public static void w(String tag, String msg, Throwable tr) {
-            if (beSilent) return;
+            if (muted) return;
             android.util.Log.w(tag, msg, tr);
         }
 

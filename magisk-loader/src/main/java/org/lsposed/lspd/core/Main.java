@@ -19,6 +19,8 @@
 
 package org.lsposed.lspd.core;
 
+import static org.lsposed.lspd.core.ApplicationServiceClient.serviceClient;
+
 import android.os.IBinder;
 import android.os.Process;
 
@@ -30,16 +32,24 @@ import org.lsposed.lspd.BuildConfig;
 
 public class Main {
 
-    public static void forkCommon(boolean isSystem, boolean isDebug, String niceName, String appDir, IBinder binder) {
+    public static void forkCommon(boolean isSystem, String niceName, String appDir, IBinder binder) {
         if (isSystem) {
             ParasiticManagerSystemHooker.start();
         }
-        Utils.Log.beSilent = !isDebug;
+
         Startup.initXposed(isSystem, niceName, appDir, ILSPApplicationService.Stub.asInterface(binder));
+
+        try {
+            Utils.Log.muted = serviceClient.isLogMuted();
+        } catch (Throwable t) {
+            Utils.logE("failed to configure logs", t);
+        }
+
         if (niceName.equals(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME) && ParasiticManagerHooker.start()) {
             Utils.logI("Loaded manager, skipping next steps");
             return;
         }
+
         Utils.logI("Loading xposed for " + niceName + "/" + Process.myUid());
         Startup.bootstrapXposed();
     }
