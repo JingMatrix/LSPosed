@@ -1,10 +1,9 @@
 package org.lsposed.lspd.impl;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import org.lsposed.lspd.nativebridge.HookBridge;
+import org.lsposed.lspd.util.Utils.Log;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;

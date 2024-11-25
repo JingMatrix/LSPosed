@@ -5,15 +5,16 @@ import android.app.ProfilerInfo;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
-import android.util.Log;
 
 import org.lsposed.lspd.hooker.HandleSystemServerProcessHooker;
 import org.lsposed.lspd.impl.LSPosedHelper;
 import org.lsposed.lspd.service.BridgeService;
+import org.lsposed.lspd.util.Utils;
 
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.annotations.AfterInvocation;
 import io.github.libxposed.api.annotations.XposedHooker;
+
 
 public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHooker.Callback {
     public static void start() {
@@ -78,9 +79,9 @@ public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHo
                     HookBridge.deoptimizeMethod(method);
             }
             LSPosedHelper.hookAllMethods(Hooker2.class, Class.forName("com.android.server.wm.ActivityStarter", false, classLoader), "execute");*/
-            Log.d("LSPosed", "hooked activity starter");
+            Utils.logD("hooked activity starter");
         } catch (Throwable e) {
-            Log.e("LSPosed", "onSystemServerLoaded: ", e);
+            Utils.logE("onSystemServerLoaded: ", e);
         }
     }
 }

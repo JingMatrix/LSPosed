@@ -30,10 +30,11 @@ import org.lsposed.lspd.BuildConfig;
 
 public class Main {
 
-    public static void forkCommon(boolean isSystem, String niceName, String appDir, IBinder binder) {
+    public static void forkCommon(boolean isSystem, boolean isDebug, String niceName, String appDir, IBinder binder) {
         if (isSystem) {
             ParasiticManagerSystemHooker.start();
         }
+        Utils.beSilent = !isDebug;
         Startup.initXposed(isSystem, niceName, appDir, ILSPApplicationService.Stub.asInterface(binder));
         if (niceName.equals(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME) && ParasiticManagerHooker.start()) {
             Utils.logI("Loaded manager, skipping next steps");

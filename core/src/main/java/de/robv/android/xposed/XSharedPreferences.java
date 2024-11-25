@@ -27,12 +27,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import com.android.internal.util.XmlUtils;
 
 import org.lsposed.lspd.core.BuildConfig;
 import org.lsposed.lspd.util.MetaDataReader;
+import org.lsposed.lspd.util.Utils.Log;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.File;

@@ -1,8 +1,7 @@
 package org.lsposed.lspd.hooker;
 
-import android.util.Log;
-
 import org.lsposed.lspd.impl.LSPosedBridge;
+import org.lsposed.lspd.util.Utils.Log;
 
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.annotations.BeforeInvocation;

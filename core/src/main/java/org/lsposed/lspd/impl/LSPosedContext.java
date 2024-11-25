@@ -8,7 +8,6 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +19,7 @@ import org.lsposed.lspd.nativebridge.HookBridge;
 import org.lsposed.lspd.nativebridge.NativeAPI;
 import org.lsposed.lspd.service.ILSPInjectedModuleService;
 import org.lsposed.lspd.util.LspModuleClassLoader;
+import org.lsposed.lspd.util.Utils.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;

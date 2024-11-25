@@ -22,7 +22,6 @@ package org.lsposed.lspd.util;
 
 import android.os.SystemProperties;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -33,6 +32,61 @@ public class Utils {
     public static final String LOG_TAG = "LSPosed";
     public static final boolean isMIUI = !TextUtils.isEmpty(SystemProperties.get("ro.miui.ui.version.name"));
     public static final boolean isLENOVO = !TextUtils.isEmpty(SystemProperties.get("ro.lenovo.region"));
+
+    public static boolean beSilent = false;
+
+    public class Log {
+        public static String getStackTraceString(Throwable tr) {
+            return android.util.Log.getStackTraceString(tr);
+        }
+
+        public static void d(String tag, String msg) {
+            if (beSilent) return;
+            android.util.Log.d(tag, msg);
+        }
+
+        public static void d(String tag, String msg, Throwable tr) {
+            android.util.Log.d(tag, msg, tr);
+        }
+
+        public static void v(String tag, String msg) {
+            if (beSilent) return;
+            android.util.Log.v(tag, msg);
+        }
+
+        public static void v(String tag, String msg, Throwable tr) {
+            android.util.Log.v(tag, msg, tr);
+        }
+
+        public static void i(String tag, String msg) {
+            if (beSilent) return;
+            android.util.Log.i(tag, msg);
+        }
+
+        public static void i(String tag, String msg, Throwable tr) {
+            android.util.Log.i(tag, msg, tr);
+        }
+
+        public static void w(String tag, String msg) {
+            if (beSilent) return;
+            android.util.Log.w(tag, msg);
+        }
+
+        public static void w(String tag, String msg, Throwable tr) {
+            if (beSilent) return;
+            android.util.Log.w(tag, msg, tr);
+        }
+
+        public static void e(String tag, String msg) {
+            android.util.Log.e(tag, msg);
+        }
+
+        public static void e(String tag, String msg, Throwable tr) {
+            android.util.Log.e(tag, msg, tr);
+        }
+
+
+    }
 
     public static void logD(Object msg) {
         Log.d(LOG_TAG, msg.toString());

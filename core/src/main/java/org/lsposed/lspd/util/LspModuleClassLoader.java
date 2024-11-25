@@ -7,7 +7,6 @@ import android.os.SharedMemory;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -24,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+
+import org.lsposed.lspd.util.Utils.Log;
 
 import hidden.ByteBufferDexClassLoader;
 import sun.misc.CompoundEnumeration;

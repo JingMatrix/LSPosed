@@ -36,6 +36,10 @@
 #include "symbol_cache.h"
 #include "utils/jni_helper.hpp"
 
+#ifndef NDEBUG
+#define NDEBUG 0
+#endif
+
 using namespace lsplant;
 
 static_assert(FS_IOC_SETFLAGS == LP_SELECT(0x40046602, 0x40086602));
@@ -222,8 +226,8 @@ void MagiskLoader::OnNativeForkSystemServerPost(JNIEnv *env) {
         InitHooks(env);
         SetupEntryClass(env);
         FindAndCall(env, "forkCommon",
-                    "(ZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V", JNI_TRUE,
-                    JNI_NewStringUTF(env, "system"), nullptr, application_binder,
+                    "(ZZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V", JNI_TRUE,
+                    !NDEBUG, JNI_NewStringUTF(env, "system"), nullptr, application_binder,
                     is_parasitic_manager);
         GetArt(true);
     }
@@ -289,8 +293,8 @@ void MagiskLoader::OnNativeForkAndSpecializePost(JNIEnv *env, jstring nice_name,
         SetupEntryClass(env);
         LOGD("Done prepare");
         FindAndCall(env, "forkCommon",
-                    "(ZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V", JNI_FALSE,
-                    nice_name, app_dir, binder);
+                    "(ZZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V", JNI_FALSE,
+                    !NDEBUG, nice_name, app_dir, binder);
         LOGD("injected xposed into {}", process_name.get());
         setAllowUnload(false);
         GetArt(true);
