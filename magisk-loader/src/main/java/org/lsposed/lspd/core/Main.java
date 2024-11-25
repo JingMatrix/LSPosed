@@ -34,7 +34,7 @@ public class Main {
         if (isSystem) {
             ParasiticManagerSystemHooker.start();
         }
-        Utils.beSilent = !isDebug;
+        Utils.Log.beSilent = !isDebug;
         Startup.initXposed(isSystem, niceName, appDir, ILSPApplicationService.Stub.asInterface(binder));
         if (niceName.equals(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME) && ParasiticManagerHooker.start()) {
             Utils.logI("Loaded manager, skipping next steps");

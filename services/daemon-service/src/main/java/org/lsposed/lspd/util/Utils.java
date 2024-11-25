@@ -33,9 +33,9 @@ public class Utils {
     public static final boolean isMIUI = !TextUtils.isEmpty(SystemProperties.get("ro.miui.ui.version.name"));
     public static final boolean isLENOVO = !TextUtils.isEmpty(SystemProperties.get("ro.lenovo.region"));
 
-    public static boolean beSilent = false;
-
     public class Log {
+        public static boolean beSilent = false;
+
         public static String getStackTraceString(Throwable tr) {
             return android.util.Log.getStackTraceString(tr);
         }
