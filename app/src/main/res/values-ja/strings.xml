@@ -36,7 +36,7 @@
     <plurals name="module_repo_upgradable">
         <item quantity="other">%d 個のモジュールが更新可能</item>
     </plurals>
-    <string name="about_view_source_code">%1$s でソースコードを閲覧<br/>%2$s チャンネルに参加</string>
+    <string name="about_view_source_code"><![CDATA[%1$s でソースコードを閲覧<br/>%2$s チャンネルに参加]]></string>
     <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">yoshi818, a1678991, りお(koko0628)</string>
     <string name="install">インストール</string>
     <string name="install_summary">タップしてLSPosedをインストールします</string>
@@ -45,11 +45,11 @@
     <string name="activated">有効化済み</string>
     <string name="partial_activated">部分的に有効化済み</string>
     <string name="selinux_policy_not_loaded_summary">SEPolicyが正しく読み込まれていません</string>
-    <string name="selinux_policy_not_loaded">一部の機能は動作しません。<br/>これを<a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a>の開発者に報告してください。</string>
+    <string name="selinux_policy_not_loaded"><![CDATA[一部の機能は動作しません。<br/>これを<a href="https://github.com/topjohnwu/Magisk/issues"><b>Magisk</b></a>の開発者に報告してください。]]></string>
     <string name="system_inject_fail_summary">システムフレームワークへのパッチに失敗しました</string>
-    <string name="system_inject_fail">これは稀な現象であり、<b>Magisk</b>または低品質のMagiskモジュールが原因である可能性があります。<br/>LSPosed以外のMagiskモジュールを一時的に無効化してみるか、完全なログを開発者に送信してください。</string>
+    <string name="system_inject_fail"><![CDATA[これは稀な現象であり、<b>Magisk</b>または低品質のMagiskモジュールが原因である可能性があります。<br/>LSPosed以外のMagiskモジュールを一時的に無効化してみるか、完全なログを開発者に送信してください。]]></string>
     <string name="system_prop_incorrect_summary">システム設定が正しくありません</string>
-    <string name="system_prop_incorrect">必須のシステム設定が変更もしくは削除されています。<br/>モジュールが無効化される場合があります。</string>
+    <string name="system_prop_incorrect"><![CDATA[必須のシステム設定が変更もしくは削除されています。<br/>モジュールが無効化される場合があります。]]></string>
     <string name="need_update">更新が必要です</string>
     <string name="please_update_summary">最新バージョンのLSPosedをインストールして下さい</string>
     <string name="developer_warning_title">モジュール開発者向けのヒント</string>
