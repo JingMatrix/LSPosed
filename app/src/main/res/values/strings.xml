@@ -141,9 +141,13 @@
     <string name="menu_show_denylist">Denylist</string>
     <string name="failed_to_save_scope_list">Failed to save scope list</string>
     <string name="app_version">Version: %1$s</string>
+    <string name="menu_select">Select</string>
     <string name="use_recommended">Recommended</string>
     <string name="no_scope_selected_has_recommended">You did not select any app. Select recommended apps?</string>
     <string name="use_recommended_message">Select recommended apps?</string>
+    <string name="menu_select_all">All</string>
+    <string name="menu_select_none">None</string>
+    <string name="menu_auto_include">Auto-Include</string>
     <string name="module_is_not_activated_yet">Xposed module is not activated yet</string>
     <string name="requested_by_module">Recommended</string>
     <string name="update_available">Update available: %1$s</string>
