@@ -145,9 +145,13 @@
     <string name="menu_show_denylist">Lista Odmów</string>
     <string name="failed_to_save_scope_list">Nie udało się zapisać listy zakresu</string>
     <string name="app_version">Wersja: %1$s</string>
+    <string name="menu_select">Zaznacz</string>
     <string name="use_recommended">Zalecane</string>
     <string name="no_scope_selected_has_recommended">Nie wybrałeś żadnej aplikacji. Wybrać rekomendowane aplikacje?</string>
     <string name="use_recommended_message">Wybrać zalecane aplikacje?</string>
+    <string name="menu_select_all">Wszystkie</string>
+    <string name="menu_select_none">Żadne</string>
+    <string name="menu_auto_include">Automatycznie</string>
     <string name="module_is_not_activated_yet">Moduł Xposed nie jest jeszcze aktywowany</string>
     <string name="requested_by_module">Zalecane</string>
     <string name="update_available">Dostępna aktualizacja: %1$s</string>
