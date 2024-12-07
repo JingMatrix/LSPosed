@@ -225,7 +225,7 @@
         <item quantity="other">%d de descărcări</item>
     </plurals>
     <!-- Colors -->
-    <string name="color_sakura">Roz de cireș</string>
+    <string name="color_sakura">Roz cireș</string>
     <string name="color_red">Roșu</string>
     <string name="color_pink">Roz</string>
     <string name="color_purple">Violet</string>
@@ -237,7 +237,7 @@
     <string name="color_teal">Turcoaz</string>
     <string name="color_green">Verde</string>
     <string name="color_light_green">Verde deschis</string>
-    <string name="color_lime">Lămâie verde</string>
+    <string name="color_lime">Verde lămâie</string>
     <string name="color_yellow">Galben</string>
     <string name="color_amber">Chihlimbar</string>
     <string name="color_orange">Portocaliu</string>
