@@ -60,7 +60,7 @@
     <string name="developer_warning_summary">Vă rugăm să dezactivați optimizările automate oferite de Android Studio sau să executați `gradlew installDebug` pentru instalare. În caz contrar, aplicația nu va putea fi actualizată.</string>
     <string name="info_api_version">Versiune API</string>
     <string name="info_framework_version">Versiune implementare</string>
-    <string name="info_manager_package_name">Numele aplicației de administrare</string>
+    <string name="info_manager_package_name">Numele pachetului manager</string>
     <string name="info_system_version">Versiune sistem</string>
     <string name="info_device">Dispozitiv</string>
     <string name="info_system_abi">Model de interfață binară</string>
