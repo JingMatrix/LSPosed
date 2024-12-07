@@ -15,7 +15,7 @@
     <string name="xposed_module_request_scope_title">Cerere de modificare configurație</string>
     <string name="xposed_module_request_scope_content">Modulul %1$s, instalat pentru utilizatorul %2$s, dorește să adauge %3$s în configurația sa.</string>
     <string name="scope_channel_name">Cerere de modificare configurație</string>
-    <string name="scope_approve">Aprobă</string>
+    <string name="scope_approve">Aprobați</string>
     <string name="scope_deny">Refuzați</string>
     <string name="nerver_ask_again">Nu afișați din nou</string>
 </resources>
