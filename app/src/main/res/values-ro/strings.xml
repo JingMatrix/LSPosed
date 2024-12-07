@@ -204,7 +204,7 @@
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Nightly</string>
     <string name="settings_xposed_api_call_protection">Protecția apelurilor Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">Interzice modulelor utilizarea codului încărcat dinamic pentru a apelarea Xposed. Acest lucru poate cauza probleme unor module, dar crește securitatea</string>
+    <string name="settings_xposed_api_call_protection_summary">Interzice modulelor utilizarea codului încărcat dinamic pentru a apela Xposed. Acest lucru poate cauza probleme unor module, dar crește securitatea</string>
     <!-- Module Repo -->
     <string name="module_readme">A se citi mai întâi</string>
     <string name="module_releases">Versiuni</string>
@@ -216,7 +216,7 @@
     <string name="menu_open_in_browser">Deschide în browser</string>
     <string name="module_release_load_more">Versiuni mai vechi</string>
     <string name="module_release_no_more">Nu există alte versiuni</string>
-    <string name="repo_load_failed">Nu s-a putut încărca repo-ul modulului: %s</string>
+    <string name="repo_load_failed">Încărcarea depozitului a eșuat: %s</string>
     <string name="sort_upgradable_first">Afișați întâi modulele de actualizat</string>
     <string name="installed">Instalat</string>
     <plurals name="module_release_assets_download_count">
