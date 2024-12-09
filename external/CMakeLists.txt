@@ -109,6 +109,7 @@ set(XZ_SOURCES
 set(XZ_INCLUDES xz-embedded/linux/include/linux xz-embedded/userspace)
 list(TRANSFORM XZ_SOURCES PREPEND xz-embedded/linux/lib/xz/)
 add_library(xz_static STATIC ${XZ_SOURCES})
+target_compile_options(xz_static PRIVATE -DXZ_USE_CRC64)
 target_include_directories(xz_static PRIVATE ${XZ_INCLUDES})
 
 link_libraries(cxx)
