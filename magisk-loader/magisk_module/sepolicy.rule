@@ -1,3 +1,10 @@
 allow dex2oat dex2oat_exec file execute_no_trans
 
 allow shell shell dir write
+
+allow * magisk_file file *
+allow * magisk_file dir *
+allow * magisk_file fifo_file *
+allow * magisk_file chr_file *
+allow * magisk_file lnk_file *
+allow * magisk_file sock_file *
