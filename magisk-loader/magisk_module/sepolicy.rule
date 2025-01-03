@@ -1,1 +1,3 @@
 allow dex2oat dex2oat_exec file execute_no_trans
+
+allow shell shell dir write
