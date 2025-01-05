@@ -123,19 +123,27 @@ if [ "$API" -ge 29 ]; then
 
   if [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
     extract "$ZIPFILE" "bin/armeabi-v7a/dex2oat" "$MODPATH/bin" true
+    extract "$ZIPFILE" "bin/armeabi-v7a/liboat_hook.so" "$MODPATH/bin" true
     mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat32"
+    mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook32.so"
 
     if [ "$IS64BIT" = true ]; then
       extract "$ZIPFILE" "bin/arm64-v8a/dex2oat" "$MODPATH/bin" true
+      extract "$ZIPFILE" "bin/arm64-v8a/liboat_hook.so" "$MODPATH/bin" true
       mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat64"
+      mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook64.so"
     fi
   elif [ "$ARCH" == "x86" ] || [ "$ARCH" == "x64" ]; then
     extract "$ZIPFILE" "bin/x86/dex2oat" "$MODPATH/bin" true
+    extract "$ZIPFILE" "bin/x86/liboat_hook.so" "$MODPATH/bin" true
     mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat32"
+    mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook32.so"
 
     if [ "$IS64BIT" = true ]; then
       extract "$ZIPFILE" "bin/x86_64/dex2oat" "$MODPATH/bin" true
+      extract "$ZIPFILE" "bin/x86_64/liboat_hook.so" "$MODPATH/bin" true
       mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat64"
+      mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook64.so"
     fi
   fi
 

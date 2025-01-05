@@ -51,8 +51,8 @@ public class Dex2OatService implements Runnable {
     private static final String WRAPPER32 = "bin/dex2oat32";
     private static final String WRAPPER64 = "bin/dex2oat64";
 
-    private final String[] dex2oatArray = new String[4];
-    private final FileDescriptor[] fdArray = new FileDescriptor[4];
+    private final String[] dex2oatArray = new String[6];
+    private final FileDescriptor[] fdArray = new FileDescriptor[6];
     private final FileObserver selinuxObserver;
     private int compatibility = DEX2OAT_OK;
 
@@ -75,6 +75,9 @@ public class Dex2OatService implements Runnable {
             openDex2oat(2, "/apex/com.android.art/bin/dex2oat64");
             openDex2oat(3, "/apex/com.android.art/bin/dex2oatd64");
         }
+
+        openDex2oat(4, "/data/adb/modules/zygisk_lsposed/bin/liboat_hook32.so");
+        openDex2oat(5, "/data/adb/modules/zygisk_lsposed/bin/liboat_hook64.so");
 
         var enforce = Paths.get("/sys/fs/selinux/enforce");
         var policy = Paths.get("/sys/fs/selinux/policy");
@@ -126,7 +129,7 @@ public class Dex2OatService implements Runnable {
     }
 
     private boolean notMounted() {
-        for (int i = 0; i < dex2oatArray.length; i++) {
+        for (int i = 0; i < dex2oatArray.length && i < 4; i++) {
             var bin = dex2oatArray[i];
             if (bin == null) continue;
             try {
@@ -193,8 +196,7 @@ public class Dex2OatService implements Runnable {
                     var fd = new FileDescriptor[]{fdArray[id]};
                     client.setFileDescriptorsForSend(fd);
                     os.write(1);
-                    Log.d(TAG, "Sent stock fd: is64 = " + ((id & 0b10) != 0) +
-                            ", isDebug = " + ((id & 0b01) != 0));
+                    Log.d(TAG, "Sent fd of " + dex2oatArray[id]);
                 }
             }
         } catch (IOException e) {

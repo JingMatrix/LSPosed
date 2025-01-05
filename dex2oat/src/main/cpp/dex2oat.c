@@ -21,7 +21,6 @@
 // Created by Nullptr on 2022/4/1.
 //
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,6 +95,7 @@ int main(int argc, char **argv) {
     struct sockaddr_un sock = {};
     sock.sun_family = AF_UNIX;
     strlcpy(sock.sun_path + 1, kSockName, sizeof(sock.sun_path) - 1);
+
     int sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
     size_t len = sizeof(sa_family_t) + strlen(sock.sun_path + 1) + 1;
     if (connect(sock_fd, (struct sockaddr *)&sock, len)) {
@@ -106,6 +106,17 @@ int main(int argc, char **argv) {
     int stock_fd = recv_fd(sock_fd);
     read_int(sock_fd);
     close(sock_fd);
+
+    sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (connect(sock_fd, (struct sockaddr *)&sock, len)) {
+        PLOGE("failed to connect to %s", sock.sun_path + 1);
+        return 1;
+    }
+    write_int(sock_fd, LP_SELECT(4, 5));
+    int hooker_fd = recv_fd(sock_fd);
+    read_int(sock_fd);
+    close(sock_fd);
+
     LOGD("sock: %s %d", sock.sun_path + 1, stock_fd);
 
     const char *new_argv[argc + 2];
@@ -114,16 +125,20 @@ int main(int argc, char **argv) {
     new_argv[argc + 1] = NULL;
 
     if (getenv("LD_LIBRARY_PATH") == NULL) {
-#if defined(__LP64__)
-        char const *libenv =
-            "LD_LIBRARY_PATH=/apex/com.android.art/lib64:/apex/com.android.os.statsd/lib64";
-#else
-        char const *libenv =
-            "LD_LIBRARY_PATH=/apex/com.android.art/lib:/apex/com.android.os.statsd/lib";
-#endif
+        char const *libenv = LP_SELECT(
+            "LD_LIBRARY_PATH=/apex/com.android.art/lib:/apex/com.android.os.statsd/lib",
+            "LD_LIBRARY_PATH=/apex/com.android.art/lib64:/apex/com.android.os.statsd/lib64");
         putenv((char *)libenv);
     }
+
+    // Set LD_PRELOAD to load liboat_hook.so
+    const int STRING_BUFFER = 50;
+    char env_str[STRING_BUFFER];
+    snprintf(env_str, STRING_BUFFER, "LD_PRELOAD=/proc/%d/fd/%d", getpid(), hooker_fd);
+    putenv(env_str);
+
     fexecve(stock_fd, (char **)new_argv, environ);
+
     PLOGE("fexecve failed");
     return 2;
 }

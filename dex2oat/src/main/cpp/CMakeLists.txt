@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 project(dex2oat)
 
 add_executable(dex2oat dex2oat.c)
+add_library(oat_hook SHARED oat_hook.c)
 
 target_link_libraries(dex2oat log)
+target_link_libraries(oat_hook log)
 
 if (DEFINED DEBUG_SYMBOLS_PATH)
     message(STATUS "Debug symbols will be placed at ${DEBUG_SYMBOLS_PATH}")
