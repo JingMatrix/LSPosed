@@ -16,3 +16,6 @@
 [submodule "apache/commons-lang"]
 	path = apache/commons-lang
 	url = https://github.com/apache/commons-lang
+[submodule "external/lsplt"]
+	path = external/lsplt
+	url = https://github.com/JingMatrix/LSPlt

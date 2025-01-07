@@ -2,10 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 project(dex2oat)
 
 add_executable(dex2oat dex2oat.c)
-add_library(oat_hook SHARED oat_hook.c)
+add_library(oat_hook SHARED oat_hook.cpp)
+
+OPTION(LSPLT_BUILD_SHARED OFF)
+add_subdirectory(${EXTERNAL_ROOT}/lsplt/lsplt/src/main/jni external)
 
 target_link_libraries(dex2oat log)
-target_link_libraries(oat_hook log)
+target_link_libraries(oat_hook log lsplt_static)
 
 if (DEFINED DEBUG_SYMBOLS_PATH)
     message(STATUS "Debug symbols will be placed at ${DEBUG_SYMBOLS_PATH}")
