@@ -223,7 +223,7 @@
     <string name="module_release_load_more">Versiuni mai vechi</string>
     <string name="module_release_no_more">Nu există alte versiuni</string>
     <string name="repo_load_failed">Încărcarea repozitoriului a eșuat: %s</string>
-    <string name="sort_upgradable_first">Afișați întâi modulele de actualizat</string>
+    <string name="sort_upgradable_first">Actualizările întâi</string>
     <string name="installed">Instalat</string>
     <plurals name="module_release_assets_download_count">
         <item quantity="one">%d descărcare</item>
