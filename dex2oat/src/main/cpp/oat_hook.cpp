@@ -1,15 +1,20 @@
 #include <dlfcn.h>
 
+#include <lsplt.hpp>
 #include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "logging.h"
 
-static uint32_t (*OatHeader_GetKeyValueStoreSize)(void*);
-static uint8_t* (*OatHeader_GetKeyValueStore)(void*);
-static bool store_updated = false;
 const std::string_view parameter_to_remove = " --inline-max-code-units=0";
+
+#define DCL_HOOK_FUNC(ret, func, ...)                                                              \
+    ret (*old_##func)(__VA_ARGS__);                                                                \
+    ret new_##func(__VA_ARGS__)
+
+bool store_updated = false;
 
 void UpdateKeyValueStore(std::map<std::string, std::string>* key_value, uint8_t* store) {
     LOGD("updating KeyValueStore");
@@ -28,11 +33,19 @@ void UpdateKeyValueStore(std::map<std::string, std::string>* key_value, uint8_t*
     store_updated = true;
 }
 
-extern "C" [[gnu::visibility("default")]]
-uint8_t* _ZNK3art9OatHeader16GetKeyValueStoreEv(void* header) {
+DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
+    uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
+    if (store_updated) {
+        LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p\n", header);
+        size = size - parameter_to_remove.size();
+    }
+    return size;
+}
+
+DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
     LOGD("OatHeader::GetKeyValueStore() called on object at %p\n", header);
-    uint8_t* key_value_store_ = OatHeader_GetKeyValueStore(header);
-    uint32_t key_value_store_size_ = OatHeader_GetKeyValueStoreSize(header);
+    uint8_t* key_value_store_ = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
+    uint32_t key_value_store_size_ = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
     const char* ptr = reinterpret_cast<const char*>(key_value_store_);
     const char* end = ptr + key_value_store_size_;
     std::map<std::string, std::string> new_store = {};
@@ -67,30 +80,37 @@ uint8_t* _ZNK3art9OatHeader16GetKeyValueStoreEv(void* header) {
     return key_value_store_;
 }
 
-extern "C" [[gnu::visibility("default")]]
-uint32_t _ZNK3art9OatHeader20GetKeyValueStoreSizeEv(void* header) {
-    uint32_t size = OatHeader_GetKeyValueStoreSize(header);
-    if (store_updated) {
-        LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p\n", header);
-        size = size - parameter_to_remove.size();
+#undef DCL_HOOK_FUNC
+
+void register_hook(dev_t dev, ino_t inode, const char* symbol, void* new_func, void** old_func) {
+    LOGD("RegisterHook: %s, %p, %p", symbol, new_func, old_func);
+    if (!lsplt::RegisterHook(dev, inode, symbol, new_func, old_func)) {
+        LOGE("Failed to register plt_hook \"%s\"\n", symbol);
+        return;
     }
-    return size;
 }
 
-__attribute__((constructor)) static void initialize() {
-    if (!OatHeader_GetKeyValueStore) {
-        OatHeader_GetKeyValueStore = reinterpret_cast<decltype(OatHeader_GetKeyValueStore)>(
-            dlsym(RTLD_NEXT, "_ZNK3art9OatHeader16GetKeyValueStoreEv"));
-        if (!OatHeader_GetKeyValueStore) {
-            PLOGE("resolving symbol");
-        }
-    }
+#define PLT_HOOK_REGISTER_SYM(DEV, INODE, SYM, NAME)                                               \
+    register_hook(DEV, INODE, SYM, reinterpret_cast<void*>(new_##NAME),                            \
+                  reinterpret_cast<void**>(&old_##NAME))
 
-    if (!OatHeader_GetKeyValueStoreSize) {
-        OatHeader_GetKeyValueStoreSize = reinterpret_cast<decltype(OatHeader_GetKeyValueStoreSize)>(
-            dlsym(RTLD_NEXT, "_ZNK3art9OatHeader20GetKeyValueStoreSizeEv"));
-        if (!OatHeader_GetKeyValueStoreSize) {
-            PLOGE("resolving symbol");
+#define PLT_HOOK_REGISTER(DEV, INODE, NAME) PLT_HOOK_REGISTER_SYM(DEV, INODE, #NAME, NAME)
+
+__attribute__((constructor)) static void initialize() {
+    dev_t dev = 0;
+    ino_t inode = 0;
+    for (auto& info : lsplt::MapInfo::Scan()) {
+        if (info.path.starts_with("/apex/com.android.art/bin/dex2oat")) {
+            dev = info.dev;
+            inode = info.inode;
+            break;
         }
     }
+    LOGD("dex2oat binary %lu:%lu", dev, inode);
+
+    PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv);
+    PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader16GetKeyValueStoreEv);
+    if (lsplt::CommitHook()) {
+        LOGD("lsplt hooks done");
+    };
 }
