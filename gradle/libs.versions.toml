@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.3"
+agp = "8.8.0"
 kotlin = "2.1.0"
 nav = "2.8.5"
 appcenter = "5.0.5"
