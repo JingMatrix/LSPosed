@@ -68,7 +68,7 @@
     <string name="supported">Desteklenen</string>
     <string name="unsupported">Desteklenmiyor</string>
     <string name="android_version_unsatisfied">Android sürümü tatmin edici değil</string>
-    <string name="crashed">çöktü</string>
+    <string name="crashed">Çöktü</string>
     <string name="mount_failed">Bağlama başarısız</string>
     <string name="selinux_permissive">SELinux\'a izin verildi</string>
     <string name="sepolicy_incorrect">SELinux politikası yanlış</string>
