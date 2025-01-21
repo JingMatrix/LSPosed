@@ -35,17 +35,28 @@ check_magisk_version() {
 
 require_new_android() {
   ui_print "*********************************************************"
-  ui_print "! Unsupported Android version ${1} (below Oreo MR1)"
+  ui_print "! Unsupported Android version ${1} (below ${2})"
   ui_print "! Learn more from our GitHub"
   [ "$BOOTMODE" == "true" ] && am start -a android.intent.action.VIEW -d https://github.com/JingMatrix/LSPosed/#supported-versions
   abort    "*********************************************************"
 }
 
 check_android_version() {
-  if [ "$API" -ge 27 ]; then
+  local required_version
+  local min_api
+
+  if [ "$ARCH" == "riscv64" ]; then
+    required_version="Vanilla Ice Cream"
+    min_api=35
+  else
+    required_version="Oreo MR1"
+    min_api=27
+  fi
+
+  if [ "$API" -ge "$min_api" ]; then
     ui_print "- Android SDK version: $API"
   else
-    require_new_android "$API"
+    require_new_android "$API" "$required_version"
   fi
 }
 

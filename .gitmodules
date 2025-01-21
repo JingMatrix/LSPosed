@@ -19,3 +19,6 @@
 [submodule "external/lsplt"]
 	path = external/lsplt
 	url = https://github.com/JingMatrix/LSPlt
+[submodule "external/riscv64-inline-hook"]
+	path = external/riscv64-inline-hook
+	url = https://github.com/eirv/riscv64-inline-hook
