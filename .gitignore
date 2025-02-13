@@ -9,3 +9,4 @@ apache/local/generated
 .DS_Store
 /build
 /captures
+/apache/build

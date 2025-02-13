@@ -62,7 +62,7 @@ check_incompatible_module
 enforce_install_from_magisk_app
 
 # Check architecture
-if [ "$ARCH" != "arm" ] && [ "$ARCH" != "arm64" ] && [ "$ARCH" != "x86" ] && [ "$ARCH" != "x64" ]; then
+if [ "$ARCH" != "arm" ] && [ "$ARCH" != "arm64" ] && [ "$ARCH" != "x86" ] && [ "$ARCH" != "x64" ] && [ "$ARCH" != "riscv64" ]; then
   abort "! Unsupported platform: $ARCH"
 else
   ui_print "- Device platform: $ARCH"
@@ -115,6 +115,11 @@ if [ "$FLAVOR" == "zygisk" ]; then
       mv "$MODPATH/zygisk/liblspd.so" "$MODPATH/zygisk/x86_64.so"
     fi
   fi
+
+  if [ "$ARCH" = "riscv64" ]; then
+    extract "$ZIPFILE" "lib/riscv64/liblspd.so" "$MODPATH/zygisk" true
+    mv "$MODPATH/zygisk/liblspd.so" "$MODPATH/zygisk/riscv64.so"
+  fi
 fi
 
 if [ "$API" -ge 29 ]; then
@@ -145,12 +150,19 @@ if [ "$API" -ge 29 ]; then
       mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat64"
       mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook64.so"
     fi
+  elif [ "$ARCH" == "riscv64" ]; then
+    extract "$ZIPFILE" "bin/riscv64/dex2oat" "$MODPATH/bin" true
+    extract "$ZIPFILE" "bin/riscv64/liboat_hook.so" "$MODPATH/bin" true
+    mv "$MODPATH/bin/dex2oat" "$MODPATH/bin/dex2oat64"
+    mv "$MODPATH/bin/liboat_hook.so" "$MODPATH/bin/liboat_hook64.so"
   fi
 
   ui_print "- Patching binaries"
   DEV_PATH=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 32)
   sed -i "s/5291374ceda0aef7c5d86cd2a4f6a3ac/$DEV_PATH/g" "$MODPATH/daemon.apk"
-  sed -i "s/5291374ceda0aef7c5d86cd2a4f6a3ac/$DEV_PATH/" "$MODPATH/bin/dex2oat32"
+  if [ "$ARCH" != "riscv64" ]; then
+    sed -i "s/5291374ceda0aef7c5d86cd2a4f6a3ac/$DEV_PATH/" "$MODPATH/bin/dex2oat32"
+  fi
   sed -i "s/5291374ceda0aef7c5d86cd2a4f6a3ac/$DEV_PATH/" "$MODPATH/bin/dex2oat64"
 else
   extract "$ZIPFILE" 'system.prop' "$MODPATH"
