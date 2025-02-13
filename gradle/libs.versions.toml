@@ -1,7 +1,7 @@
 [versions]
 agp = "8.8.0"
 kotlin = "2.1.10"
-nav = "2.8.6"
+nav = "2.8.7"
 appcenter = "5.0.5"
 libxposed = "100"
 glide = "4.16.0"
@@ -36,12 +36,12 @@ androidx-annotation = { module = "androidx.annotation:annotation", version = "1.
 androidx-browser = { module = "androidx.browser:browser", version = "1.8.0" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.0" }
 androidx-core = { module = "androidx.core:core", version = "1.15.0" }
-androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.5" }
+androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.6" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "nav" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
 androidx-preference = { module = "androidx.preference:preference", version = "1.2.1" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.4.0" }
-androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version = "1.2.0-alpha01" }
+androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version = "1.2.0-beta01" }
 
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
@@ -54,7 +54,7 @@ agp-apksig = { group = "com.android.tools.build", name = "apksig", version.ref =
 appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version = "1.5.0" }
 material = { module = "com.google.android.material:material", version = "1.12.0" }
 gson = { module = "com.google.code.gson:gson", version = "2.12.1" }
-hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "6.0" }
+hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "6.1" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.1" }
 
