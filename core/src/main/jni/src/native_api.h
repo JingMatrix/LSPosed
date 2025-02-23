@@ -28,7 +28,11 @@
 #include <cstdint>
 #include <dlfcn.h>
 #include <string>
+#ifdef __riscv
+#include <rv64hook.h>
+#else
 #include <dobby.h>
+#endif
 
 #include "config.h"
 #include "utils/hook_helper.hpp"
@@ -56,24 +60,35 @@ namespace lspd {
         if constexpr (isDebug) {
             Dl_info info;
             if (dladdr(original, &info))
-            LOGD("Dobby hooking {} ({}) from {} ({})",
+            LOGD("Inline hooking {} ({}) from {} ({})",
                  info.dli_sname ? info.dli_sname : "(unknown symbol)",
 				 info.dli_saddr ? info.dli_saddr : original,
                  info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
         }
+#ifdef __riscv
+        rv64hook::ScopedRWXMemory rwx(original);
+        return rv64hook::InlineHook(original, replace, backup) != nullptr ? 0 : -1;
+#else
         return DobbyHook(original, reinterpret_cast<dobby_dummy_func_t>(replace), reinterpret_cast<dobby_dummy_func_t *>(backup));
+#endif
     }
 
     inline int UnhookInline(void *original) {
         if constexpr (isDebug) {
             Dl_info info;
             if (dladdr(original, &info))
-            LOGD("Dobby unhooking {} ({}) from {} ({})",
+            LOGD("Inline unhooking {} ({}) from {} ({})",
                  info.dli_sname ? info.dli_sname : "(unknown symbol)",
 				 info.dli_saddr ? info.dli_saddr : original,
                  info.dli_fname ? info.dli_fname : "(unknown file)", info.dli_fbase);
         }
+#ifdef __riscv
+        rv64hook::ScopedRWXMemory rwx(original);
+        rv64hook::UnhookFunction(original);
+        return 0;
+#else
         return DobbyDestroy(original);
+#endif
     }
 }
 
