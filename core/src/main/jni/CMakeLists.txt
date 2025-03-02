@@ -17,10 +17,17 @@ set(IGNORED_WARNINGS
 	-Wno-gnu-flexible-array-initializer
 	-Wno-variadic-macros
 	-Wno-zero-length-array)
+set(${PROJECT_NAME}_LINK_LIBS lsplant_static xz_static log fmt-header-only)
+
+if (ANDROID_ABI STREQUAL "riscv64")
+	set(${PROJECT_NAME}_LINK_LIBS ${${PROJECT_NAME}_LINK_LIBS} rv64hook-static)
+else ()
+	set(${PROJECT_NAME}_LINK_LIBS ${${PROJECT_NAME}_LINK_LIBS} dobby_static)
+endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE src ${EXTERNAL_ROOT}/xz-embedded/linux/include)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wpedantic ${IGNORED_WARNINGS})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC dobby_static lsplant_static xz_static log fmt-header-only)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${${PROJECT_NAME}_LINK_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE dex_builder_static)
