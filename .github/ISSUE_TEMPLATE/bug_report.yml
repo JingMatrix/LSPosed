@@ -7,10 +7,10 @@ body:
       value: |
         Thanks for reporting issues of LSPosed!
 
-        To make it easier for us to help you please enter detailed information below.
+        To make it easier for us to help you, please read all pinned issues and provide the following details.
 
         感谢给 LSPosed 汇报问题！
-        为了使我们更好地帮助你，请提供以下信息。
+        为了使我们更好地帮助你，请务必阅读所有已置顶的 Issues 并提供以下细节。
         为了防止重复汇报，标题请务必使用英文。
   - type: textarea
     attributes:
@@ -39,32 +39,29 @@ body:
       render: shell
     validations:
       required: true
+  - type: input
+    attributes:
+      label: Root implementation/Root 方案
+      description: Common root implementations include Magisk, KernelSU or APatch. Please specify your current implementation with exact version./常见的 Root 方案有 Magisk，KernelSU 以及 APatch。请注明您当前的方案以及详细版本。
+    validations:
+      required: true
   - type: textarea
     attributes:
-      label: Magisk Module List/Magisk 模块列表
+      label: System Module List/系统模块列表
+      description: Modules installed through your root implementation manager/通过您 Root 方案的管理器所安装的模块
       render: shell
     validations:
       required: true
   - type: input
     attributes:
       label: LSPosed version/LSPosed 版本
-      description:  Don't use 'latest'. Specify actual version with 4 digits, otherwise your issue will be closed./不要填用“最新版”。给出四位版本号，不然 issue 会被关闭。
+      description: Don't use 'latest'. Specify actual version with 4 digits, otherwise your issue will be closed./不要填用“最新版”。给出四位版本号，不然 issue 会被关闭。
     validations:
       required: true
   - type: input
     attributes:
       label: Android version/Android 版本
-    validations:
-      required: true
-  - type: input
-    attributes:
-      label: Magisk version/Magisk 版本
-    validations:
-      required: true
-  - type: input
-    attributes:
-      label: Riru version/Riru 版本
-      description: If you are using Zygisk version, input `N/A` instead./如果正在使用 Zygisk 版本，请键入 `N/A`。
+      description: If you are running a custom OS, please also note it./如果使用了非官方的操作系统，请一并注明。
     validations:
       required: true
   - type: checkboxes
@@ -72,12 +69,12 @@ body:
     attributes:
       label: Version requirement/版本要求
       options:
-        - label: I am using latest debug CI version of LSPosed and enable verbose log/我正在使用最新 CI 调试版本且启用详细日志
+        - label: I am using the latest debug build from [GitHub Actions](https://github.com/JingMatrix/LSPosed/actions?query=branch%3Amaster)./我正在使用 [GitHub Actions](https://github.com/JingMatrix/LSPosed/actions?query=branch%3Amaster) 中最新的调试版本。
           required: true
   - type: textarea
     attributes:
       label: Logs/日志
       description: For usage issues, please provide the log zip saved from manager; for activation issues, please provide [bugreport](https://developer.android.com/studio/debug/bug-report). Without logs zip, the issue will be closed. /使用问题请提供从管理器保存的日志压缩包；激活问题请提供 [bugreport](https://developer.android.google.cn/studio/debug/bug-report?hl=zh-cn) 日志。没有日志附件的问题会被关闭。
-      placeholder: Upload logs zip by clicking the bar on the bottom. Upload logs to other websites or using external links is prohibited. /点击文本框底栏上传日志压缩包，禁止上传到其它网站或使用外链提供日志。
+      placeholder: Upload logs zip by clicking the bar on the bottom. Uploading logs to other websites or using external links is prohibited. /点击文本框底栏上传日志压缩包，禁止上传到其它网站或使用外链提供日志。
     validations:
       required: true

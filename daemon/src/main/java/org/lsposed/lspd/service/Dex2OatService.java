@@ -50,6 +50,8 @@ public class Dex2OatService implements Runnable {
     private static final String TAG = "LSPosedDex2Oat";
     private static final String WRAPPER32 = "bin/dex2oat32";
     private static final String WRAPPER64 = "bin/dex2oat64";
+    private static final String HOOKER32 = "bin/liboat_hook32.so";
+    private static final String HOOKER64 = "bin/liboat_hook64.so";
 
     private final String[] dex2oatArray = new String[6];
     private final FileDescriptor[] fdArray = new FileDescriptor[6];
@@ -186,6 +188,8 @@ public class Dex2OatService implements Runnable {
             SELinux.setFileContext(WRAPPER64, xposed_file);
             setSockCreateContext("u:r:installd:s0");
         }
+        SELinux.setFileContext(HOOKER32, xposed_file);
+        SELinux.setFileContext(HOOKER64, xposed_file);
         try (var server = new LocalServerSocket(sockPath)) {
             setSockCreateContext(null);
             while (true) {
