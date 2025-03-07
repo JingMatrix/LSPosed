@@ -16,30 +16,27 @@
  *
  * Copyright (C) 2023 LSPosed Contributors
  */
-
 #include <fcntl.h>
 #include <jni.h>
-#include <string>
+#include <sched.h>
+#include <stdlib.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sched.h>
+
+#include <string>
 
 #include "logging.h"
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_org_lsposed_lspd_service_Dex2OatService_doMountNative(JNIEnv *env, jobject,
-                                                           jboolean enabled,
-                                                           jstring r32, jstring d32,
-                                                           jstring r64, jstring d64) {
+extern "C" JNIEXPORT void JNICALL Java_org_lsposed_lspd_service_Dex2OatService_doMountNative(
+    JNIEnv *env, jobject, jboolean enabled, jstring r32, jstring d32, jstring r64, jstring d64) {
     char dex2oat32[PATH_MAX], dex2oat64[PATH_MAX];
     realpath("bin/dex2oat32", dex2oat32);
     realpath("bin/dex2oat64", dex2oat64);
 
-    if (pid_t pid = fork(); pid > 0) { // parent
+    if (pid_t pid = fork(); pid > 0) {  // parent
         waitpid(pid, nullptr, 0);
-    } else { // child
+    } else {  // child
         int ns = open("/proc/1/ns/mnt", O_RDONLY);
         setns(ns, CLONE_NEWNS);
         close(ns);
@@ -95,15 +92,14 @@ static int setsockcreatecon_raw(const char *context) {
         } while (ret < 0 && errno == EINTR);
     } else {
         do {
-            ret = write(fd, nullptr, 0); // clear
+            ret = write(fd, nullptr, 0);  // clear
         } while (ret < 0 && errno == EINTR);
     }
     close(fd);
     return ret < 0 ? -1 : 0;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_org_lsposed_lspd_service_Dex2OatService_setSockCreateContext(JNIEnv *env, jclass,
                                                                   jstring contextStr) {
     const char *context = env->GetStringUTFChars(contextStr, nullptr);
@@ -112,8 +108,7 @@ Java_org_lsposed_lspd_service_Dex2OatService_setSockCreateContext(JNIEnv *env, j
     return ret == 0;
 }
 
-extern "C"
-JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jstring JNICALL
 Java_org_lsposed_lspd_service_Dex2OatService_getSockPath(JNIEnv *env, jobject) {
     return env->NewStringUTF("5291374ceda0aef7c5d86cd2a4f6a3ac\0");
 }

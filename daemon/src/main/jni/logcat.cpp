@@ -136,7 +136,7 @@ private:
 size_t Logcat::PrintLogLine(const AndroidLogEntry &entry, FILE *out) {
     if (!out) return 0;
     constexpr static size_t kMaxTimeBuff = 64;
-    struct tm tm {};
+    struct tm tm{};
     std::array<char, kMaxTimeBuff> time_buff{};
 
     auto now = entry.tv_sec;
@@ -226,10 +226,10 @@ void Logcat::ProcessBuffer(struct log_msg *buf) {
         shortcut = true;
     }
     if (verbose_ && (shortcut || buf->id() == log_id::LOG_ID_CRASH || entry.pid == my_pid_ ||
-                     tag == "APatchD"sv || tag == "Dobby"sv || tag == "KernelSU"sv ||
-                     tag == "LSPlant"sv || tag == "LSPlt"sv || tag.starts_with("LSPosed"sv) ||
-                     tag == "Magisk"sv || tag == "SELinux"sv || tag.starts_with("zygisk"sv)))
-        [[unlikely]] {
+                     tag == "APatchD"sv || tag == "Dobby"sv || tag.starts_with("dex2oat"sv) ||
+                     tag == "KernelSU"sv || tag == "LSPlant"sv || tag == "LSPlt"sv ||
+                     tag.starts_with("LSPosed"sv) || tag == "Magisk"sv || tag == "SELinux"sv ||
+                     tag.starts_with("zygisk"sv))) [[unlikely]] {
         verbose_print_count_ += PrintLogLine(entry, verbose_file_.get());
     }
     if (entry.pid == my_pid_ && tag == "LSPosedLogcat"sv) [[unlikely]] {
@@ -340,7 +340,7 @@ void Logcat::Run() {
             }
         }
 
-        struct log_msg msg {};
+        struct log_msg msg{};
 
         while (true) {
             if (android_logger_list_read(logger_list.get(), &msg) <= 0) [[unlikely]]
