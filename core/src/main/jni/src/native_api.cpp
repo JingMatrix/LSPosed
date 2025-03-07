@@ -47,6 +47,8 @@
  *      callback will not work.
  */
 
+using lsplant::operator""_sym;
+
 namespace lspd {
 
     std::list<NativeOnModuleLoaded> moduleLoadedCallbacks;
@@ -91,10 +93,10 @@ namespace lspd {
         return false;
     }
 
-    inline static lsplant::Hooker<"__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv",
-                                  void*(const char*, int, const void*, const void*)>
-        do_dlopen = +[](const char* name, int flags, const void* extinfo, const void* caller_addr) {
-                auto *handle = do_dlopen(name, flags, extinfo, caller_addr);
+    inline static auto do_dlopen_ = "__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv"_sym.hook->*[]
+		<lsplant::Backup auto backup>
+		(const char* name, int flags, const void* extinfo, const void* caller_addr) static -> void* {
+                auto *handle = backup(name, flags, extinfo, caller_addr);
                 std::string ns;
                 if (name) {
                     ns = std::string(name);
@@ -133,6 +135,6 @@ namespace lspd {
             };
 
     bool InstallNativeAPI(const lsplant::HookHandler & handler) {
-        return handler.hook(do_dlopen);
+        return handler(do_dlopen_);
     }
 }
