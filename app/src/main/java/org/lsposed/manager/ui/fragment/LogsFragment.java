@@ -370,6 +370,9 @@ public class LogsFragment extends BaseFragment implements MenuProvider {
             horizontalScrollView.setFillViewport(true);
             horizontalScrollView.setHorizontalScrollBarEnabled(false);
             horizontalScrollView.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
+                horizontalScrollView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            }
             binding.swipeRefreshLayout.addView(horizontalScrollView);
             horizontalScrollView.addView(binding.recyclerView);
             binding.recyclerView.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
