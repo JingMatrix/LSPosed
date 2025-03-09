@@ -79,6 +79,7 @@ import org.lsposed.manager.repo.model.ReleaseAsset;
 import org.lsposed.manager.ui.dialog.BlurBehindDialogBuilder;
 import org.lsposed.manager.ui.widget.EmptyStateRecyclerView;
 import org.lsposed.manager.ui.widget.LinkifyTextView;
+import org.lsposed.manager.util.AccessibilityUtils;
 import org.lsposed.manager.util.NavUtil;
 import org.lsposed.manager.util.SimpleStatefulAdaptor;
 import org.lsposed.manager.util.chrome.CustomTabsURLSpan;
@@ -122,7 +123,17 @@ public class RepoItemFragment extends BaseFragment implements RepoLoader.RepoLis
         binding.toolbar.setSubtitle(modulePackageName);
         binding.viewPager.setAdapter(new PagerAdapter(this));
         int[] titles = new int[]{R.string.module_readme, R.string.module_releases, R.string.module_information};
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager, (tab, position) -> tab.setText(titles[position])).attach();
+
+        var isAnimationEnabled = AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver());
+        new TabLayoutMediator(
+            binding.tabLayout,
+            binding.viewPager,
+            // `autoRefresh = true` by default. Update the tabs automatically when the data set of the view pager's
+            // adapter changes.
+            true,
+            isAnimationEnabled,
+            (tab, position) -> tab.setText(titles[position])
+        ).attach();
 
         binding.tabLayout.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             ViewGroup vg = (ViewGroup) binding.tabLayout.getChildAt(0);
