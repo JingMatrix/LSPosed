@@ -56,8 +56,8 @@ public abstract class BaseFragment extends Fragment {
     public boolean safeNavigate(@IdRes int resId) {
         try {
             if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
-                var animationOptions = new NavOptions.Builder().setEnterAnim(0).setExitAnim(0).build();
-                getNavController().navigate(resId, animationOptions);
+                var clearedNavOptions = new NavOptions.Builder().build();
+                getNavController().navigate(resId, clearedNavOptions);
             } else {
                 getNavController().navigate(resId);
             }
@@ -70,8 +70,8 @@ public abstract class BaseFragment extends Fragment {
     public boolean safeNavigate(NavDirections direction) {
         try {
             if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
-                var animationOptions = new NavOptions.Builder().setEnterAnim(0).setExitAnim(0).build();
-                getNavController().navigate(direction, animationOptions);
+                var clearedNavOptions = new NavOptions.Builder().build();
+                getNavController().navigate(direction, clearedNavOptions);
             } else {
                 getNavController().navigate(direction);
             }
