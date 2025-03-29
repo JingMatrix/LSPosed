@@ -58,6 +58,8 @@
     <string name="system_prop_incorrect"><![CDATA[Деякі необхідні параметри системи видалені або змінені.<br/>Модулі можуть не працювати належним чином.]]></string>
     <string name="need_update">Потрібно оновити</string>
     <string name="please_update_summary">Будь ласка, встановіть останню версію LSPosed</string>
+    <string name="developer_warning_title">Поради розробнику модулів</string>
+    <string name="developer_warning_summary">Будь ласка, відключіть оптимізацію розгортання в Android Studio або використовуйте команду `gradlew installDebug` для встановлення. В іншому випадку apk-модуль не оновиться.</string>
     <string name="info_api_version">Версія API</string>
     <string name="info_framework_version">Версія Framework</string>
     <string name="info_manager_package_name">Ім\'я пакета менеджера</string>
@@ -143,9 +145,13 @@
     <string name="menu_show_denylist">Чорний список</string>
     <string name="failed_to_save_scope_list">Не вдалося зберегти список областей</string>
     <string name="app_version">Версія: %1$s</string>
+    <string name="menu_select">Виберіть</string>
     <string name="use_recommended">Рекомендовано</string>
     <string name="no_scope_selected_has_recommended">Ви не вибрали жодної програми. Вибрати рекомендовані програми?</string>
     <string name="use_recommended_message">Вибрати рекомендовані програми?</string>
+    <string name="menu_select_all">Усі</string>
+    <string name="menu_select_none">Немає</string>
+    <string name="menu_auto_include">Автовключення</string>
     <string name="module_is_not_activated_yet">Модуль LSPosed ще не активований</string>
     <string name="requested_by_module">Рекомендовано</string>
     <string name="update_available">Доступне оновлення: %1$s</string>
@@ -170,6 +176,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Вимкнути детальні журнали</string>
     <string name="settings_disable_verbose_log_summary">Вимоги до звітів про проблеми, що виникають, включати розгорнуті журнали</string>
+    <string name="settings_enable_log_watchdog">Увімкнути відстеження журналу</string>
+    <string name="settings_enable_log_watchdog_summary">Відстеження журналу LSPosed (log watchdog) змінює системні налаштування, якими можна виявити LSPosed</string>
     <string name="pure_black_dark_theme">Чорна тема</string>
     <string name="pure_black_dark_theme_summary">Використовувати повністю чорну тему, коли темну тему увімкнено</string>
     <string name="settings_group_theme">Тема</string>
