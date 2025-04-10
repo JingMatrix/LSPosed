@@ -1,5 +1,5 @@
 [versions]
-agp = "8.9.0"
+agp = "8.9.1"
 kotlin = "2.1.20"
 nav = "2.8.9"
 appcenter = "5.0.5"
@@ -35,7 +35,7 @@ androidx-activity = { module = "androidx.activity:activity", version = "1.10.1" 
 androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
 androidx-browser = { module = "androidx.browser:browser", version = "1.8.0" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.1" }
-androidx-core = { module = "androidx.core:core", version = "1.15.0" }
+androidx-core = { module = "androidx.core:core", version = "1.16.0" }
 androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.6" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "nav" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
@@ -56,7 +56,7 @@ material = { module = "com.google.android.material:material", version = "1.12.0"
 gson = { module = "com.google.code.gson:gson", version = "2.12.1" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "6.1" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.1" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
 
 libxposed-api = { group = "io.github.libxposed", name = "api", version.ref = "libxposed" }
 libxposed-interface = { group = "io.github.libxposed", name = "interface", version.ref = "libxposed" }
