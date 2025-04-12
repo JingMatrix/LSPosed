@@ -76,9 +76,11 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           max-size: 2G
-          key: ${{ runner.os }}
-          restore-keys: ${{ runner.os }}
-          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          key: Linux-${{ hashFiles('**/*.gradle') }}-${{ hashFiles('**/*.cpp') }}-${{ hashFiles('**/*.h') }}
+          restore-keys: |
+            Linux-${{ hashFiles('**/*.gradle') }}-${{ hashFiles('**/*.cpp') }}-${{ hashFiles('**/*.h') }}
+            Linux-
+          save: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
