@@ -73,14 +73,14 @@ jobs:
           version: latest
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: actions/cache@v3
         with:
-          max-size: 2G
-          key: Linux-${{ hashFiles('**/*.gradle') }}-${{ hashFiles('**/*.cpp') }}-${{ hashFiles('**/*.h') }}
+          path: |
+            ~/.ccache
+            ${{ github.workspace }}/.ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
-            Linux-${{ hashFiles('**/*.gradle') }}-${{ hashFiles('**/*.cpp') }}-${{ hashFiles('**/*.h') }}
-            Linux-
-          save: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+            ${{ runner.os }}-ccache-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
