@@ -73,12 +73,14 @@ jobs:
           version: latest
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: actions/cache@v3
         with:
-          max-size: 2G
-          key: ${{ runner.os }}
-          restore-keys: ${{ runner.os }}
-          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          path: |
+            ~/.ccache
+            ${{ github.workspace }}/.ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
