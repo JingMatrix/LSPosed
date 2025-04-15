@@ -142,9 +142,7 @@ public class ConfigManager {
             "module_pkg_name text NOT NULL UNIQUE," +
             "apk_path text NOT NULL, " +
             "enabled BOOLEAN DEFAULT 0 " +
-            "CHECK (enabled IN (0, 1))," +
-            "auto_include BOOLEAN DEFAULT 0 " +
-            "CHECK (auto_include IN (0, 1))" +
+            "CHECK (enabled IN (0, 1))" +
             ");");
     private final SQLiteStatement createScopeTable = db.compileStatement("CREATE TABLE IF NOT EXISTS scope (" +
             "mid integer," +
@@ -390,6 +388,7 @@ public class ConfigManager {
                         // dummy module for config
                         db.insertWithOnConflict("modules", null, values, SQLiteDatabase.CONFLICT_IGNORE);
                         db.setVersion(1);
+                        Log.d(TAG, "create new datebase");
                     });
                 case 1:
                     executeInTransaction(() -> {
@@ -430,8 +429,8 @@ public class ConfigManager {
                             db.setVersion(4);
                         });
                     } catch (SQLiteException ex) {
-                        // Fix wrong init code for new column auto_include
-                        if (ex.getMessage().startsWith("duplicate column name: auto_include")) {
+                        // SQLite cannot check existence before inserting new columns
+                        if (ex.getMessage().contains("duplicate column name: auto_include")) {
                             db.setVersion(4);
                         } else {
                             throw ex;
