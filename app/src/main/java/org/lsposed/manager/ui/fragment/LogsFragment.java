@@ -53,6 +53,7 @@ import org.lsposed.manager.databinding.ItemLogTextviewBinding;
 import org.lsposed.manager.databinding.SwiperefreshRecyclerviewBinding;
 import org.lsposed.manager.receivers.LSPManagerServiceHolder;
 import org.lsposed.manager.ui.widget.EmptyStateRecyclerView;
+import org.lsposed.manager.util.AccessibilityUtils;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -109,7 +110,17 @@ public class LogsFragment extends BaseFragment implements MenuProvider {
         binding.toolbar.setSubtitle(ConfigManager.isVerboseLogEnabled() ? R.string.enabled_verbose_log : R.string.disabled_verbose_log);
         adapter = new LogPageAdapter(this);
         binding.viewPager.setAdapter(adapter);
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager, (tab, position) -> tab.setText((int) adapter.getItemId(position))).attach();
+
+        var isAnimationEnabled = AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver());
+        new TabLayoutMediator(
+            binding.tabLayout,
+            binding.viewPager,
+            // `autoRefresh = true` by default. Update the tabs automatically when the data set of the view pager's
+            // adapter changes.
+            true,
+            isAnimationEnabled,
+            (tab, position) -> tab.setText((int) adapter.getItemId(position))
+        ).attach();
 
         binding.tabLayout.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             ViewGroup vg = (ViewGroup) binding.tabLayout.getChildAt(0);
@@ -359,6 +370,9 @@ public class LogsFragment extends BaseFragment implements MenuProvider {
             horizontalScrollView.setFillViewport(true);
             horizontalScrollView.setHorizontalScrollBarEnabled(false);
             horizontalScrollView.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
+                horizontalScrollView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            }
             binding.swipeRefreshLayout.addView(horizontalScrollView);
             horizontalScrollView.addView(binding.recyclerView);
             binding.recyclerView.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;

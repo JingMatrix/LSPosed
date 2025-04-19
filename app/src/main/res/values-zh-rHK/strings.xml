@@ -52,8 +52,11 @@
     <string name="system_prop_incorrect"><![CDATA[部分必須的系統屬性被刪除或被修改，<br/>模組可能會隨機失效。]]></string>
     <string name="need_update">需要更新</string>
     <string name="please_update_summary">請安裝最新版本的 LSPosed</string>
+    <string name="developer_warning_title">給模組開發人員的提示</string>
+    <string name="developer_warning_summary">請在 Android Studio 上停用部署最佳化，或使用 `gradlew installDebug` 指令進行安裝。否則模組apk將不會更新。</string>
     <string name="info_api_version">API版本</string>
     <string name="info_framework_version">架構版本</string>
+    <string name="info_manager_package_name">管理器包名</string>
     <string name="info_system_version">系統版本</string>
     <string name="info_device">裝置版本</string>
     <string name="info_system_abi">系統架構</string>
@@ -82,6 +85,7 @@
     <string name="menuSaveToSd">儲存</string>
     <string name="nav_item_logs_verbose">詳細記錄</string>
     <string name="nav_item_logs_module">模組記錄</string>
+    <string name="logs_saving">正在保存日誌，請稍候</string>
     <string name="logs_saved">記錄已儲存</string>
     <string name="logs_save_failed2">儲存失敗：\n%s</string>
     <string name="menuClearLog">立即清理記錄</string>
@@ -135,9 +139,13 @@
     <string name="menu_show_denylist">Magisk 排除清單</string>
     <string name="failed_to_save_scope_list">作用範圍清單儲存失敗</string>
     <string name="app_version">版本：%1$s</string>
+    <string name="menu_select">選擇</string>
     <string name="use_recommended">推薦應用程式</string>
     <string name="no_scope_selected_has_recommended">未選擇任何應用程式，選擇推薦的應用程式？</string>
     <string name="use_recommended_message">選擇推薦的應用程式?</string>
+    <string name="menu_select_all">全部</string>
+    <string name="menu_select_none">空</string>
+    <string name="menu_auto_include">自動添加</string>
     <string name="module_is_not_activated_yet">Xposed 模組尚未啟用</string>
     <string name="requested_by_module">推薦應用程式</string>
     <string name="update_available">可用更新：%1$s</string>
@@ -162,6 +170,8 @@
     <string name="settings_group_framework">框架</string>
     <string name="settings_disable_verbose_log">禁用詳細紀錄檔</string>
     <string name="settings_disable_verbose_log_summary">回報問題要求包含詳細記錄檔</string>
+    <string name="settings_enable_log_watchdog">啟用日誌監控</string>
+    <string name="settings_enable_log_watchdog_summary">LSPosed 的日誌監控會修改系統屬性，可能被利用來偵測 LSPosed</string>
     <string name="pure_black_dark_theme">使用純黑深色主題</string>
     <string name="pure_black_dark_theme_summary">使用純黑色背景當深色模式已啟用</string>
     <string name="settings_group_theme">主題</string>
@@ -210,6 +220,7 @@
     <string name="module_release_no_more">沒有更舊版本</string>
     <string name="repo_load_failed">模組存放庫載入失敗：%s</string>
     <string name="sort_upgradable_first">可更新優先</string>
+    <string name="installed">已安裝</string>
     <plurals name="module_release_assets_download_count">
         <item quantity="other">%d 次下載</item>
     </plurals>

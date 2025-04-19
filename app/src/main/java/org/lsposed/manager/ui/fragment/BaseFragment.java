@@ -29,6 +29,7 @@ import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDirections;
+import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -36,6 +37,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import org.lsposed.manager.App;
 import org.lsposed.manager.R;
+import org.lsposed.manager.util.AccessibilityUtils;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -53,7 +55,12 @@ public abstract class BaseFragment extends Fragment {
 
     public boolean safeNavigate(@IdRes int resId) {
         try {
-            getNavController().navigate(resId);
+            if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
+                var clearedNavOptions = new NavOptions.Builder().build();
+                getNavController().navigate(resId, clearedNavOptions);
+            } else {
+                getNavController().navigate(resId);
+            }
             return true;
         } catch (IllegalArgumentException ignored) {
             return false;
@@ -62,7 +69,12 @@ public abstract class BaseFragment extends Fragment {
 
     public boolean safeNavigate(NavDirections direction) {
         try {
-            getNavController().navigate(direction);
+            if (!AccessibilityUtils.isAnimationEnabled(requireContext().getContentResolver())) {
+                var clearedNavOptions = new NavOptions.Builder().build();
+                getNavController().navigate(direction, clearedNavOptions);
+            } else {
+                getNavController().navigate(direction);
+            }
             return true;
         } catch (IllegalArgumentException ignored) {
             return false;

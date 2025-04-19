@@ -145,9 +145,13 @@
     <string name="menu_show_denylist">DenyList</string>
     <string name="failed_to_save_scope_list">Ошибка сохранения списка «охвата»</string>
     <string name="app_version">Версия: %1$s</string>
+    <string name="menu_select">Выберите</string>
     <string name="use_recommended">Рекомендуемые</string>
     <string name="no_scope_selected_has_recommended">Вы не выбрали ни одного приложения. Выбрать рекомендуемые приложения?</string>
     <string name="use_recommended_message">Выбрать рекомендуемые приложения?</string>
+    <string name="menu_select_all">Все</string>
+    <string name="menu_select_none">Нет</string>
+    <string name="menu_auto_include">Автовключение</string>
     <string name="module_is_not_activated_yet">Модуль Xposed пока не активирован</string>
     <string name="requested_by_module">Рекомендуемые</string>
     <string name="update_available">Доступно обновление: %1$s</string>
@@ -216,7 +220,7 @@
     <string name="module_information_homepage">Домашняя страница</string>
     <string name="module_information_source_url">Исходный код</string>
     <string name="module_information_collaborators">Разработчики</string>
-    <string name="module_release_view_assets">Ассеты</string>
+    <string name="module_release_view_assets">Вложения</string>
     <string name="menu_open_in_browser">Открыть в браузере</string>
     <string name="module_release_load_more">Показать старые версии</string>
     <string name="module_release_no_more">Больше нет релизов</string>
