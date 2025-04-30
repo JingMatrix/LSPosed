@@ -15,10 +15,11 @@ Android 8.1 ~ 15
 ## Install
 
 1. Install Magisk v26+
-2. [Download](#download) and install LSPosed in Magisk app
-3. Reboot
-4. Open LSPosed manager from notification
-5. Have fun :)
+2. Open magisk settings and enable zygisk
+3. [Download](#download) and install LSPosed in Magisk app
+4. Reboot
+5. Open LSPosed manager from notification
+6. Have fun :)
 
 ## Download
 
