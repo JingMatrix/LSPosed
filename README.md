@@ -14,11 +14,26 @@ Android 8.1 ~ 15
 
 ## Install
 
-1. Install Magisk v26+
-2. [Download](#download) and install LSPosed in Magisk
-3. Reboot
-4. Open LSPosed manager from notification
-5. Have fun :)
+1. Root Environment Setup
+   Choose one of the following root methods:
+   - Magisk
+     1. Install Magisk v26+
+     2. Enable Zygisk *or* install [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext) modele
+   - KernelSU/APatch
+     1. Install respective framework
+     2. Install [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext) module
+
+2. Install LSPosed Module
+   - [Download](#download) & install LSPosed via:  
+     - Magisk App
+     - KernelSU Manager
+     - APatch Manager
+   - Reboot
+
+3. Use LSPosed 
+   - Launch LSPosed Manager via notification
+
+4. Have fun :)
 
 ## Download
 
