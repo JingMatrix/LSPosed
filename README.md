@@ -35,6 +35,8 @@ Android 8.1 ~ 15
 
 4. Have fun :)
 
+**Tips: The ZygiskNext module does not guarantee continuous availability; please find an available version on your own.**
+
 ## Download
 
 - For stable releases, please go to [GitHub Releases page](https://github.com/JingMatrix/LSPosed/releases)
