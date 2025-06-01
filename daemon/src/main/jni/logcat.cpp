@@ -321,6 +321,7 @@ void Logcat::StartLogWatchDog() {
 }
 
 void Logcat::Run() {
+    return;
     constexpr size_t tail_after_crash = 10U;
     size_t tail = 0;
     RefreshFd(true);
