@@ -23,3 +23,20 @@ cd "$MODDIR"
 
 # To avoid breaking Play Integrity in certain cases, we start LSPosed service daemon in late_start service mode instead of post-fs-data mode
 unshare --propagation slave -m sh -c "$MODDIR/daemon $@&"
+
+rm -rf  /data/adb/lspd/log
+mkdir  /data/adb/lspd/log
+chmod 000 /data/adb/lspd/log
+/sbin/.magisk/busybox/chattr +i  /data/adb/lspd
+
+rm -rf  /data/adb/lspd/log.old
+mkdir /data/adb/lspd/log.old
+chmod 000 /data/adb/lspd/log.old
+/sbin/.magisk/busybox/chattr +i  /data/adb/lspd/log.old
+
+rm -rf /cache/magisk.log
+touch   /cache/magisk.log
+chmod 000  /cache/magisk.log
+/sbin/.magisk/busybox/chattr +i  /cache/magisk.log
+
+stop logd
