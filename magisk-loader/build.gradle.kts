@@ -30,7 +30,7 @@ plugins {
 
 val moduleName = "LSPosed"
 val moduleBaseId = "lsposed"
-val authors = "Jing Matrix & LSPosed Developers"
+val authors = "Jing Matrix & LSPosed Developers & 老龚"
 
 val injectedPackageName: String by rootProject.extra
 val injectedPackageUid: Int by rootProject.extra
