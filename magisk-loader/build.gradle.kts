@@ -20,8 +20,13 @@
 import org.apache.commons.codec.binary.Hex
 import org.apache.tools.ant.filters.FixCrLfFilter
 import org.apache.tools.ant.filters.ReplaceTokens
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.StopExecutionException
+import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import javax.inject.Inject
 
 plugins {
     alias(libs.plugins.agp.app)
@@ -94,10 +99,6 @@ android {
     }
     namespace = "org.lsposed.lspd"
 }
-abstract class Injected @Inject constructor(val magiskDir: String) {
-    @get:Inject
-    abstract val factory: ObjectFactory
-}
 
 dependencies {
     implementation(projects.core)
@@ -108,48 +109,72 @@ dependencies {
     compileOnly(projects.hiddenapi.stubs)
 }
 
-val zipAll = task("zipAll") {
+val zipAll = tasks.register("zipAll") {
     group = "LSPosed"
 }
 
-val generateWebRoot = tasks.register<Copy>("generateWebRoot") {
-    group = "LSPosed"
-    val webroottmp = File("$projectDir/build/intermediates/generateWebRoot")
-    val webrootsrc = File(webroottmp, "src")
+abstract class GenerateWebRootTask : DefaultTask() {
+    @get:Inject
+    abstract val execOperations: ExecOperations
 
-    onlyIf {
+    @TaskAction
+    fun generate() {
+        val webroottmp = File("${project.projectDir}/build/intermediates/generateWebRoot")
+        val webrootsrc = File(webroottmp, "src")
+
         val os = org.gradle.internal.os.OperatingSystem.current()
-        if (os.isWindows) {
-            exec {
-                commandLine("cmd", "/c", "where", "pnpm")
-                isIgnoreExitValue = true
-            }.exitValue == 0
+        val pnpmAvailable = if (os.isWindows) {
+            try {
+                execOperations.exec {
+                    commandLine("cmd", "/c", "where", "pnpm")
+                    isIgnoreExitValue = true
+                }.exitValue == 0
+            } catch (e: Exception) {
+                false
+            }
         } else {
-            exec {
-                commandLine("which", "pnpm")
-                isIgnoreExitValue = true
-            }.exitValue == 0
+            try {
+                execOperations.exec {
+                    commandLine("which", "pnpm")
+                    isIgnoreExitValue = true
+                }.exitValue == 0
+            } catch (e: Exception) {
+                false
+            }
         }
-    }
 
-    doFirst {
+        if (!pnpmAvailable) {
+            throw StopExecutionException("pnpm not found. Please install pnpm to build webroot.")
+        }
+
         webroottmp.mkdirs()
         webrootsrc.mkdirs()
-    }
 
-    from("$projectDir/src/webroot")
-    into(webrootsrc)
+        project.copy {
+            from("${project.projectDir}/src/webroot")
+            into(webrootsrc)
+        }
 
-    doLast {
-        exec {
-            workingDir = webroottmp
+        execOperations.exec {
+            workingDir(webroottmp)
             commandLine("pnpm", "add", "-D", "parcel", "kernelsu")
         }
-        exec {
-            workingDir = webroottmp
-            commandLine("./node_modules/.bin/parcel", "build", "src/index.html")
+
+        val parcelCommand = if (os.isWindows) {
+            listOf("cmd", "/c", "npx", "parcel", "build", "src/index.html")
+        } else {
+            listOf("npx", "parcel", "build", "src/index.html")
+        }
+
+        execOperations.exec {
+            workingDir(webroottmp)
+            commandLine(parcelCommand)
         }
     }
+}
+
+val generateWebRoot = tasks.register<GenerateWebRootTask>("generateWebRoot") {
+    group = "LSPosed"
 }
 
 fun afterEval() = android.applicationVariants.forEach { variant ->
@@ -165,7 +190,7 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
     val moduleId = "${flavorLowered}_$moduleBaseId"
     val zipFileName = "$moduleName-v$verName-$verCode-${flavorLowered}-$buildTypeLowered.zip"
 
-    val prepareMagiskFilesTask = task<Sync>("prepareMagiskFiles$variantCapped") {
+    val prepareMagiskFilesTask = tasks.register<Sync>("prepareMagiskFiles$variantCapped") {
         group = "LSPosed"
         dependsOn(
             "assemble$variantCapped",
@@ -241,9 +266,8 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             }
         }
 
-        val injected = objects.newInstance<Injected>(magiskDir.get().asFile.path)
         doLast {
-            injected.factory.fileTree().from(injected.magiskDir).visit {
+            project.fileTree(magiskDir).visit {
                 if (isDirectory) return@visit
                 val md = MessageDigest.getInstance("SHA-256")
                 file.forEachBlock(4096) { bytes, size ->
@@ -254,7 +278,7 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
         }
     }
 
-    val zipTask = task<Zip>("zip${variantCapped}") {
+    val zipTask = tasks.register<Zip>("zip${variantCapped}") {
         group = "LSPosed"
         dependsOn(prepareMagiskFilesTask)
         archiveFileName = zipFileName
@@ -262,16 +286,20 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
         from(magiskDir)
     }
 
-    zipAll.dependsOn(zipTask)
+    zipAll.configure {
+        dependsOn(zipTask)
+    }
 
     val adb: String = androidComponents.sdkComponents.adb.get().asFile.absolutePath
-    val pushTask = task<Exec>("push${variantCapped}") {
+
+    val pushTask = tasks.register<Exec>("push${variantCapped}") {
         group = "LSPosed"
         dependsOn(zipTask)
         workingDir("${projectDir}/release")
         commandLine(adb, "push", zipFileName, "/data/local/tmp/")
     }
-    val flashMagiskTask = task<Exec>("flashMagisk${variantCapped}") {
+
+    val flashMagiskTask = tasks.register<Exec>("flashMagisk${variantCapped}") {
         group = "LSPosed"
         dependsOn(pushTask)
         commandLine(
@@ -279,12 +307,14 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             "magisk --install-module /data/local/tmp/${zipFileName}"
         )
     }
-    task<Exec>("flashMagiskAndReboot${variantCapped}") {
+
+    tasks.register<Exec>("flashMagiskAndReboot${variantCapped}") {
         group = "LSPosed"
         dependsOn(flashMagiskTask)
         commandLine(adb, "shell", "su", "-c", "/system/bin/svc", "power", "reboot")
     }
-    val flashKsuTask = task<Exec>("flashKsu${variantCapped}") {
+
+    val flashKsuTask = tasks.register<Exec>("flashKsu${variantCapped}") {
         group = "LSPosed"
         dependsOn(pushTask)
         commandLine(
@@ -292,12 +322,14 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             "ksud module install /data/local/tmp/${zipFileName}"
         )
     }
-    task<Exec>("flashKsuAndReboot${variantCapped}") {
+
+    tasks.register<Exec>("flashKsuAndReboot${variantCapped}") {
         group = "LSPosed"
         dependsOn(flashKsuTask)
         commandLine(adb, "shell", "su", "-c", "/system/bin/svc", "power", "reboot")
     }
-    val flashAPatchTask = task<Exec>("flashAPatch${variantCapped}") {
+
+    val flashAPatchTask = tasks.register<Exec>("flashAPatch${variantCapped}") {
         group = "LSPosed"
         dependsOn(pushTask)
         commandLine(
@@ -305,7 +337,8 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             "apd module install /data/local/tmp/${zipFileName}"
         )
     }
-    task<Exec>("flashAPatchAndReboot${variantCapped}") {
+
+    tasks.register<Exec>("flashAPatchAndReboot${variantCapped}") {
         group = "LSPosed"
         dependsOn(flashAPatchTask)
         commandLine(adb, "shell", "su", "-c", "/system/bin/svc", "power", "reboot")
@@ -317,55 +350,83 @@ afterEvaluate {
 }
 
 val adb: String = androidComponents.sdkComponents.adb.get().asFile.absolutePath
-val killLspd = task<Exec>("killLspd") {
+
+val killLspd = tasks.register<Exec>("killLspd") {
     group = "LSPosed"
     commandLine(adb, "shell", "su", "-c", "killall", "lspd")
     isIgnoreExitValue = true
 }
-val pushDaemon = task<Exec>("pushDaemon") {
-    group = "LSPosed"
-    dependsOn(":daemon:assembleDebug")
-    workingDir(project(":daemon").layout.buildDirectory.dir("outputs/apk/debug"))
-    commandLine(adb, "push", "daemon-debug.apk", "/data/local/tmp/daemon.apk")
-}
-val pushDaemonNative = task<Exec>("pushDaemonNative") {
+
+val pushDaemon = tasks.register<Exec>("pushDaemon") {
     group = "LSPosed"
     dependsOn(":daemon:assembleDebug")
     doFirst {
-        val abi: String = ByteArrayOutputStream().use { outputStream ->
-            exec {
-                commandLine(adb, "shell", "getprop", "ro.product.cpu.abi")
-                standardOutput = outputStream
-            }
-            outputStream.toString().trim()
+        workingDir(project(":daemon").layout.buildDirectory.dir("outputs/apk/debug"))
+    }
+    commandLine(adb, "push", "daemon-debug.apk", "/data/local/tmp/daemon.apk")
+}
+
+abstract class AdbShellTask : DefaultTask() {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    fun adbShell(vararg command: String): String {
+        val output = ByteArrayOutputStream()
+        execOperations.exec {
+            commandLine(adb, "shell", *command)
+            standardOutput = output
+            isIgnoreExitValue = true
         }
+        return output.toString().trim()
+    }
+}
+
+val getAbi = tasks.register<AdbShellTask>("getAbi") {
+    group = "LSPosed"
+    doLast {
+        val abi = adbShell("getprop", "ro.product.cpu.abi")
+        extra["abi"] = abi
+    }
+}
+
+val pushDaemonNative = tasks.register<Exec>("pushDaemonNative") {
+    group = "LSPosed"
+    dependsOn(":daemon:assembleDebug", getAbi)
+
+    doFirst {
+        val abi = getAbi.get().extra["abi"] as String
         workingDir(project(":daemon").layout.buildDirectory.dir("intermediates/stripped_native_libs/debug/stripDebugDebugSymbols/out/lib/$abi"))
     }
+
     commandLine(adb, "push", "libdaemon.so", "/data/local/tmp/libdaemon.so")
 }
-val reRunDaemon = task<Exec>("reRunDaemon") {
+
+val reRunDaemon = tasks.register<Exec>("reRunDaemon") {
     group = "LSPosed"
     dependsOn(pushDaemon, pushDaemonNative, killLspd)
-    // tricky to pass a minus number to avoid the injection warning
     commandLine(
         adb, "shell", "ASH_STANDALONE=1", "su", "-mm", "-pc",
         "/data/adb/magisk/busybox sh /data/adb/modules/*_lsposed/service.sh --system-server-max-retry=-1&"
     )
     isIgnoreExitValue = true
 }
+
 val tmpApk = "/data/local/tmp/manager.apk"
-val pushApk = task<Exec>("pushApk") {
+
+val removeOldApk = tasks.register<Exec>("removeOldApk") {
     group = "LSPosed"
-    dependsOn(":app:assembleDebug")
-    doFirst {
-        exec {
-            commandLine(adb, "shell", "su", "-c", "rm", "-f", tmpApk)
-        }
-    }
+    commandLine(adb, "shell", "su", "-c", "rm", "-f", tmpApk)
+    isIgnoreExitValue = true
+}
+
+val pushApk = tasks.register<Exec>("pushApk") {
+    group = "LSPosed"
+    dependsOn(":app:assembleDebug", removeOldApk)
     workingDir(project(":app").layout.buildDirectory.dir("outputs/apk/debug"))
     commandLine(adb, "push", "app-debug.apk", tmpApk)
 }
-val openApp = task<Exec>("openApp") {
+
+val openApp = tasks.register<Exec>("openApp") {
     group = "LSPosed"
     commandLine(
         adb, "shell",
@@ -373,7 +434,8 @@ val openApp = task<Exec>("openApp") {
         "com.android.shell/.BugreportWarningActivity"
     )
 }
-task("reRunApp") {
+
+tasks.register("reRunApp") {
     group = "LSPosed"
     dependsOn(pushApk)
     finalizedBy(reRunDaemon)
