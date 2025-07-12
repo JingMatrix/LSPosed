@@ -71,14 +71,10 @@ public class UserService {
         IUserManager um = getUserManager();
         List<UserInfo> users = new LinkedList<>();
         if (um == null) return users;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        try {
+            users = um.getUsers(true);
+        } catch (NoSuchMethodError e) {
             users = um.getUsers(true, true, true);
-        } else {
-            try {
-                users = um.getUsers(true);
-            } catch (NoSuchMethodError e) {
-                users = um.getUsers(true, true, true);
-            }
         }
         if (Utils.isLENOVO) { // lenovo hides user [900, 910) for app cloning
             var gotUsers = new boolean[10];
