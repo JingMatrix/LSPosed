@@ -15,42 +15,26 @@ Android 8.1 ~ 15
 ## Install
 
 1. Install Magisk v26+
-2. [Download](#download) and install LSPosed in Magisk app
+2. [Download](#download) and install LSPosed in Magisk
 3. Reboot
 4. Open LSPosed manager from notification
 5. Have fun :)
 
 ## Download
 
-- For stable releases, please go to [Github Releases page](https://github.com/JingMatrix/LSPosed/releases)
-- For canary build, please check [Github Actions](https://github.com/JingMatrix/LSPosed/actions/workflows/core.yml?query=branch%3Amaster)
+- For stable releases, please go to [GitHub Releases page](https://github.com/JingMatrix/LSPosed/releases)
+- For canary build, please check [GitHub Actions](https://github.com/JingMatrix/LSPosed/actions/workflows/core.yml?query=branch%3Amaster)
 
-Note: debug builds are only available in Github Actions.
 
-## Get Help
-**Only bug reports from **THE LATEST DEBUG BUILD** will be accepted.**
-- GitHub issues: [Issues](https://github.com/JingMatrix/LSPosed/issues/)
-- (For Chinese speakers) 本项目只接受英语**标题**的issue。如果您不懂英语，请使用[翻译工具](https://www.deepl.com/zh/translator)
+Note: debug builds are only available in GitHub Actions.
 
-## For Developers
+## Documentations
 
-Developers are welcome to write Xposed modules with hooks based on LSPosed Framework. A module based on LSPosed framework is fully compatible with the original Xposed Framework, and vice versa, a Xposed Framework-based module will work well with LSPosed framework too.
+- If you encounter problems while using LSPosed, please follow the [TROUBLESHOOT guide](TROUBLESHOOT.md).
+- To understand the mechanism of LSPosed, please read the [DEVELOPMENT introduction](DEVELOPMENT.md).
+- Xposed modules submit to [LSPosed Module Repository](https://github.com/Xposed-Modules-Repo) will be shown in the LSPosed manager.
+- UI translations are managed in [the Crowdin project](https://crowdin.com/project/lsposed_jingmatrix).
 
-- [Xposed Framework API](https://api.xposed.info/)
-
-We use our own module repository. We welcome developers to submit modules to our repository, and then modules can be downloaded in LSPosed.
-
-- [LSPosed Module Repository](https://github.com/Xposed-Modules-Repo)
-
-## Community Discussion
-
-- Telegram: [@LSPosed](https://t.me/s/LSPosed)
-
-Notice: These community groups don't accept any bug report, please use [Get help](#get-help) to report.
-
-## Translation Contributing
-
-You can contribute translation [here](https://crowdin.com/project/lsposed_jingmatrix).
 
 ## Credits 
 
@@ -64,7 +48,6 @@ You can contribute translation [here](https://crowdin.com/project/lsposed_jingma
 - ~[SandHook](https://github.com/ganyao114/SandHook/): ART hooking framework for SandHook variant~
 - ~[YAHFA](https://github.com/rk700/YAHFA): previous ART hooking framework~
 - ~[dexmaker](https://github.com/linkedin/dexmaker) and [dalvikdx](https://github.com/JakeWharton/dalvik-dx): to dynamically generate YAHFA hooker classes~
-- ~[DexBuilder](https://github.com/LSPosed/DexBuilder): to dynamically generate YAHFA hooker classes~
 
 ## License
 
