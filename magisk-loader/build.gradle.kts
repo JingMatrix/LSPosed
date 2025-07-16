@@ -131,8 +131,7 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             "assemble$variantCapped",
             ":app:package$buildTypeCapped",
             ":daemon:package$buildTypeCapped",
-            ":dex2oat:externalNativeBuild${buildTypeCapped}",
-            generateWebRoot
+            ":dex2oat:externalNativeBuild${buildTypeCapped}"
         )
         into(magiskDir)
         from("${rootProject.projectDir}/README.md")
@@ -192,15 +191,6 @@ fun afterEval() = android.applicationVariants.forEach { variant ->
             from(dexOutPath)
             rename("classes.dex", "lspd.dex")
         }
-        into("webroot") {
-            if (flavorLowered.startsWith("zygisk")) {
-                from("$projectDir/build/intermediates/generateWebRoot/dist") {
-                    include("**/*.js")
-                    include("**/*.html")
-                }
-            }
-        }
-
         val injected = objects.newInstance<Injected>(magiskDir.get().asFile.path)
         doLast {
             injected.factory.fileTree().from(injected.magiskDir).visit {
