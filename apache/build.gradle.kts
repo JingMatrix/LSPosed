@@ -18,14 +18,14 @@ java {
 val lang3Src = "commons-lang/src/main/java/org/apache/commons/lang3"
 val localDir = "local/generated"
 
-task<Copy>("ClassUtilsX") {
+tasks.register<Copy>("ClassUtilsX") {
     from("$lang3Src/ClassUtils.java")
     into(localDir)
     filter { line: String -> line.replace("ClassUtils", "ClassUtilsX") }
     rename("(.+).java", "$1X.java")
 }
 
-task<Copy>("SerializationUtilsX") {
+tasks.register<Copy>("SerializationUtilsX") {
     from("$lang3Src/SerializationUtils.java")
     into(localDir)
     filter { line: String -> line.replace("SerializationUtils", "SerializationUtilsX") }
