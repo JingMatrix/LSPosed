@@ -36,6 +36,34 @@ namespace lspd {
     std::unique_ptr<Context> Context::instance_;
     std::unique_ptr<ConfigBridge> ConfigBridge::instance_;
 
+    bool IsHiddenApiPolicyEnforced(JNIEnv *env) {
+        ScopedLocalRef<jclass> class_ActivityThread(env, env->FindClass("android/app/ActivityThread"));
+        if (class_ActivityThread.get() == nullptr) {
+            LOGW("Could not find android.app.ActivityThread to check hidden API policy.");
+            // If the class is missing, we can't perform the check.
+            // Clear a potential exception and assume the policy is active for safety.
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+            }
+            return true;
+        }
+
+        // Attempt to get the ID of a known hidden field. If the hidden API policy is
+        // enforced, this call will fail by returning null and throwing an exception.
+        env->GetFieldID(class_ActivityThread.get(), "mInitialApplication", "Landroid/app/Application;");
+
+        const bool enforced = env->ExceptionCheck();
+        if (enforced) {
+            // It's critical to clear the exception so the app can continue running normally.
+            env->ExceptionClear();
+            LOGD("Hidden API policy is enforced.");
+        } else {
+            LOGD("Hidden API policy is not enforced, skipping workaround.");
+        }
+
+        return enforced;
+    }
+
     Context::PreloadedDex::PreloadedDex(int fd, std::size_t size) {
         LOGD("Context::PreloadedDex::PreloadedDex: fd={}, size={}", fd, size);
         auto *addr = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
@@ -60,34 +88,36 @@ namespace lspd {
     }
 
     void Context::InitHooks(JNIEnv *env) {
-        auto path_list = JNI_GetObjectFieldOf(env, inject_class_loader_, "pathList",
-                                              "Ldalvik/system/DexPathList;");
-        if (!path_list) {
-            LOGE("Failed to get path list");
-            return;
-        }
-        const auto elements = JNI_Cast<jobjectArray>(
-                JNI_GetObjectFieldOf(env, path_list, "dexElements",
-                                     "[Ldalvik/system/DexPathList$Element;"));
-        if (!elements) {
-            LOGE("Failed to get elements");
-            return;
-        }
-        for (const auto &element: elements) {
-            if (!element)
-                continue;
-            auto java_dex_file = JNI_GetObjectFieldOf(env, element, "dexFile",
-                                                      "Ldalvik/system/DexFile;");
-            if (!java_dex_file) {
-                LOGE("Failed to get java dex file");
+        if (IsHiddenApiPolicyEnforced(env)) {
+            auto path_list = JNI_GetObjectFieldOf(env, inject_class_loader_, "pathList",
+                                                  "Ldalvik/system/DexPathList;");
+            if (!path_list) {
+                LOGE("Failed to get path list");
                 return;
             }
-            auto cookie = JNI_GetObjectFieldOf(env, java_dex_file, "mCookie", "Ljava/lang/Object;");
-            if (!cookie) {
-                LOGE("Failed to get cookie");
+            const auto elements = JNI_Cast<jobjectArray>(
+                    JNI_GetObjectFieldOf(env, path_list, "dexElements",
+                                         "[Ldalvik/system/DexPathList$Element;"));
+            if (!elements) {
+                LOGE("Failed to get elements");
                 return;
             }
-            lsplant::MakeDexFileTrusted(env, cookie.get());
+            for (const auto &element: elements) {
+                if (!element)
+                    continue;
+                auto java_dex_file = JNI_GetObjectFieldOf(env, element, "dexFile",
+                                                          "Ldalvik/system/DexFile;");
+                if (!java_dex_file) {
+                    LOGE("Failed to get java dex file");
+                    return;
+                }
+                auto cookie = JNI_GetObjectFieldOf(env, java_dex_file, "mCookie", "Ljava/lang/Object;");
+                if (!cookie) {
+                    LOGE("Failed to get cookie");
+                    return;
+                }
+                lsplant::MakeDexFileTrusted(env, cookie.get());
+            }
         }
         RegisterResourcesHook(env);
         RegisterHookBridge(env);
