@@ -1,7 +1,7 @@
 [versions]
 agp = "8.11.1"
 kotlin = "2.2.0"
-nav = "2.9.1"
+nav = "2.9.3"
 appcenter = "5.0.5"
 libxposed = "100"
 glide = "4.16.0"
@@ -33,7 +33,7 @@ rikkax-widget-mainswitchbar = { module = "dev.rikka.rikkax.widget:mainswitchbar"
 
 androidx-activity = { module = "androidx.activity:activity", version = "1.10.1" }
 androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
-androidx-browser = { module = "androidx.browser:browser", version = "1.8.0" }
+androidx-browser = { module = "androidx.browser:browser", version = "1.9.0" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.1" }
 androidx-core = { module = "androidx.core:core", version = "1.16.0" }
 androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.8" }
