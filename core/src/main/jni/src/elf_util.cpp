@@ -27,6 +27,9 @@
 
 #include <cassert>
 #include <cstring>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "linux/xz.h"
 #include "logging.h"
@@ -373,47 +376,95 @@ constexpr inline bool contains(std::string_view a, std::string_view b) {
     return a.find(b) != std::string_view::npos;
 }
 
+// A clean and simple struct to hold parsed map entry data.
+struct MapEntry {
+    uintptr_t start_addr;
+    char perms[5] = {0};  // Assured null-termination
+    std::string pathname;
+};
+
 bool ElfImg::findModuleBase() {
-    off_t load_addr;
-    bool found = false;
+    // Open the maps file using standard C file I/O.
     FILE *maps = fopen("/proc/self/maps", "r");
-
-    char *buff = nullptr;
-    size_t len = 0;
-    ssize_t nread;
-
-    while ((nread = getline(&buff, &len, maps)) != -1) {
-        std::string_view line{buff, static_cast<size_t>(nread)};
-
-        if ((contains(line, "r-xp") || contains(line, "r--p")) && contains(line, elf)) {
-            LOGD("found: {}", line);
-            if (auto begin = line.find_last_of(' ');
-                begin != std::string_view::npos && line[++begin] == '/') {
-                found = true;
-                elf = line.substr(begin);
-                if (elf.back() == '\n') elf.pop_back();
-                LOGD("update path: {}", elf);
-                break;
-            }
-        }
-    }
-    if (!found) {
-        if (buff) free(buff);
-        LOGE("failed to read load address for {}", elf);
-        fclose(maps);
+    if (!maps) {
+        LOGE("failed to open /proc/self/maps");
         return false;
     }
 
-    if (char *next = buff; load_addr = strtoul(buff, &next, 16), next == buff) {
-        LOGE("failed to read load address for {}", elf);
+    char line_buffer[512];  // A reasonable fixed-size buffer for map lines.
+    std::vector<MapEntry> filtered_list;
+
+    // Step 1: Filter all entries containing `elf` in its path.
+    while (fgets(line_buffer, sizeof(line_buffer), maps)) {
+        // Use an intermediate variable of a known, large type to avoid format warnings.
+        // `unsigned long long` and `%llx` are standard and portable.
+        unsigned long long temp_start;
+        char path_buffer[256] = {0};
+        char p[5] = {0};
+
+        // Use the portable `%llx` specifier.
+        int items_parsed =
+            sscanf(line_buffer, "%llx-%*x %4s %*x %*s %*d %255s", &temp_start, p, path_buffer);
+
+        // The filter condition: must parse the path, and it must contain the elf name.
+        if (items_parsed == 3 && strstr(path_buffer, elf.c_str()) != nullptr) {
+            MapEntry entry;
+            // Safely assign the parsed value to the uintptr_t.
+            entry.start_addr = static_cast<uintptr_t>(temp_start);
+            strncpy(entry.perms, p, 4);
+            entry.pathname = path_buffer;
+            filtered_list.push_back(std::move(entry));
+        }
     }
-
-    if (buff) free(buff);
-
     fclose(maps);
 
-    LOGD("get module base {}: {:#x}", elf, load_addr);
+    if (filtered_list.empty()) {
+        LOGE("Could not find any mappings for {}", elf.data());
+        return false;
+    }
 
-    base = reinterpret_cast<void *>(load_addr);
+    // Also part of Step 1: Print the filtered list for debugging.
+    LOGD("Found {} filtered map entries for {}:", filtered_list.size(), elf.data());
+    for (const auto &entry : filtered_list) {
+        LOGD("  {:#x} {} {}", entry.start_addr, entry.perms, entry.pathname);
+    }
+
+    const MapEntry *found_block = nullptr;
+
+    // Step 2: In the filtered list, search for the first `r--p` whose next entry is `r-xp`.
+    for (size_t i = 0; i < filtered_list.size() - 1; ++i) {
+        if (strcmp(filtered_list[i].perms, "r--p") == 0 &&
+            strcmp(filtered_list[i + 1].perms, "r-xp") == 0) {
+            found_block = &filtered_list[i];
+            LOGD("Found `r--p` -> `r-xp` pattern. Choosing base from `r--p` block at {:#x}",
+                 found_block->start_addr);
+            break;  // Pattern found, exit loop.
+        }
+    }
+
+    // Step 2 (Fallback): If the pattern was not found, find the first `r-xp` entry.
+    if (!found_block) {
+        LOGD("`r--p` -> `r-xp` pattern not found. Falling back to first `r-xp` entry.");
+        for (const auto &entry : filtered_list) {
+            if (strcmp(entry.perms, "r-xp") == 0) {
+                found_block = &entry;
+                LOGD("Found first `r-xp` block at {:#x}", found_block->start_addr);
+                break;  // Fallback found, exit loop.
+            }
+        }
+    }
+
+    if (!found_block) {
+        LOGE("Fatal: Could not determine a base address for {}", elf.data());
+        return false;
+    }
+
+    // Step 3: Use the starting address of the found block as the base address.
+    base = reinterpret_cast<void *>(found_block->start_addr);
+    elf = found_block->pathname;  // Update elf path to the canonical one.
+
+    LOGD("get module base {}: {:#x}", elf, found_block->start_addr);
+    LOGD("update path: {}", elf);
+
     return true;
 }
