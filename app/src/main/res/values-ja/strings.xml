@@ -22,7 +22,7 @@
     <string name="overview">概要</string>
     <string name="Modules">モジュール</string>
     <plurals name="modules_enabled_count">
-        <item quantity="other">%d個のモジュールが有効</item>
+        <item quantity="other">%d個のモジュールが有効です</item>
     </plurals>
     <string name="Logs">ログ</string>
     <string name="Settings">設定</string>
@@ -34,9 +34,9 @@
     <string name="module_repo_published_time">公開日時: %s</string>
     <string name="module_repo_updated_time">更新日時: %s</string>
     <plurals name="module_repo_upgradable">
-        <item quantity="other">%d 個のモジュールが更新可能</item>
+        <item quantity="other">%d個のモジュールが更新可能です</item>
     </plurals>
-    <string name="about_view_source_code"><![CDATA[%1$s でソースコードを閲覧<br/>%2$s チャンネルに参加]]></string>
+    <string name="about_view_source_code"><![CDATA[ソースコードを閲覧するにはこちら: %1$s<br/>チャンネルに参加するにはこちら: %2$s]]></string>
     <string name="translators" comment="Dear translators, please add your home page here following the format. There can be more than one translator. So feel free to append yourself.">yoshi818, a1678991, りお(koko0628)</string>
     <string name="install">インストール</string>
     <string name="install_summary">タップしてLSPosedをインストールします</string>
@@ -80,7 +80,7 @@
     <string name="create_shortcut">ショートカットを作成</string>
     <string name="never_show">再度表示しない</string>
     <string name="app_welcome">パラサイトマネージャーを使用することを推奨します</string>
-    <string name="app_welcome_summary">LSPosedは検出を回避するためのシステムパラサイトに対応し、通知からパラサイトマネージャーを開くことができるようになりました。現在のアプリケーションをアンインストールすることをお勧めします。</string>
+    <string name="app_welcome_summary">LSPosedは検出を回避するためのシステムパラサイトに対応し、通知からパラサイトマネージャーを開くことができるようになりました。現在のアプリケーションをアンインストールすることをおすすめします。</string>
     <!-- LogsActivity -->
     <string name="menuSaveToSd">保存</string>
     <string name="nav_item_logs_verbose">詳細ログ</string>
@@ -123,8 +123,8 @@
     <string name="compile_speed_msg">最適化中…</string>
     <string name="compile_done">最適化が完了しました</string>
     <string name="app_launch">起動</string>
-    <string name="compile_failed">最適化に失敗: return value is empty</string>
-    <string name="compile_failed_with_info">最適化に失敗: </string>
+    <string name="compile_failed">最適化に失敗しました: 戻り値が空です</string>
+    <string name="compile_failed_with_info">最適化に失敗しました: </string>
     <string name="sort_by_name">アプリ名</string>
     <string name="sort_by_package_name">パッケージ名</string>
     <string name="sort_by_install_time">インストール日時</string>
@@ -140,14 +140,14 @@
     <string name="failed_to_save_scope_list">スコープリストの保存に失敗しました</string>
     <string name="app_version">バージョン: %1$s</string>
     <string name="menu_select">選択</string>
-    <string name="use_recommended">おすすめ</string>
+    <string name="use_recommended">推奨</string>
     <string name="no_scope_selected_has_recommended">アプリが選択されていません。おすすめのアプリを選択しますか？</string>
     <string name="use_recommended_message">おすすめのアプリを選択しますか？</string>
     <string name="menu_select_all">すべて</string>
     <string name="menu_select_none">なし</string>
     <string name="menu_auto_include">自動的に含む</string>
     <string name="module_is_not_activated_yet">Xposedモジュールが有効化されていません</string>
-    <string name="requested_by_module">おすすめ</string>
+    <string name="requested_by_module">推奨</string>
     <string name="update_available">アップデートが利用可能です: %1$s</string>
     <string name="module_disabled_no_selection">アプリが選択されていないため、モジュール「%s」は無効になっています。</string>
     <string name="android_framework">システムフレームワーク</string>
@@ -165,11 +165,11 @@
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">他のアプリで表示</string>
     <string name="module_app_info">アプリの情報</string>
-    <string name="list_empty">¯\\\\_(ツ)_\/¯\nリストは空です</string>
+    <string name="list_empty">¯\\_(ツ)_\/¯\リストは空です</string>
     <!-- SettingsActivity -->
     <string name="settings_group_framework">フレームワーク</string>
     <string name="settings_disable_verbose_log">詳細ログの無効化</string>
-    <string name="settings_disable_verbose_log_summary">問題を報告する際は、詳細なログを含めるようリクエストしてください</string>
+    <string name="settings_disable_verbose_log_summary">問題を報告する際は、詳細なログを含めるようにしてください</string>
     <string name="settings_enable_log_watchdog">ログウォッチドッグを有効化</string>
     <string name="settings_enable_log_watchdog_summary">LSPosedのログウォッチドッグはシステムプロパティを変更し、LSPosedを検出するために悪用される可能性があります。</string>
     <string name="pure_black_dark_theme">黒のダークテーマ</string>
@@ -180,7 +180,7 @@
     <string name="settings_restore_summery">モジュールリストとスコープリストを復元します</string>
     <string name="settings_backup">バックアップ</string>
     <string name="settings_backup_failed2">バックアップに失敗しました:\n%s</string>
-    <string name="enable_documentui">DocumentUIを有効にしてください。</string>
+    <string name="enable_documentui">DocumentUIを有効にしてください</string>
     <string name="settings_restore">復元</string>
     <string name="settings_restore_failed2">復元に失敗しました:\n%s</string>
     <string name="group_network">ネットワーク</string>
@@ -218,7 +218,7 @@
     <string name="menu_open_in_browser">ブラウザで表示</string>
     <string name="module_release_load_more">以前のバージョンを表示</string>
     <string name="module_release_no_more">これ以上のリリースはありません</string>
-    <string name="repo_load_failed">モジュールリポジトリの読み込みに失敗: %s</string>
+    <string name="repo_load_failed">モジュールリポジトリの読み込みに失敗しました: %s</string>
     <string name="sort_upgradable_first">更新があるモジュールを先頭に表示</string>
     <string name="installed">インストール済み</string>
     <plurals name="module_release_assets_download_count">
