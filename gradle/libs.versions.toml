@@ -42,6 +42,8 @@ androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui"
 androidx-preference = { module = "androidx.preference:preference", version = "1.2.1" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.4.0" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version = "1.2.0-beta01" }
+#noinspection GradleDependency
+androidx-startup = { module = "androidx.startup:startup-runtime", version = "1.1.1" }
 
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }

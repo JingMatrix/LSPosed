@@ -134,6 +134,7 @@ dependencies {
     implementation(libs.androidx.preference)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.startup)
     implementation(libs.glide)
     implementation(libs.material)
     implementation(libs.gson)
