@@ -99,7 +99,9 @@ public class ConfigManager {
     private boolean logWatchdog = true;
     private boolean dexObfuscate = true;
     private boolean enableStatusNotification = true;
+    private boolean bEnableCli = false;
     private Path miscPath = null;
+    private int iSessionTimeout = -1;
 
     private int managerUid = -1;
 
@@ -280,6 +282,22 @@ public class ConfigManager {
         if (bool != null) {
             // TODO: remove
             updateModulePrefs("lspd", 0, "config", "enable_auto_add_shortcut", null);
+        }
+
+        bool = config.get("enable_cli");
+        if (bool == null && BuildConfig.VERSION_NAME.contains("_cli_auto")) {
+            bEnableCli = true;
+            updateModulePrefs("lspd", 0, "config", "enable_cli", bEnableCli);
+        } else {
+            bEnableCli = bool != null && (boolean) bool;
+        }
+
+        var value = config.get("cli_session_timeout");
+        if (value == null && BuildConfig.VERSION_NAME.contains("_cli_auto")) {
+            iSessionTimeout = -2;
+            updateModulePrefs("lspd", 0, "config", "cli_session_timeout", iSessionTimeout);
+        } else {
+            iSessionTimeout = value == null ? -1 : (int) value;
         }
 
         bool = config.get("enable_status_notification");
@@ -1072,6 +1090,24 @@ public class ConfigManager {
         enableStatusNotification = enable;
     }
 
+    public boolean isEnableCli() {
+        return bEnableCli;
+    }
+
+    public void setEnableCli(boolean on) {
+        updateModulePrefs("lspd", 0, "config", "enable_cli", on);
+        bEnableCli = on;
+    }
+
+    public int getSessionTimeout() {
+        return iSessionTimeout;
+    }
+
+    public void setSessionTimeout(int iTimeout) {
+        updateModulePrefs("lspd", 0, "config", "cli_session_timeout", iTimeout);
+        iSessionTimeout = iTimeout;
+    }
+
     public ParcelFileDescriptor getManagerApk() {
         try {
             return ConfigFileManager.getManagerApk();
@@ -1229,7 +1265,7 @@ public class ConfigManager {
 
     public boolean getAutoInclude(String packageName) {
         try (Cursor cursor = db.query("modules", new String[]{"auto_include"},
-               "module_pkg_name = ? and auto_include = 1", new String[]{packageName}, null, null, null, null)) {
+                "module_pkg_name = ? and auto_include = 1", new String[]{packageName}, null, null, null, null)) {
             return cursor == null || cursor.moveToNext();
         }
     }

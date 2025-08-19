@@ -159,6 +159,19 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
         return ConfigManager.getInstance().getManagerApk();
     }
 
+    @Override
+    public int requestCLIBinder(String sPin, List<IBinder> binder) throws RemoteException {
+        var processInfo = ensureRegistered();
+
+        CLIService cliService = ServiceManager.getCLIService();
+        if (cliService.isValidSession(processInfo.pid, sPin)) {
+            binder.add(cliService);
+            return 0;
+        } else {
+            cliService.requestSession(processInfo.pid);
+            return 1;
+        }
+    }
     public boolean hasRegister(int uid, int pid) {
         return processes.containsKey(new Pair<>(uid, pid));
     }

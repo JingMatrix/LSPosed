@@ -209,6 +209,13 @@
     <string name="update_channel_nightly">Nightly build</string>
     <string name="settings_xposed_api_call_protection">Xposed API call protection</string>
     <string name="settings_xposed_api_call_protection_summary">Block dynamically loaded module code to use Xposed API, this may break some modules but benefit security</string>
+    <string name="settings_group_cli">CLI</string>
+    <string name="pref_title_enable_cli">Enable CLI</string>
+    <string name="pref_summary_enable_cli">(experimental feature)</string>
+    <string name="timeout_session">Session timeout in minutes</string>
+    <string name="one_command">One command</string>
+    <string name="disabled">Disabled</string>
+
     <!-- Module Repo -->
     <string name="module_readme">Readme</string>
     <string name="module_releases">Releases</string>

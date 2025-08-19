@@ -61,7 +61,7 @@ public class LSPNotificationManager {
         }
     };
 
-    private static INotificationManager getNotificationManager() throws RemoteException {
+    static INotificationManager getNotificationManager() throws RemoteException {
         if (binder == null || notificationManager == null) {
             binder = android.os.ServiceManager.getService(Context.NOTIFICATION_SERVICE);
             binder.linkToDeath(recipient, 0);
@@ -90,11 +90,11 @@ public class LSPNotificationManager {
         }
     }
 
-    private static Icon getNotificationIcon() {
+    static Icon getNotificationIcon() {
         return Icon.createWithBitmap(getBitmap(R.drawable.ic_notification));
     }
 
-    private static boolean hasNotificationChannelForSystem(
+    static boolean hasNotificationChannelForSystem(
             INotificationManager nm, String channelId) throws RemoteException {
         NotificationChannel channel;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

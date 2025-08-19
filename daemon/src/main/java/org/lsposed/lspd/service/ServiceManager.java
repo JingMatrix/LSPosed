@@ -65,6 +65,7 @@ public class ServiceManager {
     private static LSPSystemServerService systemServerService = null;
     private static LogcatService logcatService = null;
     private static Dex2OatService dex2OatService = null;
+    private static CLIService cliService = null;
 
     public static boolean isLateInject = false;
     public static String proxyServiceName = "serial";
@@ -144,6 +145,8 @@ public class ServiceManager {
         applicationService = new LSPApplicationService();
         managerService = new LSPManagerService();
         systemServerService = new LSPSystemServerService(systemServerMaxRetry, proxyServiceName);
+        cliService = new CLIService();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             dex2OatService = new Dex2OatService();
             dex2OatService.start();
@@ -213,6 +216,10 @@ public class ServiceManager {
 
     public static LogcatService getLogcatService() {
         return logcatService;
+    }
+
+    public static CLIService getCLIService() {
+        return cliService;
     }
 
     public static boolean systemServerRequested() {

@@ -95,4 +95,13 @@ interface ILSPManagerService {
     boolean getAutoInclude(String packageName) = 51;
 
     boolean setAutoInclude(String packageName, boolean enable) = 52;
+
+    boolean isEnableCli() = 64;
+
+    void setEnableCli(boolean enable) = 65;
+
+    int getSessionTimeout() = 66;
+
+    void setSessionTimeout(int iTimeout) = 67;
+
 }

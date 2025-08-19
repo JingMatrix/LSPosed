@@ -160,4 +160,22 @@
             android:summary="@string/settings_show_hidden_icon_apps_enabled_summary"
             android:title="@string/settings_show_hidden_icon_apps_enabled" />
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/settings_group_cli">
+        <rikka.material.preference.MaterialSwitchPreference
+            android:key="enable_cli"
+            android:title="@string/pref_title_enable_cli"
+            android:summary="@string/pref_summary_enable_cli"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_outline_cmd_24"
+            android:persistent="false"/>
+        <rikka.preference.SimpleMenuPreference
+            android:key="cli_session_timeout"
+            android:title="@string/timeout_session"
+            android:summary="%s"
+            android:entries="@array/timeout_texts"
+            android:entryValues="@array/timeout_values"
+            android:icon="@drawable/ic_baseline_hourglass_top_24"
+            android:persistent="false"/>
+    </PreferenceCategory>
 </PreferenceScreen>

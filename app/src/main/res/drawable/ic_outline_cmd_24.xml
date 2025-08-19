@@ -1,0 +1,29 @@
+<!--
+  ~ This file is part of LSPosed.
+  ~
+  ~ LSPosed is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ LSPosed is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with LSPosed.  If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Copyright (C) 2021 LSPosed Contributors
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal" >
+  <path 
+      android:fillColor="@android:color/white"
+      android:pathData="M3.2383,3.1211C2.4531,3.332 1.8086,3.9375 1.5391,4.7188L1.4297,5.0391L1.4297,18.9609L1.5391,19.2813C1.75,19.8828 2.1563,20.3672 2.7109,20.6641C3.2891,20.9727 2.6758,20.9531 12,20.9531C21.3242,20.9531 20.7109,20.9727 21.2891,20.6641C21.8438,20.3672 22.25,19.8828 22.4609,19.2813L22.5703,18.9609L22.5703,5.0391L22.4609,4.7188C22.25,4.1172 21.8438,3.6328 21.2891,3.3359C20.7109,3.0273 21.3281,3.0469 11.9766,3.0508C4.7188,3.0508 3.4531,3.0625 3.2383,3.1211ZM20.9453,12.9805C20.9297,18.8125 20.9297,18.8398 20.832,18.9648C20.6875,19.1641 20.5156,19.2695 20.293,19.3164C20.0234,19.3672 3.9766,19.3672 3.707,19.3164C3.4844,19.2695 3.3125,19.1641 3.168,18.9648C3.0703,18.8398 3.0703,18.8125 3.0547,12.9805L3.0469,7.125L20.9531,7.125ZM20.9453,12.9805,M6.4219,10.9922L7.8516,12.4219L5.0391,15.2344L7.1016,15.2344L9.9141,12.4219L7.0547,9.5625L4.9922,9.5625ZM6.4219,10.9922,M11.6328,13.7383C11.207,13.9492 11.0664,14.5391 11.3594,14.9219C11.6055,15.2422 11.5508,15.2383 14.0938,15.2266L16.3828,15.2109L16.543,15.0977C16.7266,14.9688 16.8711,14.6719 16.875,14.4336C16.875,14.1719 16.6914,13.875 16.4531,13.75L16.25,13.6406L14.043,13.6406C11.8867,13.6406 11.832,13.6445 11.6328,13.7383ZM11.6328,13.7383" />
+</vector>
