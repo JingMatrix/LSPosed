@@ -99,9 +99,8 @@ public class ConfigManager {
     private boolean logWatchdog = true;
     private boolean dexObfuscate = true;
     private boolean enableStatusNotification = true;
-    private boolean bEnableCli = false;
     private Path miscPath = null;
-    private int iSessionTimeout = -1;
+    private String cliPin = null;
 
     private int managerUid = -1;
 
@@ -284,21 +283,8 @@ public class ConfigManager {
             updateModulePrefs("lspd", 0, "config", "enable_auto_add_shortcut", null);
         }
 
-        bool = config.get("enable_cli");
-        if (bool == null && BuildConfig.VERSION_NAME.contains("_cli_auto")) {
-            bEnableCli = true;
-            updateModulePrefs("lspd", 0, "config", "enable_cli", bEnableCli);
-        } else {
-            bEnableCli = bool != null && (boolean) bool;
-        }
-
-        var value = config.get("cli_session_timeout");
-        if (value == null && BuildConfig.VERSION_NAME.contains("_cli_auto")) {
-            iSessionTimeout = -2;
-            updateModulePrefs("lspd", 0, "config", "cli_session_timeout", iSessionTimeout);
-        } else {
-            iSessionTimeout = value == null ? -1 : (int) value;
-        }
+        var pin = config.get("cli_pin");
+		cliPin = pin instanceof String ? (String) pin : null;
 
         bool = config.get("enable_status_notification");
         enableStatusNotification = bool == null || (boolean) bool;
@@ -1090,22 +1076,21 @@ public class ConfigManager {
         enableStatusNotification = enable;
     }
 
-    public boolean isEnableCli() {
-        return bEnableCli;
+    public boolean isCliEnabled() {
+        return BuildConfig.DEBUG || cliPin != null;
     }
 
     public void setEnableCli(boolean on) {
         updateModulePrefs("lspd", 0, "config", "enable_cli", on);
-        bEnableCli = on;
     }
 
-    public int getSessionTimeout() {
-        return iSessionTimeout;
+	public String getCliPin() {
+        return cliPin;
     }
 
-    public void setSessionTimeout(int iTimeout) {
-        updateModulePrefs("lspd", 0, "config", "cli_session_timeout", iTimeout);
-        iSessionTimeout = iTimeout;
+	public void setCliPin(String pin) {
+        updateModulePrefs("lspd", 0, "config", "cli_pin", pin);
+        cliPin = pin;
     }
 
     public ParcelFileDescriptor getManagerApk() {

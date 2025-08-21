@@ -22,6 +22,7 @@ public class Utils {
         ENABLE_DISABLE,
         SET_SCOPE,
         LS_SCOPE,
+        AUTH_FAILED,
         NO_DAEMON,
         REMOTE_ERROR
     }

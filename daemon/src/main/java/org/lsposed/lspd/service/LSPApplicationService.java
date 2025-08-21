@@ -31,6 +31,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
+import org.lsposed.daemon.BuildConfig;
 import org.lsposed.lspd.models.Module;
 
 import java.util.Collections;
@@ -159,19 +160,34 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
         return ConfigManager.getInstance().getManagerApk();
     }
 
-    @Override
-    public int requestCLIBinder(String sPin, List<IBinder> binder) throws RemoteException {
-        var processInfo = ensureRegistered();
+	@Override
+    public void requestCLIBinder(String pin, List<IBinder> binder) throws RemoteException {
+        ensureRegistered(); // Ensures caller is a valid process
+        
+        ConfigManager config = ConfigManager.getInstance();
+        String storedPin = config.getCliPin();
+        
+		boolean allowAccess = false;
+		if (BuildConfig.DEBUG) {
+			// For DEBUG builds, access is granted if either:
+			// 1. The user hasn't set a PIN yet (default on).
+			// 2. The special "no auth" value is set.
+			if (storedPin == null || "DEBUG_MODE_NO_AUTH".equals(storedPin)) {
+				allowAccess = true;
+			}
+		}
 
-        CLIService cliService = ServiceManager.getCLIService();
-        if (cliService.isValidSession(processInfo.pid, sPin)) {
-            binder.add(cliService);
-            return 0;
-        } else {
-            cliService.requestSession(processInfo.pid);
-            return 1;
-        }
+		// For ALL builds (including debug if the above conditions were not met),
+		// check if the provided PIN matches the stored one.
+		if (!allowAccess && storedPin != null && storedPin.equals(pin)) {
+			allowAccess = true;
+		}
+
+		if (allowAccess) {
+			binder.add(ServiceManager.getCLIService());
+		}
     }
+
     public boolean hasRegister(int uid, int pid) {
         return processes.containsKey(new Pair<>(uid, pid));
     }

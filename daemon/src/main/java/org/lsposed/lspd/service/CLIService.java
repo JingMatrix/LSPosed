@@ -61,18 +61,9 @@ import rikka.parcelablelist.ParcelableListSlice;
 
 public class CLIService extends ICLIService.Stub {
 
-    private final static Map<Integer, Session> sessions = new ConcurrentHashMap<>(3);
     private static final HandlerThread worker = new HandlerThread("cli worker");
     private static final Handler workerHandler;
 
-    private static final String CHANNEL_ID = "lsposedpin";
-    private static final String CHANNEL_NAME = "Pin code";
-    private static final int CHANNEL_IMP = NotificationManager.IMPORTANCE_HIGH;
-    private static final int NOTIFICATION_ID = 2000;
-    private static final String opPkg = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
-            "android" : "com.android.settings";
-
-    // E/JavaBinder      ] *** Uncaught remote exception!  (Exceptions are not yet supported across processes.)
     private String sLastMsg;
 
     static {
@@ -83,117 +74,13 @@ public class CLIService extends ICLIService.Stub {
     CLIService() {
     }
 
-    private int getParentPid(int pid) {
-        try {
-            Path path = Paths.get("/proc/" + pid + "/status");
-            for (var sLine : Files.readAllLines(path)) {
-                if (sLine.startsWith("PPid:")) {
-                    return Integer.parseInt(sLine.split(":", 2)[1].trim());
-                }
-            }
-        } catch (IOException io) {
-            return -1;
-        }
-        return -1;
-    }
-
-    private static class Session {
-        boolean bValid;
-        String sPIN;
-        LocalDateTime ldtStartSession;
-    }
-
-    public boolean isValidSession(int iPid, String sPin) {
-        var iPPid = getParentPid(iPid);
-        Log.d(TAG, "cli validating session pid=" + iPid + " ppid=" + iPPid);
-        if (iPPid != -1) {
-            int timeout = ConfigManager.getInstance().getSessionTimeout();
-            if (timeout == -2) {
-                return true;
-            }
-            Session session = sessions.get(iPPid);
-            if (session != null) {
-                if (!session.bValid) {
-                    if (sPin != null && sPin.equals(session.sPIN)) {
-                        session.bValid = true;
-                        session.ldtStartSession = LocalDateTime.now();
-                        Log.d(TAG, "cli valid session ppid=" + iPPid);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-
-                LocalDateTime ldtExpire = LocalDateTime.now().minusMinutes(timeout);
-
-                if (session.ldtStartSession.isAfter(ldtExpire)) {
-                    return true;
-                } else {
-                    sessions.remove(iPPid);
-                }
-            }
-        }
-        return false;
-    }
-
-    public void requestSession(int iPid) {
-        var iPPid = getParentPid(iPid);
-        Log.d(TAG, "cli request new session pid=" + iPid + " parent pid=" + iPPid);
-        if (iPPid != -1) {
-            Session session = new Session();
-            session.sPIN = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 999999));
-            session.bValid = false;
-            sessions.put(iPPid, session);
-            showNotification(session.sPIN);
-            Log.d(TAG, "cli request pin " + session.sPIN);
-        }
-    }
-
-    private void showNotification(String sPin) {
-        var context = new FakeContext();
-        String title = context.getString(R.string.pin_request_notification_title);
-        String content = sPin;
-
-        var style = new Notification.BigTextStyle();
-        style.bigText(content);
-
-        var notification = new Notification.Builder(context, CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setColor(Color.BLUE)
-                .setSmallIcon(LSPNotificationManager.getNotificationIcon())
-                .setAutoCancel(false)
-                .setStyle(style)
-                .build();
-        notification.extras.putString("android.substName", "LSPosed");
-        try {
-            var nm = LSPNotificationManager.getNotificationManager();
-            var list = new ArrayList<NotificationChannel>();
-
-            final NotificationChannel channel =
-                    new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, CHANNEL_IMP);
-            channel.setShowBadge(false);
-            if (LSPNotificationManager.hasNotificationChannelForSystem(nm, CHANNEL_ID)) {
-                nm.updateNotificationChannelForPackage("android", 1000, channel);
-            } else {
-                list.add(channel);
-            }
-
-            nm.createNotificationChannelsForPackage("android", 1000, new ParceledListSlice<>(list));
-            nm.enqueueNotificationWithTag("android", opPkg, null, NOTIFICATION_ID, notification, 0);
-        } catch (RemoteException e) {
-            Log.e(TAG, "notifyStatusNotification: ", e);
-        }
+	@Override
+    public void revokeCurrentPin() {
+        ConfigManager.getInstance().setCliPin(null);
     }
 
     public static boolean basicCheck(int uid) {
-        if (!ConfigManager.getInstance().isEnableCli()) {
-            return false;
-        }
-        if (uid != 0) {
-            return false;
-        }
-        return true;
+		return uid == 0;
     }
 
     public static boolean applicationStageNameValid(int pid, String processName) {

@@ -45,6 +45,9 @@ import java.util.zip.GZIPOutputStream;
 
 @CommandLine.Command(name = "log")
 class LogCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
     @CommandLine.Option(names = {"-f", "--follow", "follow"}, description = "Follow update of log, as tail -f")
@@ -56,7 +59,7 @@ class LogCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.getManager();
         if (bClear) {
             manager.clearLogs(bVerboseLog);
             if (!bFollow) { // we can clear old logs and follow new
@@ -92,8 +95,57 @@ class LogCommand implements Callable<Integer> {
     }
 }
 
+@CommandLine.Command(name = "login",
+        description = "Verifies the PIN and prints the shell command to set the session environment variable.")
+class LoginCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
+    @CommandLine.Option(names = "--for-eval",
+            description = "Output only the export command for use with eval().")
+    private boolean forEval;
+
+    @Override
+    public Integer call() throws Exception {
+        // Step 1: Authenticate by requesting the manager.
+        // If the PIN is wrong, parent.getManager() will throw a SecurityException,
+        // which our main exception handler will catch and report to the user.
+        // We don't need any try-catch block here.
+        parent.getManager();
+
+        // Step 2: If we reach here, authentication was successful.
+        String pin = parent.pin;
+        if (pin == null) {
+            // This case should ideally not be hit if auth succeeded, but as a safeguard:
+            System.err.println("Error: Could not retrieve the PIN used for authentication.");
+            return 1;
+        }
+
+        String exportCommand = "export LSPOSED_CLI_PIN=\"" + pin + "\"";
+
+        if (forEval) {
+            // For power-users using `eval $(...)`
+            System.out.println(exportCommand);
+        } else {
+            // For regular interactive users
+            System.out.println("✅ Authentication successful.");
+            System.out.println();
+            System.out.println("To avoid typing the PIN for every command in this shell session, run the following command:");
+            System.out.println();
+            System.out.println("    " + exportCommand);
+            System.out.println();
+            System.out.println("You will then be able to run commands like 'lsposed-cli status' without the --pin argument.");
+        }
+
+        return 0; // Success
+    }
+}
+
 @CommandLine.Command(name = "ls")
 class ListModulesCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private ModulesCommand parent;
+
     @CommandLine.ArgGroup(exclusive = true)
     LSModuleOpts objArgs = new LSModuleOpts();
 
@@ -110,7 +162,7 @@ class ListModulesCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.parent.getManager();
 
         var lstEnabledModules = Arrays.asList(manager.enabledModules());
         var lstPackages = manager.getInstalledPackagesFromAllUsers(PackageManager.GET_META_DATA | MATCH_ALL_FLAGS, false);
@@ -131,8 +183,25 @@ class ListModulesCommand implements Callable<Integer> {
     }
 }
 
+@CommandLine.Command(name = "revoke-pin", description = "Revokes the current CLI PIN, disabling CLI access.")
+class RevokePinCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
+    @Override
+    public Integer call() throws Exception {
+        System.out.println("Revoking current CLI PIN...");
+        parent.getManager().revokeCurrentPin();
+        System.out.println("PIN has been revoked. You must re-enable the CLI from the Manager app.");
+        return 0;
+    }
+}
+
 @CommandLine.Command(name = "set")
 class SetModulesCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private ModulesCommand parent;
+
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     SetModuleOpts objArgs = new SetModuleOpts();
 
@@ -150,7 +219,7 @@ class SetModulesCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.parent.getManager();
         boolean bMsgReboot = false;
 
         for (var module : lstModules) {
@@ -191,6 +260,9 @@ class SetModulesCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "modules", subcommands = {ListModulesCommand.class, SetModulesCommand.class})
 class ModulesCommand implements Runnable {
+	@CommandLine.ParentCommand
+    Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
 
@@ -227,12 +299,15 @@ class Scope extends Application {
 
 @CommandLine.Command(name = "ls")
 class ListScopeCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private ScopeCommand parent;
+
     @CommandLine.Parameters(index = "0", description = "module's name", paramLabel="<module name>")
     String moduleName;
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.parent.getManager();
 
         var lstScope = manager.getModuleScope(moduleName);
         if (lstScope == null)
@@ -251,6 +326,9 @@ class ListScopeCommand implements Callable<Integer> {
 @CommandLine.Command(name = "set", exitCodeOnExecutionException = 4 /* ERRCODES.SET_SCOPE */)
 class SetScopeCommand implements Callable<Integer> {
     /*, multiplicity = "0..1"*/
+    @CommandLine.ParentCommand
+    private ScopeCommand parent;
+
     @CommandLine.ArgGroup(exclusive = true)
     ScopeOpts objArgs = new ScopeOpts();
 
@@ -274,7 +352,7 @@ class SetScopeCommand implements Callable<Integer> {
     @Override
     public Integer call() throws RemoteException {
         boolean bMsgReboot = false;
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.parent.getManager();
 
         // default operation set
         // TODO find a mode for manage in picocli
@@ -350,6 +428,9 @@ class SetScopeCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "scope", subcommands = {ListScopeCommand.class, SetScopeCommand.class})
 class ScopeCommand implements Runnable {
+	@CommandLine.ParentCommand
+    Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
 
@@ -363,12 +444,15 @@ class ScopeCommand implements Runnable {
 
 @CommandLine.Command(name = "status")
 class StatusCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.getManager();
         String sSysVer;
         if (Build.VERSION.PREVIEW_SDK_INT != 0) {
             sSysVer = String.format("%1$s Preview (API %2$d)", Build.VERSION.CODENAME, Build.VERSION.SDK_INT);
@@ -398,6 +482,9 @@ class StatusCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "backup")
 class BackupCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
     @CommandLine.Parameters(index = "0..*", description = "module's name default all", paramLabel="<module name>")
@@ -412,7 +499,7 @@ class BackupCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.getManager();
 
         if (modulesName == null) {
             List<String> modules = new ArrayList<>();
@@ -469,6 +556,9 @@ class BackupCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "restore")
 class RestoreCommand implements Callable<Integer> {
+    @CommandLine.ParentCommand
+    private Main parent;
+
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
     @CommandLine.Parameters(index = "0..*", description = "module's name default all", paramLabel="<module name>")
@@ -483,7 +573,7 @@ class RestoreCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws RemoteException {
-        ICLIService manager = Main.getManager();
+        ICLIService manager = parent.getManager();
 
         StringBuilder json = new StringBuilder();
         try {
@@ -573,8 +663,11 @@ class RestoreCommand implements Callable<Integer> {
     }
 }
 
-@CommandLine.Command(name = CMDNAME, subcommands = {LogCommand.class, BackupCommand.class, ModulesCommand.class, RestoreCommand.class, ScopeCommand.class, StatusCommand.class}, version = "0.2")
+@CommandLine.Command(name = CMDNAME, subcommands = {LogCommand.class, BackupCommand.class, ModulesCommand.class, RestoreCommand.class, ScopeCommand.class, StatusCommand.class, RevokePinCommand.class}, version = "0.3")
 public class Main implements Runnable {
+	@CommandLine.Option(names = {"-p", "--pin"}, description = "Authentication PIN for the CLI.", scope = CommandLine.ScopeType.INHERIT)
+    String pin;
+
     @CommandLine.Option(names = {"-V", "--version", "version"}, versionHelp = true, description = "display version info")
     boolean versionInfoRequested;
 
@@ -590,8 +683,13 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
-        System.exit(exec(args));
-    }
+		System.exit(new CommandLine(new Main())
+			.setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
+				commandLine.getErr().println(ex.getMessage());
+				return ex instanceof SecurityException ? ERRCODES.AUTH_FAILED.ordinal() : ERRCODES.REMOTE_ERROR.ordinal();
+			})
+			.execute(args));
+	}
 
     public void run() {
         throw new CommandLine.ParameterException(spec.commandLine(), "Missing required subcommand");
@@ -614,56 +712,84 @@ public class Main implements Runnable {
         return rc;
     }
 
-    public static final ICLIService getManager() {
-        if (objManager == null) {
+    public final ICLIService getManager() {
+		if (objManager == null) {
             try {
-                objManager = getCLIService();
-                if (objManager == null) throw new RemoteException();
-            } catch (RemoteException re) {
-                System.err.println("Get manager binder fail, maybe the daemon hasn't started yet or you have not enabled cli");
+                objManager = connectToService();
+                if (objManager == null) {
+                    // connectToService will throw, but as a fallback:
+                    throw new SecurityException("Authentication failed or daemon service not available.");
+                }
+            } catch (RemoteException | SecurityException e) {
+                System.err.println("Error: " + e.getMessage());
                 System.exit(ERRCODES.NO_DAEMON.ordinal());
             }
         }
         return objManager;
     }
 
-    private static ICLIService getCLIService() throws RemoteException {
-        var activityService = ServiceManager.getService("activity");
-        var binder = new Binder();
+	private ICLIService connectToService() throws RemoteException {
+		// 1. Check for credentials provided by the user via arguments or environment.
+		// We store this in a separate variable to remember if the user even tried to provide a PIN.
+		String initialPin = this.pin; // `this.pin` is populated by picocli from the --pin arg
+		if (initialPin == null) {
+			initialPin = System.getenv("LSPOSED_CLI_PIN");
+		}
+		// `this.pin` will be used for the actual connection attempts.
+		this.pin = initialPin;
 
-        Parcel data = Parcel.obtain();
-        data.writeInterfaceToken("LSPosed");
-        data.writeInt(2);
-        data.writeString("lsp-cli:" + SignInfo.CLI_UUID);
-        data.writeStrongBinder(binder);
+		// 2. Connect to the basic application service binder (boilerplate).
+		var activityService = ServiceManager.getService("activity");
+		if (activityService == null) throw new RemoteException("Could not get activity service.");
 
-        Parcel reply = Parcel.obtain();
+		var binder = new Binder();
+		Parcel data = Parcel.obtain();
+		data.writeInterfaceToken("LSPosed");
+		data.writeInt(2);
+		data.writeString("lsp-cli:" + org.lsposed.lspd.util.SignInfo.CLI_UUID);
+		data.writeStrongBinder(binder);
+		Parcel reply = Parcel.obtain();
 
-        if(activityService.transact(1598837584, data, reply, 0)) {
-            reply.readException();
-            var serviceBinder = reply.readStrongBinder();
-            if (serviceBinder == null) {
-                System.err.println("ERROR: binder null");
-                return null;
-            }
-            var service = ILSPApplicationService.Stub.asInterface(serviceBinder);
-            var lstBinder = new ArrayList<IBinder>(1);
-            String sPin = null;
+		if (!activityService.transact(1598837584, data, reply, 0)) {
+			throw new RemoteException("Transaction to activity service failed.");
+		}
 
-            while (true) {
-                int iStatus = service.requestCLIBinder(sPin, lstBinder);
-                if (iStatus == 0) {
-                    return ICLIService.Stub.asInterface(lstBinder.get(0));
-                } else if (iStatus == 1) { // request pin to user
-                    sPin = new String(System.console().readPassword("Enter pin code: "));
-                } else {
-                    System.err.println("ERROR: cli request failed");
-                    return null;
-                }
-            }
-        } else {
-            System.err.println("ERROR: transact failed");
-        }
-        return null;
-    }
+		reply.readException();
+		var serviceBinder = reply.readStrongBinder();
+		if (serviceBinder == null) throw new RemoteException("Daemon did not return a service binder.");
+
+		var service = ILSPApplicationService.Stub.asInterface(serviceBinder);
+		var lstBinder = new ArrayList<IBinder>(1);
+
+		// 3. First attempt: Authenticate with the credentials we have (which could be null).
+		service.requestCLIBinder(this.pin, lstBinder);
+
+		// 4. Recovery step: If the first attempt failed, we have no PIN, AND we're in an
+		//    interactive shell, then prompt the user as a last resort.
+		if (lstBinder.isEmpty() && this.pin == null && System.console() != null) {
+			System.err.println("Authentication required.");
+			char[] pinChars = System.console().readPassword("Enter CLI PIN: ");
+			if (pinChars != null) {
+				this.pin = new String(pinChars);
+				// Second attempt: Retry with the PIN from the interactive prompt.
+				service.requestCLIBinder(this.pin, lstBinder);
+			}
+		}
+
+		// 5. Final check and smart error reporting.
+		if (lstBinder.isEmpty()) {
+			String errorMessage;
+			if (initialPin == null) {
+				// The user never provided a PIN. The daemon requires one. Guide the user.
+				errorMessage = "Authentication required. Use --pin, set LSPOSED_CLI_PIN, or use an interactive shell.";
+			} else {
+				// The user provided a PIN, but it was rejected by the daemon.
+				errorMessage = "Authentication failed. The provided PIN is incorrect or CLI is disabled in the Manager app.";
+			}
+			throw new SecurityException(errorMessage);
+		}
+
+		// If we reach here, we are successful.
+		return ICLIService.Stub.asInterface(lstBinder.get(0));
+	}
 }

@@ -41,4 +41,6 @@ interface ICLIService {
     boolean getAutoInclude(String packageName) = 18;
 
     void setAutoInclude(String packageName, boolean add) = 19;
+
+    void revokeCurrentPin() = 20;
 }

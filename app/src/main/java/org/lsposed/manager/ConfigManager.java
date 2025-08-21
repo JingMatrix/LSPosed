@@ -382,47 +382,10 @@ public class ConfigManager {
         }
     }
 
-    public static boolean isEnableCli() {
-        try {
-            return LSPManagerServiceHolder.getService().isEnableCli();
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
-
-    public static boolean setEnableCli(boolean enabled) {
-        try {
-            LSPManagerServiceHolder.getService().setEnableCli(enabled);
-            return true;
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
-
-    public static int getSessionTimeout() {
-        try {
-            return LSPManagerServiceHolder.getService().getSessionTimeout();
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return -2;
-        }
-    }
-
-    public static boolean setSessionTimeout(int iTimeout) {
-        try {
-            LSPManagerServiceHolder.getService().setSessionTimeout(iTimeout);
-            return true;
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
     public static int getDex2OatWrapperCompatibility() {
         try {
             return LSPManagerServiceHolder.getService().getDex2OatWrapperCompatibility();
-        } catch (RemoteException e) {
+       } catch (RemoteException e) {
             Log.e(App.TAG, Log.getStackTraceString(e));
             return ILSPManagerService.DEX2OAT_CRASHED;
         }
@@ -444,6 +407,32 @@ public class ConfigManager {
         } catch (RemoteException e) {
             Log.e(App.TAG, Log.getStackTraceString(e));
             return false;
+        }
+    }
+
+	public static boolean isCliEnabled() {
+        try {
+            return LSPManagerServiceHolder.getService().isCliEnabled();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return false;
+        }
+    }
+
+    public static void setCliPin(String pin) {
+        try {
+            LSPManagerServiceHolder.getService().setCliPin(pin);
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+        }
+    }
+
+    public static String getCliPin() {
+        try {
+            return LSPManagerServiceHolder.getService().getCliPin();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return null;
         }
     }
 }

@@ -24,6 +24,7 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Html;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -58,6 +59,7 @@ import org.lsposed.manager.util.ThemeUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.UUID;
 
 import rikka.core.util.ResourceUtils;
 import rikka.material.app.LocaleDelegate;
@@ -373,18 +375,38 @@ public class SettingsFragment extends BaseFragment {
             }
 
             MaterialSwitchPreference prefCli = findPreference("enable_cli");
-            Preference prefSessionTimeout = findPreference("cli_session_timeout");
-            if (prefCli != null && prefSessionTimeout != null) {
+            if (prefCli != null) {
                 prefCli.setEnabled(installed);
-                prefCli.setChecked(!installed || ConfigManager.isEnableCli());
-                prefCli.setOnPreferenceChangeListener((preference, newValue) -> {
-                    ConfigManager.setEnableCli((boolean) newValue);
-                    prefSessionTimeout.setEnabled((boolean) newValue);
-                    return true;
-                });
-                prefSessionTimeout.setEnabled(!installed ? false : prefCli.isChecked());
-                ((SimpleMenuPreference) prefSessionTimeout).setValue(!installed ? "-1" : "" + ConfigManager.getSessionTimeout());
-                prefSessionTimeout.setOnPreferenceChangeListener((preference, newValue) -> ConfigManager.setSessionTimeout(Integer.parseInt((String) newValue)));
+                if (!installed) {
+                    prefCli.setChecked(false);
+                } else {
+                    // Set the initial state of the switch and summary
+                    boolean isEnabled = ConfigManager.isCliEnabled();
+                    prefCli.setChecked(isEnabled);
+                    updateCliSummary(prefCli, isEnabled);
+
+                    // Set the listener for when the user toggles the switch
+                    prefCli.setOnPreferenceChangeListener((preference, newValue) -> {
+                        boolean enabled = (boolean) newValue;
+                        if (enabled) {
+                            // User is TURNING ON the CLI
+                            if (BuildConfig.DEBUG) {
+                                // For debug builds, set a special non-null value
+                                ConfigManager.setCliPin("DEBUG_MODE_NO_AUTH");
+                            } else {
+                                // For release builds, generate and set a new random PIN
+                                String newPin = UUID.randomUUID().toString().substring(0, 8);
+                                ConfigManager.setCliPin(newPin);
+                            }
+                        } else {
+                            // User is TURNING OFF the CLI, invalidate the PIN
+                            ConfigManager.setCliPin(null);
+                        }
+                        // Update the summary to reflect the new state
+                        updateCliSummary(preference, enabled);
+                        return true;
+                    });
+                }
             }
 
             SimpleMenuPreference channel = findPreference("update_channel");
@@ -413,6 +435,25 @@ public class SettingsFragment extends BaseFragment {
                 settingsFragment.binding.clickView.setOnClickListener(l);
             }
             return recyclerView;
+        }
+
+        private void updateCliSummary(Preference prefCli, boolean isEnabled) {
+            if (!isEnabled) {
+                prefCli.setSummary(R.string.pref_summary_enable_cli);
+            } else {
+                if (BuildConfig.DEBUG) {
+                    prefCli.setSummary(R.string.pref_summary_cli_debug);
+                } else {
+                    String pin = ConfigManager.getCliPin();
+                    if (pin != null) {
+                        String summary = getString(R.string.pref_summary_cli_pin, pin);
+                        prefCli.setSummary(Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT));
+                    } else {
+                        // Fallback in case PIN is null while switch is on
+                        prefCli.setSummary(R.string.pref_summary_enable_cli);
+                    }
+                }
+            }
         }
     }
 }

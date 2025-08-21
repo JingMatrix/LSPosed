@@ -13,6 +13,5 @@ interface ILSPApplicationService {
 
     ParcelFileDescriptor requestInjectedManagerBinder(out List<IBinder> binder);
 
-    int requestCLIBinder(String sPid, out List<IBinder> binder);
-
+    void requestCLIBinder(String pin, out List<IBinder> binder);
 }

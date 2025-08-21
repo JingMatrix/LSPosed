@@ -169,13 +169,5 @@
             android:defaultValue="false"
             android:icon="@drawable/ic_outline_cmd_24"
             android:persistent="false"/>
-        <rikka.preference.SimpleMenuPreference
-            android:key="cli_session_timeout"
-            android:title="@string/timeout_session"
-            android:summary="%s"
-            android:entries="@array/timeout_texts"
-            android:entryValues="@array/timeout_values"
-            android:icon="@drawable/ic_baseline_hourglass_top_24"
-            android:persistent="false"/>
     </PreferenceCategory>
 </PreferenceScreen>
