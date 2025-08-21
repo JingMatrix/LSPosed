@@ -376,37 +376,7 @@ public class SettingsFragment extends BaseFragment {
 
             MaterialSwitchPreference prefCli = findPreference("enable_cli");
             if (prefCli != null) {
-                prefCli.setEnabled(installed);
-                if (!installed) {
-                    prefCli.setChecked(false);
-                } else {
-                    // Set the initial state of the switch and summary
-                    boolean isEnabled = ConfigManager.isCliEnabled();
-                    prefCli.setChecked(isEnabled);
-                    updateCliSummary(prefCli, isEnabled);
-
-                    // Set the listener for when the user toggles the switch
-                    prefCli.setOnPreferenceChangeListener((preference, newValue) -> {
-                        boolean enabled = (boolean) newValue;
-                        if (enabled) {
-                            // User is TURNING ON the CLI
-                            if (BuildConfig.DEBUG) {
-                                // For debug builds, set a special non-null value
-                                ConfigManager.setCliPin("DEBUG_MODE_NO_AUTH");
-                            } else {
-                                // For release builds, generate and set a new random PIN
-                                String newPin = UUID.randomUUID().toString().substring(0, 8);
-                                ConfigManager.setCliPin(newPin);
-                            }
-                        } else {
-                            // User is TURNING OFF the CLI, invalidate the PIN
-                            ConfigManager.setCliPin(null);
-                        }
-                        // Update the summary to reflect the new state
-                        updateCliSummary(preference, enabled);
-                        return true;
-                    });
-                }
+                setupCliPreference(prefCli);
             }
 
             SimpleMenuPreference channel = findPreference("update_channel");
@@ -437,22 +407,48 @@ public class SettingsFragment extends BaseFragment {
             return recyclerView;
         }
 
-        private void updateCliSummary(Preference prefCli, boolean isEnabled) {
-            if (!isEnabled) {
-                prefCli.setSummary(R.string.pref_summary_enable_cli);
+        private void setupCliPreference(MaterialSwitchPreference prefCli) {
+            boolean installed = ConfigManager.isBinderAlive();
+            if (!installed) {
+                prefCli.setEnabled(false);
+                return;
+            }
+            prefCli.setEnabled(true);
+
+            // On load, check the daemon's memory for the current state.
+            String currentPin = ConfigManager.getCurrentCliPin();
+            boolean isEnabled;
+            if (BuildConfig.DEBUG) {
+                // On DEBUG, the feature is considered enabled even if PIN is null (default-on state)
+                isEnabled = true;
+                prefCli.setEnabled(false);
             } else {
-                if (BuildConfig.DEBUG) {
-                    prefCli.setSummary(R.string.pref_summary_cli_debug);
+                isEnabled = currentPin != null;
+            }
+            prefCli.setChecked(isEnabled);
+            updateCliSummary(prefCli, currentPin);
+
+            prefCli.setOnPreferenceChangeListener((preference, newValue) -> {
+                boolean enable = (boolean) newValue;
+                String newPin = null;
+                if (enable) {
+                    newPin = ConfigManager.resetCliPin();
                 } else {
-                    String pin = ConfigManager.getCliPin();
-                    if (pin != null) {
-                        String summary = getString(R.string.pref_summary_cli_pin, pin);
-                        prefCli.setSummary(Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT));
-                    } else {
-                        // Fallback in case PIN is null while switch is on
-                        prefCli.setSummary(R.string.pref_summary_enable_cli);
-                    }
+                    ConfigManager.disableCli();
                 }
+                updateCliSummary(preference, newPin);
+                return true;
+            });
+        }
+
+        private void updateCliSummary(Preference pref, String pin) {
+            if (BuildConfig.DEBUG && pin == null) {
+                pref.setSummary(R.string.pref_summary_cli_debug);
+            } else if (pin != null) {
+                String summary = getString(R.string.pref_summary_cli_pin, pin);
+                pref.setSummary(Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT));
+            } else {
+                pref.setSummary(R.string.pref_summary_enable_cli);
             }
         }
     }

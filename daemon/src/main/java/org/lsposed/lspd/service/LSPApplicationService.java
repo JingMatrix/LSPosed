@@ -165,28 +165,27 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
         ensureRegistered(); // Ensures caller is a valid process
         
         ConfigManager config = ConfigManager.getInstance();
-        String storedPin = config.getCliPin();
         
 		boolean allowAccess = false;
+		// Rule 1: Special case for DEBUG builds.
 		if (BuildConfig.DEBUG) {
-			// For DEBUG builds, access is granted if either:
-			// 1. The user hasn't set a PIN yet (default on).
-			// 2. The special "no auth" value is set.
-			if (storedPin == null || "DEBUG_MODE_NO_AUTH".equals(storedPin)) {
+			// If the daemon is a debug build AND no PIN has been set in memory yet,
+			// we allow access by default without a PIN.
+			if (config.getCurrentCliPin() == null && pin == null) {
 				allowAccess = true;
 			}
 		}
 
-		// For ALL builds (including debug if the above conditions were not met),
-		// check if the provided PIN matches the stored one.
-		if (!allowAccess && storedPin != null && storedPin.equals(pin)) {
+		// Rule 2: Standard PIN validation for ALL builds.
+		// If access wasn't already granted by the debug rule, we perform the normal check.
+		if (!allowAccess && config.isCliPinValid(pin)) {
 			allowAccess = true;
 		}
 
 		if (allowAccess) {
 			binder.add(ServiceManager.getCLIService());
 		}
-    }
+	}
 
     public boolean hasRegister(int uid, int pid) {
         return processes.containsKey(new Pair<>(uid, pid));

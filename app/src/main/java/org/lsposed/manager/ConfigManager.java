@@ -410,29 +410,29 @@ public class ConfigManager {
         }
     }
 
-	public static boolean isCliEnabled() {
+    public static String getCurrentCliPin() {
         try {
-            return LSPManagerServiceHolder.getService().isCliEnabled();
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
-
-    public static void setCliPin(String pin) {
-        try {
-            LSPManagerServiceHolder.getService().setCliPin(pin);
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-        }
-    }
-
-    public static String getCliPin() {
-        try {
-            return LSPManagerServiceHolder.getService().getCliPin();
+            return LSPManagerServiceHolder.getService().getCurrentCliPin();
         } catch (RemoteException e) {
             Log.e(App.TAG, Log.getStackTraceString(e));
             return null;
+        }
+    }
+
+    public static String resetCliPin() {
+        try {
+            return LSPManagerServiceHolder.getService().resetCliPin();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return null;
+        }
+    }
+
+    public static void disableCli() {
+        try {
+            LSPManagerServiceHolder.getService().disableCli();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
         }
     }
 }

@@ -76,7 +76,7 @@ public class CLIService extends ICLIService.Stub {
 
 	@Override
     public void revokeCurrentPin() {
-        ConfigManager.getInstance().setCliPin(null);
+        ConfigManager.getInstance().disableCli();
     }
 
     public static boolean basicCheck(int uid) {

@@ -100,7 +100,6 @@ public class ConfigManager {
     private boolean dexObfuscate = true;
     private boolean enableStatusNotification = true;
     private Path miscPath = null;
-    private String cliPin = null;
 
     private int managerUid = -1;
 
@@ -113,6 +112,8 @@ public class ConfigManager {
     private long requestScopeCacheTime = 0;
 
     private String api = "(???)";
+
+    private String volatileCliPin = null;
 
     static class ProcessScope {
         final String processName;
@@ -282,9 +283,6 @@ public class ConfigManager {
             // TODO: remove
             updateModulePrefs("lspd", 0, "config", "enable_auto_add_shortcut", null);
         }
-
-        var pin = config.get("cli_pin");
-		cliPin = pin instanceof String ? (String) pin : null;
 
         bool = config.get("enable_status_notification");
         enableStatusNotification = bool == null || (boolean) bool;
@@ -1076,21 +1074,25 @@ public class ConfigManager {
         enableStatusNotification = enable;
     }
 
-    public boolean isCliEnabled() {
-        return BuildConfig.DEBUG || cliPin != null;
+    public String getCurrentCliPin() {
+        return volatileCliPin;
     }
 
-    public void setEnableCli(boolean on) {
-        updateModulePrefs("lspd", 0, "config", "enable_cli", on);
+    public String resetCliPin() {
+        // Generate a new, secure random PIN
+        this.volatileCliPin = java.util.UUID.randomUUID().toString().substring(0, 8);
+        return this.volatileCliPin;
     }
 
-	public String getCliPin() {
-        return cliPin;
+    public void disableCli() {
+        this.volatileCliPin = null;
     }
 
-	public void setCliPin(String pin) {
-        updateModulePrefs("lspd", 0, "config", "cli_pin", pin);
-        cliPin = pin;
+    public boolean isCliPinValid(String providedPin) {
+        if (volatileCliPin == null || providedPin == null) {
+            return false; // CLI is disabled or no PIN was provided
+        }
+        return volatileCliPin.equals(providedPin);
     }
 
     public ParcelFileDescriptor getManagerApk() {

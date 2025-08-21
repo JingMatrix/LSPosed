@@ -563,22 +563,22 @@ public class LSPManagerService extends ILSPManagerService.Stub {
     }
 
     @Override
-    public boolean isCliEnabled() {
-        return ConfigManager.getInstance().isCliEnabled();
-    }
-
-    @Override
     public boolean getAutoInclude(String packageName) {
         return ConfigManager.getInstance().getAutoInclude(packageName);
     }
 
     @Override
-    public String getCliPin() {
-        return ConfigManager.getInstance().getCliPin();
+    public String getCurrentCliPin() {
+        return ConfigManager.getInstance().getCurrentCliPin();
     }
 
     @Override
-    public void setCliPin(String pin) {
-        ConfigManager.getInstance().setCliPin(pin);
+    public String resetCliPin() {
+        return ConfigManager.getInstance().resetCliPin();
+    }
+
+    @Override
+    public void disableCli() {
+        ConfigManager.getInstance().disableCli();
     }
 }
