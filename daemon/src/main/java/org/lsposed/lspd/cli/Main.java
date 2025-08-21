@@ -663,7 +663,7 @@ class RestoreCommand implements Callable<Integer> {
     }
 }
 
-@CommandLine.Command(name = CMDNAME, subcommands = {LogCommand.class, BackupCommand.class, ModulesCommand.class, RestoreCommand.class, ScopeCommand.class, StatusCommand.class, RevokePinCommand.class}, version = "0.3")
+@CommandLine.Command(name = CMDNAME, subcommands = {LogCommand.class, LoginCommand.class, BackupCommand.class, ModulesCommand.class, RestoreCommand.class, ScopeCommand.class, StatusCommand.class, RevokePinCommand.class}, version = "0.3")
 public class Main implements Runnable {
 	@CommandLine.Option(names = {"-p", "--pin"}, description = "Authentication PIN for the CLI.", scope = CommandLine.ScopeType.INHERIT)
     String pin;
