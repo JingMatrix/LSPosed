@@ -677,8 +677,6 @@ public class Main implements Runnable {
     @CommandLine.Spec
     CommandLine.Model.CommandSpec spec;
 
-    private static ICLIService objManager;
-
     public Main() {
     }
 
@@ -713,17 +711,16 @@ public class Main implements Runnable {
     }
 
     public final ICLIService getManager() {
-        if (objManager == null) {
-            try {
-                objManager = connectToService();
-                if (objManager == null) {
-                    // connectToService will throw, but as a fallback:
-                    throw new SecurityException("Authentication failed or daemon service not available.");
-                }
-            } catch (RemoteException | SecurityException e) {
-                System.err.println("Error: " + e.getMessage());
-                System.exit(ERRCODES.NO_DAEMON.ordinal());
+        ICLIService objManager;
+        try {
+            objManager = connectToService();
+            if (objManager == null) {
+                // connectToService will throw, but as a fallback:
+                throw new SecurityException("Authentication failed or daemon service not available.");
             }
+        } catch (RemoteException | SecurityException e) {
+            System.err.println("Error: " + e.getMessage());
+            System.exit(ERRCODES.NO_DAEMON.ordinal());
         }
         return objManager;
     }
