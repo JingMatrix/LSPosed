@@ -95,7 +95,6 @@ public class LSPosedService extends ILSPosedService.Stub {
             return null;
         }
 
-        // for cli
         if (CLIService.basicCheck(uid) && CLIService.applicationStageNameValid(pid, processName)) {
             Log.d(TAG, "CLI start, pid: " + pid);
             return ServiceManager.requestApplicationService(uid, pid, processName, heartBeat);

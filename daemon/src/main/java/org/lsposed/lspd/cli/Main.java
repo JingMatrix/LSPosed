@@ -11,6 +11,7 @@ import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -24,12 +25,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import org.lsposed.lspd.ICLIService;
 import org.lsposed.lspd.models.Application;
 import org.lsposed.lspd.service.ILSPApplicationService;
+
 import picocli.CommandLine;
 import picocli.CommandLine.IExecutionExceptionHandler;
 
@@ -436,7 +440,7 @@ class BackupCommand implements Callable<Integer> {
     }
 }
 
-@ommandLine.Command(name = "log", description = "Streams and manages the LSPosed framework and module logs.")
+@CommandLine.Command(name = "log", description = "Streams and manages the LSPosed framework and module logs.")
 class LogCommand implements Callable<Integer> {
     @CommandLine.ParentCommand
     private Main parent;
