@@ -114,6 +114,8 @@ public class ConfigManager {
     private String api = "(???)";
 
     private String volatileCliPin = null;
+    private int failedCliAttempts = 0;
+    private static final int MAX_CLI_ATTEMPTS = 5;
 
     static class ProcessScope {
         final String processName;
@@ -1072,6 +1074,18 @@ public class ConfigManager {
     public void setEnableStatusNotification(boolean enable) {
         updateModulePrefs("lspd", 0, "config", "enable_status_notification", enable);
         enableStatusNotification = enable;
+    }
+
+    public void recordFailedCliAttempt() {
+        failedCliAttempts++;
+        if (failedCliAttempts >= MAX_CLI_ATTEMPTS) {
+            disableCli();
+            failedCliAttempts = 0;
+        }
+    }
+
+    public void resetCliFailedAttempts() {
+        failedCliAttempts = 0;
     }
 
     public String getCurrentCliPin() {
