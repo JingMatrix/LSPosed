@@ -385,7 +385,7 @@ public class ConfigManager {
     public static int getDex2OatWrapperCompatibility() {
         try {
             return LSPManagerServiceHolder.getService().getDex2OatWrapperCompatibility();
-       } catch (RemoteException e) {
+        } catch (RemoteException e) {
             Log.e(App.TAG, Log.getStackTraceString(e));
             return ILSPManagerService.DEX2OAT_CRASHED;
         }

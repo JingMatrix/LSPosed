@@ -260,7 +260,7 @@ class SetModulesCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "modules", subcommands = {ListModulesCommand.class, SetModulesCommand.class})
 class ModulesCommand implements Runnable {
-	@CommandLine.ParentCommand
+    @CommandLine.ParentCommand
     Main parent;
 
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
@@ -428,7 +428,7 @@ class SetScopeCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = "scope", subcommands = {ListScopeCommand.class, SetScopeCommand.class})
 class ScopeCommand implements Runnable {
-	@CommandLine.ParentCommand
+    @CommandLine.ParentCommand
     Main parent;
 
     @CommandLine.Option(names = {"-h", "--help", "help"}, usageHelp = true, description = "display this help message")
@@ -665,7 +665,7 @@ class RestoreCommand implements Callable<Integer> {
 
 @CommandLine.Command(name = CMDNAME, subcommands = {LogCommand.class, LoginCommand.class, BackupCommand.class, ModulesCommand.class, RestoreCommand.class, ScopeCommand.class, StatusCommand.class, RevokePinCommand.class}, version = "0.3")
 public class Main implements Runnable {
-	@CommandLine.Option(names = {"-p", "--pin"}, description = "Authentication PIN for the CLI.", scope = CommandLine.ScopeType.INHERIT)
+    @CommandLine.Option(names = {"-p", "--pin"}, description = "Authentication PIN for the CLI.", scope = CommandLine.ScopeType.INHERIT)
     String pin;
 
     @CommandLine.Option(names = {"-V", "--version", "version"}, versionHelp = true, description = "display version info")
@@ -683,13 +683,13 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
-		System.exit(new CommandLine(new Main())
-			.setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
-				commandLine.getErr().println(ex.getMessage());
-				return ex instanceof SecurityException ? ERRCODES.AUTH_FAILED.ordinal() : ERRCODES.REMOTE_ERROR.ordinal();
-			})
-			.execute(args));
-	}
+        System.exit(new CommandLine(new Main())
+            .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
+                commandLine.getErr().println(ex.getMessage());
+                return ex instanceof SecurityException ? ERRCODES.AUTH_FAILED.ordinal() : ERRCODES.REMOTE_ERROR.ordinal();
+            })
+            .execute(args));
+    }
 
     public void run() {
         throw new CommandLine.ParameterException(spec.commandLine(), "Missing required subcommand");
@@ -713,7 +713,7 @@ public class Main implements Runnable {
     }
 
     public final ICLIService getManager() {
-		if (objManager == null) {
+        if (objManager == null) {
             try {
                 objManager = connectToService();
                 if (objManager == null) {
@@ -728,68 +728,68 @@ public class Main implements Runnable {
         return objManager;
     }
 
-	private ICLIService connectToService() throws RemoteException {
-		// 1. Check for credentials provided by the user via arguments or environment.
-		// We store this in a separate variable to remember if the user even tried to provide a PIN.
-		String initialPin = this.pin; // `this.pin` is populated by picocli from the --pin arg
-		if (initialPin == null) {
-			initialPin = System.getenv("LSPOSED_CLI_PIN");
-		}
-		// `this.pin` will be used for the actual connection attempts.
-		this.pin = initialPin;
+    private ICLIService connectToService() throws RemoteException {
+        // 1. Check for credentials provided by the user via arguments or environment.
+        // We store this in a separate variable to remember if the user even tried to provide a PIN.
+        String initialPin = this.pin; // `this.pin` is populated by picocli from the --pin arg
+        if (initialPin == null) {
+            initialPin = System.getenv("LSPOSED_CLI_PIN");
+        }
+        // `this.pin` will be used for the actual connection attempts.
+        this.pin = initialPin;
 
-		// 2. Connect to the basic application service binder (boilerplate).
-		var activityService = ServiceManager.getService("activity");
-		if (activityService == null) throw new RemoteException("Could not get activity service.");
+        // 2. Connect to the basic application service binder (boilerplate).
+        var activityService = ServiceManager.getService("activity");
+        if (activityService == null) throw new RemoteException("Could not get activity service.");
 
-		var binder = new Binder();
-		Parcel data = Parcel.obtain();
-		data.writeInterfaceToken("LSPosed");
-		data.writeInt(2);
-		data.writeString("lsp-cli:" + org.lsposed.lspd.util.SignInfo.CLI_UUID);
-		data.writeStrongBinder(binder);
-		Parcel reply = Parcel.obtain();
+        var binder = new Binder();
+        Parcel data = Parcel.obtain();
+        data.writeInterfaceToken("LSPosed");
+        data.writeInt(2);
+        data.writeString("lsp-cli:" + org.lsposed.lspd.util.SignInfo.CLI_UUID);
+        data.writeStrongBinder(binder);
+        Parcel reply = Parcel.obtain();
 
-		if (!activityService.transact(1598837584, data, reply, 0)) {
-			throw new RemoteException("Transaction to activity service failed.");
-		}
+        if (!activityService.transact(1598837584, data, reply, 0)) {
+            throw new RemoteException("Transaction to activity service failed.");
+        }
 
-		reply.readException();
-		var serviceBinder = reply.readStrongBinder();
-		if (serviceBinder == null) throw new RemoteException("Daemon did not return a service binder.");
+        reply.readException();
+        var serviceBinder = reply.readStrongBinder();
+        if (serviceBinder == null) throw new RemoteException("Daemon did not return a service binder.");
 
-		var service = ILSPApplicationService.Stub.asInterface(serviceBinder);
-		var lstBinder = new ArrayList<IBinder>(1);
+        var service = ILSPApplicationService.Stub.asInterface(serviceBinder);
+        var lstBinder = new ArrayList<IBinder>(1);
 
-		// 3. First attempt: Authenticate with the credentials we have (which could be null).
-		service.requestCLIBinder(this.pin, lstBinder);
+        // 3. First attempt: Authenticate with the credentials we have (which could be null).
+        service.requestCLIBinder(this.pin, lstBinder);
 
-		// 4. Recovery step: If the first attempt failed, we have no PIN, AND we're in an
-		//    interactive shell, then prompt the user as a last resort.
-		if (lstBinder.isEmpty() && this.pin == null && System.console() != null) {
-			System.err.println("Authentication required.");
-			char[] pinChars = System.console().readPassword("Enter CLI PIN: ");
-			if (pinChars != null) {
-				this.pin = new String(pinChars);
-				// Second attempt: Retry with the PIN from the interactive prompt.
-				service.requestCLIBinder(this.pin, lstBinder);
-			}
-		}
+        // 4. Recovery step: If the first attempt failed, we have no PIN, AND we're in an
+        //    interactive shell, then prompt the user as a last resort.
+        if (lstBinder.isEmpty() && this.pin == null && System.console() != null) {
+            System.err.println("Authentication required.");
+            char[] pinChars = System.console().readPassword("Enter CLI PIN: ");
+            if (pinChars != null) {
+                this.pin = new String(pinChars);
+                // Second attempt: Retry with the PIN from the interactive prompt.
+                service.requestCLIBinder(this.pin, lstBinder);
+            }
+        }
 
-		// 5. Final check and smart error reporting.
-		if (lstBinder.isEmpty()) {
-			String errorMessage;
-			if (initialPin == null) {
-				// The user never provided a PIN. The daemon requires one. Guide the user.
-				errorMessage = "Authentication required. Use --pin, set LSPOSED_CLI_PIN, or use an interactive shell.";
-			} else {
-				// The user provided a PIN, but it was rejected by the daemon.
-				errorMessage = "Authentication failed. The provided PIN is incorrect or CLI is disabled in the Manager app.";
-			}
-			throw new SecurityException(errorMessage);
-		}
+        // 5. Final check and smart error reporting.
+        if (lstBinder.isEmpty()) {
+            String errorMessage;
+            if (initialPin == null) {
+                // The user never provided a PIN. The daemon requires one. Guide the user.
+                errorMessage = "Authentication required. Use --pin, set LSPOSED_CLI_PIN, or use an interactive shell.";
+            } else {
+                // The user provided a PIN, but it was rejected by the daemon.
+                errorMessage = "Authentication failed. The provided PIN is incorrect or CLI is disabled in the Manager app.";
+            }
+            throw new SecurityException(errorMessage);
+        }
 
-		// If we reach here, we are successful.
-		return ICLIService.Stub.asInterface(lstBinder.get(0));
-	}
+        // If we reach here, we are successful.
+        return ICLIService.Stub.asInterface(lstBinder.get(0));
+    }
 }

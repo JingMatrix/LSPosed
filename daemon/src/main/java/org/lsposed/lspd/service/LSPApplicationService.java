@@ -160,32 +160,31 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
         return ConfigManager.getInstance().getManagerApk();
     }
 
-	@Override
+    @Override
     public void requestCLIBinder(String pin, List<IBinder> binder) throws RemoteException {
         ensureRegistered(); // Ensures caller is a valid process
-        
         ConfigManager config = ConfigManager.getInstance();
-        
-		boolean allowAccess = false;
-		// Rule 1: Special case for DEBUG builds.
-		if (BuildConfig.DEBUG) {
-			// If the daemon is a debug build AND no PIN has been set in memory yet,
-			// we allow access by default without a PIN.
-			if (config.getCurrentCliPin() == null && pin == null) {
-				allowAccess = true;
-			}
-		}
 
-		// Rule 2: Standard PIN validation for ALL builds.
-		// If access wasn't already granted by the debug rule, we perform the normal check.
-		if (!allowAccess && config.isCliPinValid(pin)) {
-			allowAccess = true;
-		}
+        boolean allowAccess = false;
+        // Rule 1: Special case for DEBUG builds.
+        if (BuildConfig.DEBUG) {
+            // If the daemon is a debug build AND no PIN has been set in memory yet,
+            // we allow access by default without a PIN.
+            if (config.getCurrentCliPin() == null && pin == null) {
+                allowAccess = true;
+            }
+        }
 
-		if (allowAccess) {
-			binder.add(ServiceManager.getCLIService());
-		}
-	}
+        // Rule 2: Standard PIN validation for ALL builds.
+        // If access wasn't already granted by the debug rule, we perform the normal check.
+        if (!allowAccess && config.isCliPinValid(pin)) {
+            allowAccess = true;
+        }
+
+        if (allowAccess) {
+            binder.add(ServiceManager.getCLIService());
+        }
+    }
 
     public boolean hasRegister(int uid, int pid) {
         return processes.containsKey(new Pair<>(uid, pid));

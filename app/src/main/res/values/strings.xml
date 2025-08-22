@@ -211,7 +211,7 @@
     <string name="settings_xposed_api_call_protection_summary">Block dynamically loaded module code to use Xposed API, this may break some modules but benefit security</string>
     <string name="settings_group_cli">Command line interface</string>
     <string name="pref_title_enable_cli">Enable CLI feature</string>
-	<!-- Default summary when disabled -->
+    <!-- Default summary when disabled -->
     <string name="pref_summary_enable_cli">Automate LSPosed with shell scripts via PIN authentication</string>
     <!-- Summary for Release builds when enabled -->
     <string name="pref_summary_cli_pin">Your CLI auth PIN is: <B>%1$s</B><br/></string>

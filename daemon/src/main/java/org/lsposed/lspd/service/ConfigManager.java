@@ -1252,7 +1252,7 @@ public class ConfigManager {
 
     public boolean getAutoInclude(String packageName) {
         try (Cursor cursor = db.query("modules", new String[]{"auto_include"},
-                "module_pkg_name = ? and auto_include = 1", new String[]{packageName}, null, null, null, null)) {
+               "module_pkg_name = ? and auto_include = 1", new String[]{packageName}, null, null, null, null)) {
             return cursor == null || cursor.moveToNext();
         }
     }
