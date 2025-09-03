@@ -2,6 +2,7 @@ package org.lsposed.lspd.impl;
 
 import androidx.annotation.NonNull;
 
+import org.lsposed.lspd.annotation.XposedHooker;
 import org.lsposed.lspd.nativebridge.HookBridge;
 import org.lsposed.lspd.util.Utils.Log;
 
@@ -12,9 +13,6 @@ import java.lang.reflect.Modifier;
 
 import de.robv.android.xposed.XposedBridge;
 import io.github.libxposed.api.XposedInterface;
-import io.github.libxposed.api.annotations.AfterInvocation;
-import io.github.libxposed.api.annotations.BeforeInvocation;
-import io.github.libxposed.api.annotations.XposedHooker;
 import io.github.libxposed.api.errors.HookFailedError;
 
 public class LSPosedBridge {
@@ -225,7 +223,7 @@ public class LSPosedBridge {
         Method beforeInvocation = null, afterInvocation = null;
         var modifiers = Modifier.PUBLIC | Modifier.STATIC;
         for (var method : hooker.getDeclaredMethods()) {
-            if (method.getAnnotation(BeforeInvocation.class) != null) {
+            if ("before".equals(method.getName())) {
                 if (beforeInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @BeforeInvocation");
                 }
@@ -241,7 +239,7 @@ public class LSPosedBridge {
                 }
                 beforeInvocation = method;
             }
-            if (method.getAnnotation(AfterInvocation.class) != null) {
+            if ("after".equals(method.getName())) {
                 if (afterInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @AfterInvocation");
                 }

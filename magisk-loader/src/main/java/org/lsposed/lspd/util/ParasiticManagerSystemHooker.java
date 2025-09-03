@@ -6,14 +6,12 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
 
+import org.lsposed.lspd.annotation.XposedHooker;
 import org.lsposed.lspd.hooker.HandleSystemServerProcessHooker;
 import org.lsposed.lspd.impl.LSPosedHelper;
 import org.lsposed.lspd.service.BridgeService;
-import org.lsposed.lspd.util.Utils;
 
 import io.github.libxposed.api.XposedInterface;
-import io.github.libxposed.api.annotations.AfterInvocation;
-import io.github.libxposed.api.annotations.XposedHooker;
 
 
 public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHooker.Callback {
@@ -35,8 +33,7 @@ public class ParasiticManagerSystemHooker implements HandleSystemServerProcessHo
 
     @XposedHooker
     private static class Hooker implements XposedInterface.Hooker {
-        @AfterInvocation
-        public static void afterHookedMethod(XposedInterface.AfterHookCallback callback) throws Throwable {
+        public static void after(XposedInterface.AfterHookCallback callback) throws Throwable {
             var intent = (Intent) callback.getArgs()[0];
             if (intent == null) return;
             if (!intent.hasCategory("org.lsposed.manager.LAUNCH_MANAGER")) return;

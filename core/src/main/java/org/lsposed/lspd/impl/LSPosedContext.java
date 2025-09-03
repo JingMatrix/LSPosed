@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedModuleInterface;
+import io.github.libxposed.api.errors.HookFailedError;
 import io.github.libxposed.api.errors.XposedFrameworkError;
 import io.github.libxposed.api.utils.DexParser;
 
@@ -170,6 +172,32 @@ public class LSPosedContext implements XposedInterface {
         return LSPosedBridge.doHook(origin, PRIORITY_DEFAULT, hooker);
     }
 
+    @NonNull
+    @Override
+    public <T> MethodUnhooker<Constructor<T>> hookClassInitializer(@NonNull Class<T> origin, @NonNull Class<? extends Hooker> hooker) {
+        return hookClassInitializer(origin, PRIORITY_DEFAULT, hooker);
+    }
+
+    @NonNull
+    @Override
+    public <T> MethodUnhooker<Constructor<T>> hookClassInitializer(@NonNull Class<T> origin, int priority, @NonNull Class<? extends Hooker> hooker) {
+        try {
+            final var typeParams = hooker.getTypeParameters();
+            final Class<?>[] typeParamsArray = new Class<?>[typeParams.length];
+            for (int i = 0; i < typeParams.length; i++) {
+                try {
+                    typeParamsArray[i] = origin.getClassLoader().loadClass(typeParams[i].getTypeName());
+                } catch (Throwable e) {
+                    typeParamsArray[i] = Object.class;
+                }
+            }
+
+            return LSPosedBridge.doHook(origin.getDeclaredConstructor(typeParamsArray), priority, hooker);
+        } catch (Throwable e) {
+            throw new HookFailedError(e);
+        }
+    }
+
     @Override
     @NonNull
     public MethodUnhooker<Method> hook(@NonNull Method origin, int priority, @NonNull Class<? extends Hooker> hooker) {
@@ -213,6 +241,11 @@ public class LSPosedContext implements XposedInterface {
         return HookBridge.invokeOriginalMethod(method, thisObject, args);
     }
 
+    @Override
+    public <T> void invokeOrigin(@NonNull Constructor<T> constructor, @NonNull T thisObject, Object... args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+        HookBridge.invokeOriginalMethod(constructor, thisObject, args);
+    }
+
     private static char getTypeShorty(Class<?> type) {
         if (type == int.class) {
             return 'I';
@@ -254,6 +287,11 @@ public class LSPosedContext implements XposedInterface {
             throw new IllegalArgumentException("Cannot invoke special on static method: " + method);
         }
         return HookBridge.invokeSpecialMethod(method, getExecutableShorty(method), method.getDeclaringClass(), thisObject, args);
+    }
+
+    @Override
+    public <T> void invokeSpecial(@NonNull Constructor<T> constructor, @NonNull T thisObject, Object... args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+        HookBridge.invokeSpecialMethod(constructor, getExecutableShorty(constructor), constructor.getDeclaringClass(), thisObject, args);
     }
 
     @NonNull

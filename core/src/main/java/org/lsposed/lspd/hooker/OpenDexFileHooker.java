@@ -2,18 +2,18 @@ package org.lsposed.lspd.hooker;
 
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+
+import org.lsposed.lspd.annotation.XposedHooker;
 import org.lsposed.lspd.impl.LSPosedBridge;
 import org.lsposed.lspd.nativebridge.HookBridge;
 
 import io.github.libxposed.api.XposedInterface;
-import io.github.libxposed.api.annotations.AfterInvocation;
-import io.github.libxposed.api.annotations.XposedHooker;
 
 @XposedHooker
 public class OpenDexFileHooker implements XposedInterface.Hooker {
 
-    @AfterInvocation
-    public static void afterHookedMethod(XposedInterface.AfterHookCallback callback) {
+    public static void after(@NonNull XposedInterface.AfterHookCallback callback) {
         ClassLoader classLoader = null;
         for (var arg : callback.getArgs()) {
             if (arg instanceof ClassLoader) {
