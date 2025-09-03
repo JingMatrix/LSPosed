@@ -2,7 +2,6 @@ package org.lsposed.lspd.impl;
 
 import androidx.annotation.NonNull;
 
-import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.nativebridge.HookBridge;
 import org.lsposed.lspd.util.Utils.Log;
 
@@ -13,6 +12,7 @@ import java.lang.reflect.Modifier;
 
 import de.robv.android.xposed.XposedBridge;
 import io.github.libxposed.api.XposedInterface;
+import io.github.libxposed.api.annotations.XposedHooker;
 import io.github.libxposed.api.errors.HookFailedError;
 
 public class LSPosedBridge {

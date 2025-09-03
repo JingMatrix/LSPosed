@@ -11,6 +11,8 @@ import android.system.OsConstants;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import org.lsposed.lspd.util.Utils.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -23,8 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-
-import org.lsposed.lspd.util.Utils.Log;
 
 import hidden.ByteBufferDexClassLoader;
 import sun.misc.CompoundEnumeration;

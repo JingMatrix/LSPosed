@@ -4,11 +4,11 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.impl.LSPosedBridge;
 import org.lsposed.lspd.nativebridge.HookBridge;
 
 import io.github.libxposed.api.XposedInterface;
+import io.github.libxposed.api.annotations.XposedHooker;
 
 @XposedHooker
 public class OpenDexFileHooker implements XposedInterface.Hooker {

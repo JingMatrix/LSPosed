@@ -4,10 +4,9 @@ import android.app.ActivityThread;
 
 import androidx.annotation.NonNull;
 
-import io.github.libxposed.api.annotations.XposedHooker;
-
 import de.robv.android.xposed.XposedInit;
 import io.github.libxposed.api.XposedInterface;
+import io.github.libxposed.api.annotations.XposedHooker;
 
 @XposedHooker
 public class AttachHooker implements XposedInterface.Hooker {
