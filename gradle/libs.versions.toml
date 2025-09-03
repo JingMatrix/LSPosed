@@ -1,10 +1,10 @@
 [versions]
-agp = "8.12.0"
-kotlin = "2.2.0"
+agp = "8.13.0"
+kotlin = "2.2.10"
 nav = "2.9.3"
 appcenter = "5.0.5"
 libxposed = "100"
-glide = "4.16.0"
+glide = "5.0.4"
 okhttp = "5.1.0"
 
 [plugins]
@@ -35,8 +35,8 @@ androidx-activity = { module = "androidx.activity:activity", version = "1.10.1" 
 androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
 androidx-browser = { module = "androidx.browser:browser", version = "1.9.0" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.1" }
-androidx-core = { module = "androidx.core:core", version = "1.16.0" }
-androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.8" }
+androidx-core = { module = "androidx.core:core", version = "1.17.0" }
+androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.9" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "nav" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
 androidx-preference = { module = "androidx.preference:preference", version = "1.2.1" }
