@@ -20,6 +20,7 @@
 
 package org.lsposed.lspd.deopt;
 
+import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
@@ -57,6 +58,12 @@ public class InlinedMethodCallers {
             // callers of Application#attach(Context)
             {"android.app.Instrumentation", "newApplication", ClassLoader.class, String.class, Context.class},
             {"android.app.Instrumentation", "newApplication", ClassLoader.class, Context.class},
+
+            // callers of Instrumentation#newApplication(ClassLoader, String, Context)
+            {"android.app.LoadedApk", "makeApplicationInner", Boolean.TYPE, Instrumentation.class, Boolean.TYPE},
+            {"android.app.LoadedApk", "makeApplicationInner", Boolean.TYPE, Instrumentation.class},
+            {"android.app.LoadedApk", "makeApplication", Boolean.TYPE, Instrumentation.class},
+
             {"android.app.ContextImpl", "getSharedPreferencesPath", String.class}
     };
 
