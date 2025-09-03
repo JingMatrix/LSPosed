@@ -1,4 +1,4 @@
-package org.lsposed.lspd.annotation;
+package io.github.libxposed.api.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

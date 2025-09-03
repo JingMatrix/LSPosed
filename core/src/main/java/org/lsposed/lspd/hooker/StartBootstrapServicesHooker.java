@@ -24,7 +24,7 @@ import static org.lsposed.lspd.util.Utils.logD;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.impl.LSPosedContext;
 import org.lsposed.lspd.util.Hookers;
 

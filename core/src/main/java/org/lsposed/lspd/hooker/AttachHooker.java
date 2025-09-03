@@ -4,7 +4,7 @@ import android.app.ActivityThread;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 
 import de.robv.android.xposed.XposedInit;
 import io.github.libxposed.api.XposedInterface;

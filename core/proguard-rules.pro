@@ -27,7 +27,7 @@
     public *** before(***);
     public *** after(***);
 }
--keep,allowoptimization,allowobfuscation @org.lsposed.lspd.annotation.XposedHooker class * {
+-keep,allowoptimization,allowobfuscation @io.github.libxposed.api.annotations.* class * {
     public *** before(***);
     public *** after(***);
 }

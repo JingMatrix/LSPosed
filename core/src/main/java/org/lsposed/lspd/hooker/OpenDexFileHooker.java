@@ -4,7 +4,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.impl.LSPosedBridge;
 import org.lsposed.lspd.nativebridge.HookBridge;
 

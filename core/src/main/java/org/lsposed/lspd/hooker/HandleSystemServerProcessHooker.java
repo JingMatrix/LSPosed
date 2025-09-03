@@ -22,7 +22,7 @@ package org.lsposed.lspd.hooker;
 
 import android.annotation.SuppressLint;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.deopt.PrebuiltMethodsDeopter;
 import org.lsposed.lspd.impl.LSPosedHelper;
 import org.lsposed.lspd.util.Hookers;

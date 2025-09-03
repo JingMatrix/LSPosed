@@ -23,7 +23,7 @@ package org.lsposed.lspd.hooker;
 import android.app.LoadedApk;
 import android.content.res.XResources;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.util.Hookers;
 import org.lsposed.lspd.util.Utils.Log;
 

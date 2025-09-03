@@ -2,7 +2,7 @@ package org.lsposed.lspd.impl;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.nativebridge.HookBridge;
 import org.lsposed.lspd.util.Utils.Log;
 
@@ -223,7 +223,7 @@ public class LSPosedBridge {
         Method beforeInvocation = null, afterInvocation = null;
         var modifiers = Modifier.PUBLIC | Modifier.STATIC;
         for (var method : hooker.getDeclaredMethods()) {
-            if ("before".equals(method.getName())) {
+            if ("before".equals(method.getName()) || "beforeHookedMethod".equals(method.getName())) {
                 if (beforeInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @BeforeInvocation");
                 }
@@ -239,7 +239,7 @@ public class LSPosedBridge {
                 }
                 beforeInvocation = method;
             }
-            if ("after".equals(method.getName())) {
+            if ("after".equals(method.getName()) || "afterHookedMethod".equals(method.getName())) {
                 if (afterInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @AfterInvocation");
                 }

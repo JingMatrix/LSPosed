@@ -30,7 +30,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.annotation.XposedHooker;
+import io.github.libxposed.api.annotations.XposedHooker;
 import org.lsposed.lspd.impl.LSPosedContext;
 import org.lsposed.lspd.util.Hookers;
 import org.lsposed.lspd.util.MetaDataReader;
