@@ -12,6 +12,8 @@ import java.lang.reflect.Modifier;
 
 import de.robv.android.xposed.XposedBridge;
 import io.github.libxposed.api.XposedInterface;
+import io.github.libxposed.api.annotations.AfterInvocation;
+import io.github.libxposed.api.annotations.BeforeInvocation;
 import io.github.libxposed.api.annotations.XposedHooker;
 import io.github.libxposed.api.errors.HookFailedError;
 
@@ -223,7 +225,7 @@ public class LSPosedBridge {
         Method beforeInvocation = null, afterInvocation = null;
         var modifiers = Modifier.PUBLIC | Modifier.STATIC;
         for (var method : hooker.getDeclaredMethods()) {
-            if ("before".equals(method.getName()) || "beforeHookedMethod".equals(method.getName())) {
+            if (method.getAnnotation(BeforeInvocation.class) != null || "before".equals(method.getName()) || "beforeHookedMethod".equals(method.getName())) {
                 if (beforeInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @BeforeInvocation");
                 }
@@ -239,7 +241,7 @@ public class LSPosedBridge {
                 }
                 beforeInvocation = method;
             }
-            if ("after".equals(method.getName()) || "afterHookedMethod".equals(method.getName())) {
+            if (method.getAnnotation(AfterInvocation.class) != null ||  "after".equals(method.getName()) || "afterHookedMethod".equals(method.getName())) {
                 if (afterInvocation != null) {
                     throw new IllegalArgumentException("More than one method annotated with @AfterInvocation");
                 }
