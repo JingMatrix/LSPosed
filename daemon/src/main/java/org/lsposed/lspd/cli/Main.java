@@ -149,7 +149,7 @@ class SetModulesCommand implements Callable<Integer> {
             if (scope == null) {
                 message = manager.getLastErrorMsg();
                 allSuccess = false;
-            } else if (objArgs.bEnable && scope.size() < 2) {
+            } else if (objArgs.bEnable && scope.size() == 0) {
                 message = "Cannot enable: module scope is empty.";
                 allSuccess = false;
             } else {
