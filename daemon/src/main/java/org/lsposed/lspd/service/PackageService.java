@@ -51,6 +51,8 @@ import androidx.annotation.Nullable;
 
 import org.lsposed.lspd.models.Application;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -345,10 +347,47 @@ public class PackageService {
     }
 
     public static boolean performDexOptMode(String packageName) throws RemoteException {
-        IPackageManager pm = getPackageManager();
-        if (pm == null) return false;
-        return pm.performDexOptMode(packageName,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Process process = null;
+            try {
+                // The 'speed-profile' filter is a balanced choice for performance.
+                String command = "cmd package compile -m speed-profile -f " + packageName;
+                process = Runtime.getRuntime().exec(command);
+
+                // Capture and log the output for debugging.
+                StringBuilder output = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                }
+
+                int exitCode = process.waitFor();
+                Log.i(TAG, "Dexopt command finished for " + packageName + " with exit code: " + exitCode);
+
+                // A successful command returns exit code 0 and typically "Success" in its output.
+                return exitCode == 0 && output.toString().contains("Success");
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to execute dexopt shell command for " + packageName, e);
+                if (e instanceof InterruptedException) {
+                    // Preserve the interrupted status.
+                    Thread.currentThread().interrupt();
+                }
+                return false;
+            } finally {
+                if (process != null) {
+                    process.destroy();
+                }
+            }
+        } else {
+            // Fallback to the original reflection method for older Android versions.
+            IPackageManager pm = getPackageManager();
+            if (pm == null) return false;
+            return pm.performDexOptMode(packageName,
                 SystemProperties.getBoolean("dalvik.vm.usejitprofiles", false),
                 SystemProperties.get("pm.dexopt.install", "speed-profile"), true, true, null);
+        }
     }
 }
