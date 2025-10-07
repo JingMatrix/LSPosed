@@ -1,5 +1,6 @@
 #include <dlfcn.h>
 
+#include <algorithm>
 #include <cinttypes>
 #include <cstdint>
 #include <lsplt.hpp>
