@@ -79,7 +79,7 @@
     <string name="info_copied">Copiat în clipboard</string>
     <!-- WelcomeDialog -->
     <string name="parasitic_welcome">Bine ați venit la LSPosed!</string>
-    <string name="parasitic_welcome_summary">Folosiți managerul parazitar, care poate fi deschis din centrul de notificări sau dintr-o scurtătură creată de acesta.</string>
+    <string name="parasitic_welcome_summary">Folosiți managerul parazitar, care poate fi deschis dintr-o scurtătură creată de acesta sau din centrul de notificări.</string>
     <string name="parasitic_welcome_summary_no_shortcut_support">Folosiți managerul parazitar, care poate fi deschis din centrul de notificări.</string>
     <string name="create_shortcut">Creează scurtătură</string>
     <string name="never_show">Nu afișați din nou</string>
