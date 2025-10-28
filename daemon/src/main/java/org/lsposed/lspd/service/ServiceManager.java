@@ -141,7 +141,7 @@ public class ServiceManager {
             dex2OatService = new Dex2OatService();
             dex2OatService.start();
         }
-
+        Log.i(TAG, "starting server===================putBinderForSystemServer");
         systemServerService.putBinderForSystemServer();
 
         ActivityThread.systemMain();

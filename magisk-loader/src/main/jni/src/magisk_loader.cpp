@@ -88,11 +88,13 @@ void MagiskLoader::SetupEntryClass(JNIEnv *env) {
 }
 
 void MagiskLoader::OnNativeForkSystemServerPre(JNIEnv *env) {
+    LOGD("=============bingin===================MagiskLoader::OnNativeForkSystemServerPre");
     Service::instance()->InitService(env);
     setAllowUnload(skip_);
 }
 
 void MagiskLoader::OnNativeForkSystemServerPost(JNIEnv *env) {
+    LOGD("===============================MagiskLoader::OnNativeForkAndSpecializePost");
     if (!skip_) {
         auto *instance = Service::instance();
         auto system_server_binder = instance->RequestSystemServerBinder(env);
@@ -170,6 +172,7 @@ void MagiskLoader::OnNativeForkAndSpecializePre(JNIEnv *env, jint uid, jintArray
 }
 
 void MagiskLoader::OnNativeForkAndSpecializePost(JNIEnv *env, jstring nice_name, jstring app_dir) {
+    LOGD("===============================MagiskLoader::OnNativeForkAndSpecializePost");
     const JUTFString process_name(env, nice_name);
     auto *instance = Service::instance();
     if (is_parasitic_manager) nice_name = JNI_NewStringUTF(env, "org.lsposed.manager").release();
