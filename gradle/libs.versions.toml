@@ -1,11 +1,11 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
-nav = "2.9.5"
+agp = "8.13.1"
+kotlin = "2.2.21"
+nav = "2.9.6"
 appcenter = "5.0.5"
 libxposed = "100"
 glide = "5.0.5"
-okhttp = "5.2.0"
+okhttp = "5.3.0"
 
 [plugins]
 agp-lib = { id = "com.android.library", version.ref = "agp" }
