@@ -155,6 +155,7 @@ LSP_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernApi,
         for (auto i = hook_item->legacy_callbacks.begin(); i != hook_item->legacy_callbacks.end(); ++i) {
             if (env->IsSameObject(i->second, callback)) {
                 hook_item->legacy_callbacks.erase(i);
+                env->DeleteGlobalRef(i->second);
                 return JNI_TRUE;
             }
         }
