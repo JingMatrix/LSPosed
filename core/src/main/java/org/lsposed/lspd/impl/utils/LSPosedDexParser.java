@@ -76,7 +76,7 @@ public class LSPosedDexParser implements DexParser {
 
             var methodIds = (int[]) out[4];
             this.methodIds = new MethodId[methodIds.length / 3];
-            for (int i = 0; i < this.methodIds.length / 3; ++i) {
+            for (int i = 0; i < this.methodIds.length; ++i) {
                 this.methodIds[i] = new LSPosedMethodId(i, methodIds[3 * i], methodIds[3 * i + 1], methodIds[3 * i + 2]);
             }
 
