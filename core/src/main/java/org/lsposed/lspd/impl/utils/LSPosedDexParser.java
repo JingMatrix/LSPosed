@@ -176,8 +176,8 @@ public class LSPosedDexParser implements DexParser {
             this.returnType = typeIds[protoId[1]];
             if (protoId.length > 2) {
                 this.parameters = new TypeId[protoId.length - 2];
-                for (int i = 2; i < parameters.length; ++i) {
-                    this.parameters[i] = typeIds[protoId[i]];
+                for (int i = 0; i < parameters.length; ++i) {
+                    this.parameters[i] = typeIds[protoId[i + 2]];
                 }
             } else {
                 this.parameters = null;
