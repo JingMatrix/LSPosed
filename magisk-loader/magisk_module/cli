@@ -1,0 +1,22 @@
+#!/system/bin/sh
+
+dex_path=""
+for DEXDIR in /data/adb/modules $(magisk --path 2>/dev/null)/.magisk/modules
+do
+    if [ -d "$DEXDIR/zygisk_lsposed" ]; then
+        dex_path="$DEXDIR/zygisk_lsposed"
+        break
+    fi
+done
+
+if [ -z "$dex_path" ]
+then
+    echo "No lsposed module path found"
+    exit 1
+fi
+
+dex_path="$dex_path/daemon.apk"
+
+java_potions="-Djava.class.path=$dex_path"
+
+exec app_process $java_potions /system/bin org.lsposed.lspd.cli.Main "$@"
