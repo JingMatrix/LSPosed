@@ -150,7 +150,7 @@ public class RepoFragment extends BaseFragment implements RepoLoader.RepoListene
             modules.forEach((k, v) -> {
                         if (!processedModules.contains(k.first)) {
                             var ver = repoLoader.getModuleLatestVersion(k.first);
-                            if (ver != null && ver.upgradable(v.versionCode, v.versionName)) {
+                            if (!ModuleUtil.isUpdateIgnored(k.first) && ver != null && ver.upgradable(v.versionCode, v.versionName)) {
                                 ++count[0];
                             }
                             processedModules.add(k.first);
@@ -287,6 +287,9 @@ public class RepoFragment extends BaseFragment implements RepoLoader.RepoListene
         }
 
         RepoLoader.ModuleVersion getUpgradableVer(OnlineModule module) {
+            if (ModuleUtil.isUpdateIgnored(module.getName())) {
+                return null;
+            }
             ModuleUtil.InstalledModule installedModule = moduleUtil.getModule(module.getName());
             if (installedModule != null) {
                 var ver = repoLoader.getModuleLatestVersion(installedModule.packageName);

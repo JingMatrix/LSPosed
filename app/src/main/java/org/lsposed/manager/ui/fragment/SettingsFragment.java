@@ -48,15 +48,18 @@ import org.lsposed.manager.R;
 import org.lsposed.manager.databinding.FragmentSettingsBinding;
 import org.lsposed.manager.repo.RepoLoader;
 import org.lsposed.manager.ui.activity.MainActivity;
+import org.lsposed.manager.ui.dialog.BlurBehindDialogBuilder;
 import org.lsposed.manager.util.BackupUtils;
 import org.lsposed.manager.util.CloudflareDNS;
 import org.lsposed.manager.util.LangList;
+import org.lsposed.manager.util.ModuleUtil;
 import org.lsposed.manager.util.NavUtil;
 import org.lsposed.manager.util.ShortcutUtil;
 import org.lsposed.manager.util.ThemeUtil;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Locale;
 
 import rikka.core.util.ResourceUtils;
@@ -144,6 +147,66 @@ public class SettingsFragment extends BaseFragment {
                                 notificationPreference.getContext().getString(R.string.disable_status_notification_error));
             }
             return notificationEnabled;
+        }
+
+        private void updateIgnoredUpdatesSummary(@Nullable Preference ignoredUpdatesPref) {
+            if (ignoredUpdatesPref == null) return;
+            int count = ModuleUtil.getIgnoredUpdates().size();
+            if (count == 0) {
+                ignoredUpdatesPref.setSummary(R.string.settings_ignored_updates_summary_empty);
+            } else {
+                ignoredUpdatesPref.setSummary(getString(R.string.settings_ignored_updates_summary, count));
+            }
+        }
+
+        private void showIgnoredUpdatesDialog(@NonNull Preference ignoredUpdatesPref) {
+            var ignored = new ArrayList<>(ModuleUtil.getIgnoredUpdates());
+            if (ignored.isEmpty()) {
+                new BlurBehindDialogBuilder(requireActivity(), R.style.ThemeOverlay_MaterialAlertDialog_Centered_FullWidthButtons)
+                        .setTitle(R.string.settings_ignored_updates_title)
+                        .setMessage(R.string.settings_ignored_updates_empty)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                return;
+            }
+
+            var modules = ModuleUtil.getInstance().getModules();
+            var labels = new ArrayList<CharSequence>(ignored.size());
+            for (var pkg : ignored) {
+                String label = pkg;
+                if (modules != null) {
+                    for (var module : modules.values()) {
+                        if (pkg.equals(module.packageName)) {
+                            label = module.getAppName() + " (" + pkg + ")";
+                            break;
+                        }
+                    }
+                }
+                if (label.equals(pkg)) {
+                    label = pkg + " (" + getString(R.string.not_installed) + ")";
+                }
+                labels.add(label);
+            }
+            boolean[] checked = new boolean[ignored.size()];
+            for (int i = 0; i < checked.length; i++) {
+                checked[i] = true;
+            }
+
+            new BlurBehindDialogBuilder(requireActivity(), R.style.ThemeOverlay_MaterialAlertDialog_Centered_FullWidthButtons)
+                    .setTitle(R.string.settings_ignored_updates_title)
+                    .setMultiChoiceItems(labels.toArray(new CharSequence[0]), checked, (dialog, which, isChecked) -> checked[which] = isChecked)
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        var updated = new HashSet<String>();
+                        for (int i = 0; i < checked.length; i++) {
+                            if (checked[i]) {
+                                updated.add(ignored.get(i));
+                            }
+                        }
+                        ModuleUtil.setIgnoredUpdates(updated);
+                        updateIgnoredUpdatesSummary(ignoredUpdatesPref);
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
         }
 
         @Override
@@ -376,6 +439,15 @@ public class SettingsFragment extends BaseFragment {
                 channel.setOnPreferenceChangeListener((preference, newValue) -> {
                     var repoLoader = RepoLoader.getInstance();
                     repoLoader.updateLatestVersion(String.valueOf(newValue));
+                    return true;
+                });
+            }
+
+            Preference ignoredUpdates = findPreference("ignored_updates");
+            if (ignoredUpdates != null) {
+                updateIgnoredUpdatesSummary(ignoredUpdates);
+                ignoredUpdates.setOnPreferenceClickListener(preference -> {
+                    showIgnoredUpdatesDialog(ignoredUpdates);
                     return true;
                 });
             }

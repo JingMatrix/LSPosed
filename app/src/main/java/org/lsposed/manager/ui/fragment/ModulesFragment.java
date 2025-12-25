@@ -343,6 +343,11 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
                     new Uri.Builder().scheme("lsposed").authority("repo").appendQueryParameter("modulePackageName", selectedModule.packageName).build(),
                     new NavOptions.Builder().setEnterAnim(R.anim.fragment_enter).setExitAnim(R.anim.fragment_exit).setPopEnterAnim(R.anim.fragment_enter_pop).setPopExitAnim(R.anim.fragment_exit_pop).setLaunchSingleTop(true).setPopUpTo(getNavController().getGraph().getStartDestinationId(), false, true).build());
             return true;
+        } else if (itemId == R.id.menu_ignore_update) {
+            boolean ignored = ModuleUtil.isUpdateIgnored(selectedModule.packageName);
+            ModuleUtil.setUpdateIgnored(selectedModule.packageName, !ignored);
+            forEachAdaptor(ModuleAdapter::refresh);
+            return true;
         } else if (itemId == R.id.menu_compile_speed) {
             CompileDialogFragment.speed(getChildFragmentManager(), selectedModule.pkg.applicationInfo);
         }
@@ -583,7 +588,7 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
                 sb.setSpan(foregroundColorSpan, sb.length() - warningText.length(), sb.length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
             }
             var ver = repoLoader.getModuleLatestVersion(item.packageName);
-            if (ver != null && ver.upgradable(item.versionCode, item.versionName)) {
+            if (!ModuleUtil.isUpdateIgnored(item.packageName) && ver != null && ver.upgradable(item.versionCode, item.versionName)) {
                 if (warningText != null) sb.append("\n");
                 String recommended = getString(R.string.update_available, ver.versionName);
                 sb.append(recommended);
@@ -626,6 +631,13 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
                     }
                     if (repoLoader.getOnlineModule(item.packageName) == null) {
                         menu.removeItem(R.id.menu_repo);
+                        menu.removeItem(R.id.menu_ignore_update);
+                    } else {
+                        var ignoreItem = menu.findItem(R.id.menu_ignore_update);
+                        if (ignoreItem != null) {
+                            boolean ignored = ModuleUtil.isUpdateIgnored(item.packageName);
+                            ignoreItem.setTitle(ignored ? R.string.allow_updates : R.string.ignore_updates);
+                        }
                     }
                     if (item.userId == 0) {
                         var users = ConfigManager.getUsers();
