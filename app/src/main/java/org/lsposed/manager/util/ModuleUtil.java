@@ -105,9 +105,11 @@ public final class ModuleUtil {
         var pref = App.getPreferences();
         if (packageNames == null || packageNames.isEmpty()) {
             pref.edit().remove(PREF_IGNORED_UPDATES).apply();
+            notifyIgnoredUpdatesChanged();
             return;
         }
         pref.edit().putStringSet(PREF_IGNORED_UPDATES, new HashSet<>(packageNames)).apply();
+        notifyIgnoredUpdatesChanged();
     }
 
     public static void setUpdateIgnored(@Nullable String packageName, boolean ignored) {
@@ -121,6 +123,14 @@ public final class ModuleUtil {
             updated.remove(packageName);
         }
         pref.edit().putStringSet(PREF_IGNORED_UPDATES, updated).apply();
+        notifyIgnoredUpdatesChanged();
+    }
+
+    private static void notifyIgnoredUpdatesChanged() {
+        ModuleUtil local = instance;
+        if (local != null) {
+            local.listeners.forEach(ModuleListener::onModulesReloaded);
+        }
     }
 
     public static int extractIntPart(String str) {
