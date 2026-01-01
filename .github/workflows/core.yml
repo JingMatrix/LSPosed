@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
@@ -41,14 +41,14 @@ jobs:
           fi
 
       - name: Checkout libxposed/api
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: libxposed/api
           path: libxposed/api
           ref: 54582730315ba4a3d7cfaf9baf9d23c419e07006
 
       - name: Checkout libxposed/service
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: libxposed/service
           path: libxposed/service
@@ -68,7 +68,7 @@ jobs:
           version: 1.12.1
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.ccache
@@ -110,19 +110,19 @@ jobs:
           unzip magisk-loader/release/LSPosed-v*-zygisk-debug.zip -d LSPosed-zygisk-debug
 
       - name: Upload zygisk release
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.prepareArtifact.outputs.zygiskReleaseName }}
           path: "./LSPosed-zygisk-release/*"
 
       - name: Upload zygisk debug
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.prepareArtifact.outputs.zygiskDebugName }}
           path: "./LSPosed-zygisk-debug/*"
 
       - name: Upload mappings
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: mappings
           path: |
@@ -130,7 +130,7 @@ jobs:
             app/build/outputs/mapping
 
       - name: Upload symbols
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: symbols
           path: build/symbols
