@@ -65,6 +65,7 @@ public class ServiceManager {
     private static LSPSystemServerService systemServerService = null;
     private static LogcatService logcatService = null;
     private static Dex2OatService dex2OatService = null;
+    private static CLIService cliService = null;
 
     private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -137,6 +138,8 @@ public class ServiceManager {
         applicationService = new LSPApplicationService();
         managerService = new LSPManagerService();
         systemServerService = new LSPSystemServerService(systemServerMaxRetry);
+        cliService = new CLIService();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             dex2OatService = new Dex2OatService();
             dex2OatService.start();
@@ -206,6 +209,10 @@ public class ServiceManager {
 
     public static LogcatService getLogcatService() {
         return logcatService;
+    }
+
+    public static CLIService getCLIService() {
+        return cliService;
     }
 
     public static boolean systemServerRequested() {

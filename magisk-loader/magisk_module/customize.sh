@@ -81,6 +81,8 @@ extract "$ZIPFILE" 'daemon.apk'         "$MODPATH"
 extract "$ZIPFILE" 'daemon'             "$MODPATH"
 rm -f /data/adb/lspd/manager.apk
 extract "$ZIPFILE" 'manager.apk'        "$MODPATH"
+mkdir                                   '/data/adb/lspd'
+extract "$ZIPFILE" 'cli'                '/data/adb/lspd/bin'
 
 if [ "$FLAVOR" == "zygisk" ]; then
   mkdir -p "$MODPATH/zygisk"
@@ -147,7 +149,10 @@ fi
 
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 set_perm_recursive "$MODPATH/bin" 0 2000 0755 0755 u:object_r:xposed_file:s0
+set_perm_recursive "/data/adb/lspd/" 0 0 0755 0644
+set_perm_recursive "/data/adb/lspd/bin" 0 0 0755 0755 u:object_r:xposed_file:s0
 chmod 0744 "$MODPATH/daemon"
+chmod 0700 "/data/adb/lspd/bin/cli"
 
 if [ "$(grep_prop ro.maple.enable)" == "1" ] && [ "$FLAVOR" == "zygisk" ]; then
   ui_print "- Add ro.maple.enable=0"
