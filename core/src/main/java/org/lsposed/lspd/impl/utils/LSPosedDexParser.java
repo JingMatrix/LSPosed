@@ -76,7 +76,7 @@ public class LSPosedDexParser implements DexParser {
 
             var methodIds = (int[]) out[4];
             this.methodIds = new MethodId[methodIds.length / 3];
-            for (int i = 0; i < this.methodIds.length / 3; ++i) {
+            for (int i = 0; i < this.methodIds.length; ++i) {
                 this.methodIds[i] = new LSPosedMethodId(i, methodIds[3 * i], methodIds[3 * i + 1], methodIds[3 * i + 2]);
             }
 
@@ -176,8 +176,8 @@ public class LSPosedDexParser implements DexParser {
             this.returnType = typeIds[protoId[1]];
             if (protoId.length > 2) {
                 this.parameters = new TypeId[protoId.length - 2];
-                for (int i = 2; i < parameters.length; ++i) {
-                    this.parameters[i] = typeIds[protoId[i]];
+                for (int i = 0; i < parameters.length; ++i) {
+                    this.parameters[i] = typeIds[protoId[i + 2]];
                 }
             } else {
                 this.parameters = null;
