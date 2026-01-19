@@ -10,3 +10,4 @@ apache/local/generated
 /build
 /captures
 bin/
+/apache
