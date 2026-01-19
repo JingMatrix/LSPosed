@@ -22,4 +22,4 @@ MODDIR=${0%/*}
 cd "$MODDIR"
 
 # To avoid delaying the normal mount timing of zygote, we start LSPosed service daemon in late_start service mode instead of post-fs-data mode
-unshare --propagation slave -m sh -c "$MODDIR/daemon $@&"
+unshare --propagation slave -m sh -c "$MODDIR/daemon --system-server-max-retry=3 $@&"
