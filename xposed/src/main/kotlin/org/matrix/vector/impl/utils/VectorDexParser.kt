@@ -4,7 +4,7 @@ import io.github.libxposed.api.utils.DexParser
 import io.github.libxposed.api.utils.DexParser.*
 import java.io.IOException
 import java.nio.ByteBuffer
-import org.matrix.vector.nativebridge.DexParserBridge
+import org.lsposed.lspd.nativebridge.DexParserBridge
 
 /**
  * Kotlin implementation of [DexParser] for Vector.
