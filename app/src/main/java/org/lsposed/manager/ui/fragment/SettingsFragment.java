@@ -24,6 +24,7 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Html;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -58,6 +59,7 @@ import org.lsposed.manager.util.ThemeUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.UUID;
 
 import rikka.core.util.ResourceUtils;
 import rikka.material.app.LocaleDelegate;
@@ -371,6 +373,12 @@ public class SettingsFragment extends BaseFragment {
                     translation_contributors.setSummary(translators);
                 }
             }
+
+            MaterialSwitchPreference prefCli = findPreference("enable_cli");
+            if (prefCli != null) {
+                setupCliPreference(prefCli);
+            }
+
             SimpleMenuPreference channel = findPreference("update_channel");
             if (channel != null) {
                 channel.setOnPreferenceChangeListener((preference, newValue) -> {
@@ -397,6 +405,51 @@ public class SettingsFragment extends BaseFragment {
                 settingsFragment.binding.clickView.setOnClickListener(l);
             }
             return recyclerView;
+        }
+
+        private void setupCliPreference(MaterialSwitchPreference prefCli) {
+            boolean installed = ConfigManager.isBinderAlive();
+            if (!installed) {
+                prefCli.setEnabled(false);
+                return;
+            }
+            prefCli.setEnabled(true);
+
+            // On load, check the daemon's memory for the current state.
+            String currentPin = ConfigManager.getCurrentCliPin();
+            boolean isEnabled;
+            if (BuildConfig.DEBUG) {
+                // On DEBUG, the feature is considered enabled even if PIN is null (default-on state)
+                isEnabled = true;
+                prefCli.setEnabled(false);
+            } else {
+                isEnabled = currentPin != null;
+            }
+            prefCli.setChecked(isEnabled);
+            updateCliSummary(prefCli, currentPin);
+
+            prefCli.setOnPreferenceChangeListener((preference, newValue) -> {
+                boolean enable = (boolean) newValue;
+                String newPin = null;
+                if (enable) {
+                    newPin = ConfigManager.resetCliPin();
+                } else {
+                    ConfigManager.disableCli();
+                }
+                updateCliSummary(preference, newPin);
+                return true;
+            });
+        }
+
+        private void updateCliSummary(Preference pref, String pin) {
+            if (BuildConfig.DEBUG && pin == null) {
+                pref.setSummary(R.string.pref_summary_cli_debug);
+            } else if (pin != null) {
+                String summary = getString(R.string.pref_summary_cli_pin, pin);
+                pref.setSummary(Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT));
+            } else {
+                pref.setSummary(R.string.pref_summary_enable_cli);
+            }
         }
     }
 }

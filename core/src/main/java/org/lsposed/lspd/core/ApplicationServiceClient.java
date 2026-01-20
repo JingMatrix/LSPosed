@@ -103,6 +103,14 @@ public class ApplicationServiceClient implements ILSPApplicationService, IBinder
     }
 
     @Override
+    public void requestCLIBinder(String sPin, List<IBinder> binder) {
+        try {
+            service.requestCLIBinder(sPin, binder);
+        } catch (RemoteException | NullPointerException ignored) {
+        }
+    }
+
+    @Override
     public IBinder asBinder() {
         return service.asBinder();
     }

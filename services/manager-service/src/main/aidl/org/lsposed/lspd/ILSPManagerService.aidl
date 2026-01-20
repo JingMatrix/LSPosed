@@ -95,4 +95,10 @@ interface ILSPManagerService {
     boolean getAutoInclude(String packageName) = 51;
 
     boolean setAutoInclude(String packageName, boolean enable) = 52;
+
+    String getCurrentCliPin() = 53;
+
+    String resetCliPin() = 54;
+
+    void disableCli() = 55;
 }

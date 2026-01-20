@@ -566,4 +566,19 @@ public class LSPManagerService extends ILSPManagerService.Stub {
     public boolean getAutoInclude(String packageName) {
         return ConfigManager.getInstance().getAutoInclude(packageName);
     }
+
+    @Override
+    public String getCurrentCliPin() {
+        return ConfigManager.getInstance().getCurrentCliPin();
+    }
+
+    @Override
+    public String resetCliPin() {
+        return ConfigManager.getInstance().resetCliPin();
+    }
+
+    @Override
+    public void disableCli() {
+        ConfigManager.getInstance().disableCli();
+    }
 }

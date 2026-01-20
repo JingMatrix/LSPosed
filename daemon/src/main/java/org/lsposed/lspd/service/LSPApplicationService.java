@@ -31,6 +31,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
+import org.lsposed.daemon.BuildConfig;
 import org.lsposed.lspd.models.Module;
 
 import java.util.Collections;
@@ -155,6 +156,35 @@ public class LSPApplicationService extends ILSPApplicationService.Stub {
             binder.add(ServiceManager.getManagerService().obtainManagerBinder(processInfo.heartBeat, processInfo.pid, processInfo.uid));
         }
         return ConfigManager.getInstance().getManagerApk();
+    }
+
+    @Override
+    public void requestCLIBinder(String pin, List<IBinder> binder) throws RemoteException {
+        ensureRegistered(); // Ensures caller is a valid process
+        ConfigManager config = ConfigManager.getInstance();
+
+        boolean allowAccess = false;
+        // Rule 1: Special case for DEBUG builds.
+        if (BuildConfig.DEBUG) {
+            // If the daemon is a debug build AND no PIN has been set in memory yet,
+            // we allow access by default without a PIN.
+            if (config.getCurrentCliPin() == null && pin == null) {
+                allowAccess = true;
+            }
+        }
+
+        // Rule 2: Standard PIN validation for ALL builds.
+        // If access wasn't already granted by the debug rule, we perform the normal check.
+        if (!allowAccess && config.isCliPinValid(pin)) {
+            allowAccess = true;
+        }
+
+        if (allowAccess) {
+            binder.add(ServiceManager.getCLIService());
+            config.resetCliFailedAttempts();
+        } else {
+            config.recordFailedCliAttempt();
+        }
     }
 
     public boolean hasRegister(int uid, int pid) {

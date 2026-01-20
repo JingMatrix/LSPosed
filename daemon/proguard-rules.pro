@@ -1,6 +1,19 @@
 -keepclasseswithmembers,includedescriptorclasses class * {
     native <methods>;
 }
+-keepattributes *Annotation*, Signature, Exception
+
+-keep class picocli.CommandLine { *; }
+-keep class picocli.CommandLine$* { *; }
+-keep class org.lsposed.lspd.cli.* {*;}
+
+-keepclassmembers class * extends java.util.concurrent.Callable {
+    public java.lang.Integer call();
+}
+
+-keepclasseswithmembers class org.lsposed.lspd.cli.Main {
+    public static void main(java.lang.String[]);
+}
 -keepclasseswithmembers class org.lsposed.lspd.Main {
     public static void main(java.lang.String[]);
 }

@@ -113,6 +113,10 @@ public class ConfigManager {
 
     private String api = "(???)";
 
+    private String volatileCliPin = null;
+    private int failedCliAttempts = 0;
+    private static final int MAX_CLI_ATTEMPTS = 5;
+
     static class ProcessScope {
         final String processName;
         final int uid;
@@ -1070,6 +1074,39 @@ public class ConfigManager {
     public void setEnableStatusNotification(boolean enable) {
         updateModulePrefs("lspd", 0, "config", "enable_status_notification", enable);
         enableStatusNotification = enable;
+    }
+
+    public void recordFailedCliAttempt() {
+        failedCliAttempts++;
+        if (failedCliAttempts >= MAX_CLI_ATTEMPTS) {
+            disableCli();
+            failedCliAttempts = 0;
+        }
+    }
+
+    public void resetCliFailedAttempts() {
+        failedCliAttempts = 0;
+    }
+
+    public String getCurrentCliPin() {
+        return volatileCliPin;
+    }
+
+    public String resetCliPin() {
+        // Generate a new, secure random PIN
+        this.volatileCliPin = java.util.UUID.randomUUID().toString().substring(0, 8);
+        return this.volatileCliPin;
+    }
+
+    public void disableCli() {
+        this.volatileCliPin = null;
+    }
+
+    public boolean isCliPinValid(String providedPin) {
+        if (volatileCliPin == null || providedPin == null) {
+            return false; // CLI is disabled or no PIN was provided
+        }
+        return volatileCliPin.equals(providedPin);
     }
 
     public ParcelFileDescriptor getManagerApk() {

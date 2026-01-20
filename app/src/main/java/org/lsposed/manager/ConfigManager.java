@@ -409,4 +409,30 @@ public class ConfigManager {
             return false;
         }
     }
+
+    public static String getCurrentCliPin() {
+        try {
+            return LSPManagerServiceHolder.getService().getCurrentCliPin();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return null;
+        }
+    }
+
+    public static String resetCliPin() {
+        try {
+            return LSPManagerServiceHolder.getService().resetCliPin();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+            return null;
+        }
+    }
+
+    public static void disableCli() {
+        try {
+            LSPManagerServiceHolder.getService().disableCli();
+        } catch (RemoteException e) {
+            Log.e(App.TAG, Log.getStackTraceString(e));
+        }
+    }
 }

@@ -12,4 +12,6 @@ interface ILSPApplicationService {
     String getPrefsPath(String packageName);
 
     ParcelFileDescriptor requestInjectedManagerBinder(out List<IBinder> binder);
+
+    void requestCLIBinder(String pin, out List<IBinder> binder);
 }
