@@ -114,9 +114,8 @@ android.applicationVariants.all {
 }
 
 dependencies {
-    implementation(libs.libxposed.`interface`)
     implementation(libs.agp.apksig)
-    implementation(projects.apache)
+    implementation(projects.external.apache)
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)
     implementation(projects.services.managerService)

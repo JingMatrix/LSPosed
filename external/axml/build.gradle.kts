@@ -10,8 +10,8 @@ java {
     targetCompatibility = androidTargetCompatibility
     sourceSets {
         main {
-            java.srcDirs("libs/manifest-editor/lib/src/main/java")
-            resources.srcDirs("libs/manifest-editor/lib/src/main")
+            java.srcDirs("manifest-editor/lib/src/main/java")
+            resources.srcDirs("manifest-editor/lib/src/main")
         }
     }
 }

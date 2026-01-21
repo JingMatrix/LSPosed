@@ -40,19 +40,6 @@ jobs:
             echo ${{ secrets.KEY_STORE }} | base64 --decode > key.jks
           fi
 
-      - name: Checkout libxposed/api
-        uses: actions/checkout@v6
-        with:
-          repository: libxposed/api
-          path: libxposed/api
-          ref: 54582730315ba4a3d7cfaf9baf9d23c419e07006
-
-      - name: Checkout libxposed/service
-        uses: actions/checkout@v6
-        with:
-          repository: libxposed/service
-          path: libxposed/service
-
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -83,18 +70,6 @@ jobs:
       - name: Remove Android's cmake
         shell: bash
         run: rm -rf $ANDROID_HOME/cmake
-
-      - name: Build dependencies
-        working-directory: libxposed
-        run: |
-          echo 'org.gradle.caching=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.parallel=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8 -XX:+UseParallelGC' >> ~/.gradle/gradle.properties
-          echo 'android.native.buildOutput=verbose' >> ~/.gradle/gradle.properties
-          cd api
-          ./gradlew publishToMavenLocal
-          cd ../service
-          ./gradlew publishToMavenLocal
 
       - name: Build with Gradle
         run: |

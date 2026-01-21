@@ -56,13 +56,12 @@ copy {
 }
 
 dependencies {
-    api(libs.libxposed.api)
-    implementation(projects.apache)
-    implementation(projects.axml)
+    api(projects.xposed)
+    implementation(projects.external.apache)
+    implementation(projects.external.axml)
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)
     implementation(projects.services.managerService)
-    implementation(projects.xposed)
     compileOnly(libs.androidx.annotation)
     compileOnly(projects.hiddenapi.stubs)
 }
