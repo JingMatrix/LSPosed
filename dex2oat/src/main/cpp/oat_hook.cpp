@@ -17,6 +17,14 @@ const std::string_view param_to_remove = " --inline-max-code-units=0";
 
 bool store_resized = false;
 
+static void safe_memmove(uint8_t* dst, const uint8_t* src, size_t n) {
+    if (dst < src) {
+        for (size_t i = 0; i < n; i++) dst[i] = src[i];
+    } else if (dst > src) {
+        for (size_t i = n; i > 0; i--) dst[i - 1] = src[i - 1];
+    }
+}
+
 bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
     if (store == nullptr || store_size == 0) {
         return false;
@@ -67,7 +75,7 @@ bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
 
         // memmove is required because the source and destination buffers overlap
         if (bytes_to_move > 0) {
-            memmove(destination, source, bytes_to_move);
+            safe_memmove(destination, source, bytes_to_move);
         }
 
         // 4. Update the total size of the store
