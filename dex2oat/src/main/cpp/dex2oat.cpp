@@ -122,27 +122,40 @@ int main(int argc, char **argv) {
     }
     LOGD("sock: %s %d", sock.sun_path + 1, stock_fd);
 
-    const char *new_argv[argc + 2];
-    for (int i = 0; i < argc; i++) new_argv[i] = argv[i];
-    new_argv[argc] = "--inline-max-code-units=0";
-    new_argv[argc + 1] = NULL;
+    int new_argc = argc + 2;  // +1 for linker, +1 for --inline...
+    const char **exec_argv = (const char **)malloc(sizeof(char *) * (new_argc + 1));
 
-    if (getenv("LD_LIBRARY_PATH") == NULL) {
-        char const *libenv = LP_SELECT(
-            "LD_LIBRARY_PATH=/apex/com.android.art/lib:/apex/com.android.os.statsd/lib",
-            "LD_LIBRARY_PATH=/apex/com.android.art/lib64:/apex/com.android.os.statsd/lib64");
-        putenv((char *)libenv);
+    const char *linker_path =
+        LP_SELECT("/apex/com.android.runtime/bin/linker", "/apex/com.android.runtime/bin/linker64");
+    char stock_fd_path[64];
+    snprintf(stock_fd_path, sizeof(stock_fd_path), "/proc/self/fd/%d", stock_fd);
+
+    exec_argv[0] = linker_path;    // The "executable" is actually the linker
+    exec_argv[1] = stock_fd_path;  // The first argument to the linker is the binary to run
+
+    // Copy original arguments
+    for (int i = 1; i < argc; i++) {
+        exec_argv[i + 1] = argv[i];
     }
 
-    // Set LD_PRELOAD to load liboat_hook.so
-    const int STRING_BUFFER = 50;
-    char env_str[STRING_BUFFER];
-    snprintf(env_str, STRING_BUFFER, "LD_PRELOAD=/proc/%d/fd/%d", getpid(), hooker_fd);
-    putenv(env_str);
-    LOGD("Set env %s", env_str);
+    // Add the extra flag
+    exec_argv[new_argc - 1] = "--inline-max-code-units=0";
+    exec_argv[new_argc] = NULL;
 
-    fexecve(stock_fd, (char **)new_argv, environ);
+    // Clean up LD_LIBRARY_PATH: let the linker use its internal config
+    unsetenv("LD_LIBRARY_PATH");
 
-    PLOGE("fexecve failed");
+    // Set LD_PRELOAD for the hooker liboat_hook.so
+    char preload_str[128];
+    snprintf(preload_str, sizeof(preload_str), "LD_PRELOAD=/proc/%d/fd/%d", getpid(), hooker_fd);
+    putenv(strdup(preload_str));
+
+    LOGD("Executing via linker: %s %s", linker_path, stock_fd_path);
+
+    execve(linker_path, (char **)exec_argv, environ);
+
+    // If we reach here, execve failed
+    PLOGE("execve failed");
+    free(exec_argv);
     return 2;
 }
