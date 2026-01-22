@@ -6,9 +6,6 @@ plugins {
 
 ktfmt { kotlinLangStyle() }
 
-val versionCodeProvider: Provider<String> by rootProject.extra
-val versionNameProvider: Provider<String> by rootProject.extra
-
 android {
     namespace = "org.matrix.vector.xposed"
 
