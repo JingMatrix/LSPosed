@@ -1,148 +1,210 @@
 #include <dlfcn.h>
 
-#include <cinttypes>
+#include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <lsplt.hpp>
+#include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "logging.h"
 #include "oat.h"
 
-const std::string_view param_to_remove = " --inline-max-code-units=0";
-const std::string_view heuristic_store_boundary = "\0\0\0";
+/**
+ * This library is injected into dex2oat to intercept the generation of OAT headers.
+ * Our wrapper runs dex2oat via the linker with extra flags. Without this hook,
+ * the resulting OAT file would record the linker path and the extra flags in its
+ * "dex2oat-cmdline" key, which can be used to detect the wrapper.
+ */
 
-#define DCL_HOOK_FUNC(ret, func, ...)                                                              \
-    ret (*old_##func)(__VA_ARGS__);                                                                \
-    ret new_##func(__VA_ARGS__)
+namespace {
+const std::string_view kParamToRemove = "--inline-max-code-units=0";
+std::string g_binary_path;  // The original binary path
+}  // namespace
 
-uint32_t new_store_size = 0;
+/**
+ * Sanitizes the command line string by:
+ * 1. Replacing the first token (the linker/binary path) with the original dex2oat path.
+ * 2. Removing the specific optimization flag we injected.
+ */
+std::string process_cmd(std::string_view sv, std::string_view new_cmd_path) {
+    std::vector<std::string> tokens;
+    std::string current;
 
-static void safe_memmove(uint8_t* dst, const uint8_t* src, size_t n) {
-    if (dst < src) {
-        for (size_t i = 0; i < n; i++) dst[i] = src[i];
-    } else if (dst > src) {
-        for (size_t i = n; i > 0; i--) dst[i - 1] = src[i - 1];
+    // Simple split by space
+    for (char c : sv) {
+        if (c == ' ') {
+            if (!current.empty()) {
+                tokens.push_back(std::move(current));
+                current.clear();
+            }
+        } else {
+            current.push_back(c);
+        }
+    }
+    if (!current.empty()) tokens.push_back(std::move(current));
+
+    // 1. Replace the command path (argv[0])
+    if (!tokens.empty()) {
+        tokens[0] = std::string(new_cmd_path);
+    }
+
+    // 2. Remove the injected parameter if it exists
+    auto it = std::remove(tokens.begin(), tokens.end(), std::string(kParamToRemove));
+    tokens.erase(it, tokens.end());
+
+    // 3. Join tokens back into a single string
+    std::string result;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        result += tokens[i];
+        if (i != tokens.size() - 1) result += ' ';
+    }
+    return result;
+}
+
+/**
+ * Re-serializes the Key-Value map back into the OAT header memory space.
+ */
+void WriteKeyValueStore(const std::map<std::string, std::string>& key_values, uint8_t* store) {
+    LOGD("Writing KeyValueStore back to memory");
+    char* data_ptr = reinterpret_cast<char*>(store);
+
+    for (const auto& [key, value] : key_values) {
+        // Copy key + null terminator
+        std::memcpy(data_ptr, key.c_str(), key.length() + 1);
+        data_ptr += key.length() + 1;
+        // Copy value + null terminator
+        std::memcpy(data_ptr, value.c_str(), value.length() + 1);
+        data_ptr += value.length() + 1;
     }
 }
 
-uint32_t ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
-    if (store == nullptr) {
-        return false;
-    }
+// Helper function to test if a header field could have variable length
+bool IsNonDeterministic(const std::string_view& key) {
+    auto variable_fields = art::OatHeader::kNonDeterministicFieldsAndLengths;
+    return std::any_of(variable_fields.begin(), variable_fields.end(),
+                       [&key](const auto& pair) { return pair.first.compare(key) == 0; });
+}
 
-    // Our initial guess of key_value_store size
-    uint32_t current_store_size = 10 * 1024;
-    if (store_size != 0) current_store_size = store_size;
+/**
+ * Parses the OAT KeyValueStore and spoofs the "dex2oat-cmdline" entry.
+ *
+ * @return true if the store was modified in-place or successfully rebuilt.
+ */
+bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
+    if (!key_value_store_) return false;
 
-    // Define the search space
-    uint8_t* const store_begin = store;
-    uint8_t* store_end = store + current_store_size;
+    const char* ptr = reinterpret_cast<const char*>(key_value_store_);
+    const char* const end = ptr + size_limit;
+    std::map<std::string, std::string> new_store;
+    bool modified = false;
+    LOGD("Parsing KeyValueStore [%p - %p]", ptr, end);
 
-    // 1. Search for the parameter in the memory buffer
-    auto it = std::search(store_begin, store_end, param_to_remove.begin(), param_to_remove.end());
+    while (ptr < end && *ptr != '\0') {
+        // Find key
+        const char* key_end = reinterpret_cast<const char*>(std::memchr(ptr, 0, end - ptr));
+        if (!key_end) break;
+        std::string_view key(ptr, key_end - ptr);
 
-    // Check if the parameter was found
-    if (it == store_end) {
-        LOGD("Parameter '%.*s' not found.", (int)param_to_remove.size(), param_to_remove.data());
-        return 0;
-    }
+        // Find value
+        const char* value_start = key_end + 1;
+        if (value_start >= end) break;
+        const char* value_end =
+            reinterpret_cast<const char*>(std::memchr(value_start, 0, end - value_start));
+        if (!value_end) break;
+        std::string_view value(value_start, value_end - value_start);
 
-    uint8_t* location_of_param = it;
-    LOGD("Parameter found at offset %td.", location_of_param - store_begin);
+        const bool has_padding =
+            value_end + 1 < end && *(value_end + 1) == '\0' && IsNonDeterministic(key);
 
-    // 2. Check if there is padding immediately after the string
-    uint8_t* const byte_after_param = location_of_param + param_to_remove.size();
-    bool has_padding = false;
-    if (byte_after_param + 1 < store_end && *(byte_after_param + 1) == '\0') {
-        has_padding = true;
-    }
+        if (key == "dex2oat-cmdline" && value.find(kParamToRemove) != std::string_view::npos) {
+            std::string cleaned_cmd = process_cmd(value, g_binary_path);
+            LOGI("Spoofing cmdline: Original size %zu -> New size %zu", value.length(),
+                 cleaned_cmd.length());
 
-    // 3. Perform the conditional action
-    if (has_padding) {
-        // CASE A: Padding exists. Overwrite the parameter with zeros.
-        LOGD("Padding found. Overwriting parameter with zeros.");
-        memset(location_of_param, 0, param_to_remove.size());
-        return 0;  // Return 0 to avoid actions based on the return value of this function.
-    } else {
-        // CASE B: No padding exists (or parameter is at the very end).
-        // Remove the parameter by shifting the rest of the memory forward.
-        LOGD("No padding found. Removing parameter and shifting memory.");
+            // We can overwrite in-place if the padding is enabled
+            if (has_padding) {
+                LOGD("In-place spoofing dex2oat-cmdline (padding detected)");
 
-        // 4. Deduce the key_value_store boundary via heuristic rules
-        if (store_size == 0) {
-            it = std::search(byte_after_param, store_end, heuristic_store_boundary.begin(),
-                             heuristic_store_boundary.end());
-            if (it == store_end) {
-                LOGD("Unable to deduce the key_value_store boundary");
-                return 0;
-            } else {
-                current_store_size = it - store_begin;
-                store_end = it;
+                // Zero out the entire original value range to be safe
+                size_t original_capacity = value.length();
+                std::memset(const_cast<char*>(value_start), 0, original_capacity);
+
+                // Write the new command.
+                std::memcpy(const_cast<char*>(value_start), cleaned_cmd.c_str(),
+                            std::min(cleaned_cmd.length(), original_capacity));
+                return true;
+            }
+
+            // Standard logic: store in map and rebuild later
+            new_store[std::string(key)] = std::move(cleaned_cmd);
+            modified = true;
+        } else {
+            new_store[std::string(key)] = std::string(value);
+            LOGD("Parsed item:\t[%s:%s]", key.data(), value.data());
+        }
+
+        ptr = value_end + 1;
+        if (has_padding) {
+            while (*ptr == '\0') {
+                ptr++;
             }
         }
-
-        // Calculate what to move
-        uint8_t* source = byte_after_param;
-        uint8_t* destination = location_of_param;
-        size_t bytes_to_move = store_end - source;
-
-        // memmove is required because the source and destination buffers overlap
-        if (bytes_to_move > 0) {
-            safe_memmove(destination, source, bytes_to_move);
-        }
-
-        // 5. Update the total size of the store
-        current_store_size -= param_to_remove.size();
-        LOGD("Store size changed. New size: %u", current_store_size);
-        return current_store_size;
     }
+
+    if (modified) {
+        WriteKeyValueStore(new_store, key_value_store_);
+        return true;
+    }
+    return false;
 }
 
+#define DCL_HOOK_FUNC(ret, func, ...)                                                              \
+    ret (*old_##func)(__VA_ARGS__) = nullptr;                                                      \
+    ret new_##func(__VA_ARGS__)
+
 DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
-    uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
+    auto size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
     LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p, returns %u.\n", header, size);
-    if (new_store_size != 0) {
-        size = new_store_size;
-        LOGD("Overwrite the return value with %u.", size);
-    }
     return size;
 }
 
+// For Android version < 16
 DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
-    LOGD("OatHeader::GetKeyValueStore() called on object at %p.", header);
-    uint8_t* key_value_store_ = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
-    uint32_t key_value_store_size_ = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    LOGD("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store_, key_value_store_size_);
-    if (key_value_store_size_ > 16 * 1024 || key_value_store_size_ < 512) {
-        LOGW("Invalid KeyValueStore size, to be deduced via boundary checking.");
-        key_value_store_size_ = 0;
-    }
-    new_store_size = ModifyStoreInPlace(key_value_store_, key_value_store_size_);
+    uint8_t* key_value_store = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
+    uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
+    LOGD("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store, size);
 
-    return key_value_store_;
+    // Bounds check to avoid memory corruption on invalid headers
+    if (size > 0 && size < 64 * 1024) {
+        SpoofKeyValueStore(key_value_store, size);
+    }
+    return key_value_store;
 }
 
+// For Android 16+ / Modern ART: Intercept during checksum calculation
 DCL_HOOK_FUNC(void, _ZNK3art9OatHeader15ComputeChecksumEPj, void* header, uint32_t* checksum) {
-    art::OatHeader* oat_header = reinterpret_cast<art::OatHeader*>(header);
-    const uint8_t* key_value_store_ = oat_header->GetKeyValueStore();
-    uint32_t key_value_store_size_ = oat_header->GetKeyValueStoreSize();
-    LOGD("KeyValueStore via offset: [addr: %p, size: %u]", key_value_store_, key_value_store_size_);
-    new_store_size =
-        ModifyStoreInPlace(const_cast<uint8_t*>(key_value_store_), key_value_store_size_);
-    if (new_store_size != 0) {
-        oat_header->SetKeyValueStoreSize(new_store_size);
-    }
+    auto* oat_header = reinterpret_cast<art::OatHeader*>(header);
+    LOGD("OatHeader::GetKeyValueStore() called on object at %p.", header);
+
+    uint8_t* store = const_cast<uint8_t*>(oat_header->GetKeyValueStore());
+    uint32_t size = oat_header->GetKeyValueStoreSize();
+    LOGD("KeyValueStore via offset: [addr: %p, size: %u]", store, size);
+
+    SpoofKeyValueStore(store, size);
+
+    // Call original to compute checksum on our modified data
     old__ZNK3art9OatHeader15ComputeChecksumEPj(header, checksum);
-    LOGD("ComputeChecksum called:  %" PRIu32, *checksum);
+    LOGD("OAT Checksum recalculated: 0x%08X", *checksum);
 }
 
 #undef DCL_HOOK_FUNC
 
 void register_hook(dev_t dev, ino_t inode, const char* symbol, void* new_func, void** old_func) {
-    LOGD("RegisterHook: %s, %p, %p", symbol, new_func, old_func);
     if (!lsplt::RegisterHook(dev, inode, symbol, new_func, old_func)) {
-        LOGE("Failed to register plt_hook \"%s\"\n", symbol);
+        LOGE("Failed to register PLT hook: %s", symbol);
     }
 }
 
@@ -153,18 +215,37 @@ void register_hook(dev_t dev, ino_t inode, const char* symbol, void* new_func, v
 #define PLT_HOOK_REGISTER(DEV, INODE, NAME) PLT_HOOK_REGISTER_SYM(DEV, INODE, #NAME, NAME)
 
 __attribute__((constructor)) static void initialize() {
+    // 1. Determine the target binary name
+    const char* env_cmd = getenv("DEX2OAT_CMD");
+    if (env_cmd) {
+        g_binary_path = env_cmd;
+    }
+
     dev_t dev = 0;
     ino_t inode = 0;
-    for (auto& info : lsplt::MapInfo::Scan()) {
-        if (info.path.starts_with("/apex/com.android.art/bin/dex2oat")) {
+
+    // 2. Locate the dex2oat binary in memory to get its device and inode for PLT hooking
+    for (const auto& info : lsplt::MapInfo::Scan()) {
+        if (info.path.find("bin/dex2oat") != std::string::npos) {
             dev = info.dev;
             inode = info.inode;
+            if (g_binary_path.empty()) g_binary_path = std::string(info.path);
+            LOGD("Found target: %s (dev: %ju, inode: %ju)", info.path.data(), (uintmax_t)dev,
+                 (uintmax_t)inode);
             break;
         }
     }
 
+    if (dev == 0) {
+        LOGE("Could not locate dex2oat memory map");
+        return;
+    }
+
+    // 3. Register hooks for various ART versions
     PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv);
     PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader16GetKeyValueStoreEv);
+
+    // If the standard store hook fails or we are on newer Android, try the Checksum hook
     if (!lsplt::CommitHook()) {
         PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader15ComputeChecksumEPj);
         lsplt::CommitHook();
