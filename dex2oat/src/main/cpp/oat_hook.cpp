@@ -10,12 +10,13 @@
 #include "oat.h"
 
 const std::string_view param_to_remove = " --inline-max-code-units=0";
+const std::string_view heuristic_store_boundary = "\0\0\0";
 
 #define DCL_HOOK_FUNC(ret, func, ...)                                                              \
     ret (*old_##func)(__VA_ARGS__);                                                                \
     ret new_##func(__VA_ARGS__)
 
-bool store_resized = false;
+uint32_t new_store_size = 0;
 
 static void safe_memmove(uint8_t* dst, const uint8_t* src, size_t n) {
     if (dst < src) {
@@ -25,14 +26,18 @@ static void safe_memmove(uint8_t* dst, const uint8_t* src, size_t n) {
     }
 }
 
-bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
-    if (store == nullptr || store_size == 0) {
+uint32_t ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
+    if (store == nullptr) {
         return false;
     }
 
+    // Our initial guess of key_value_store size
+    uint32_t current_store_size = 10 * 1024;
+    if (store_size != 0) current_store_size = store_size;
+
     // Define the search space
     uint8_t* const store_begin = store;
-    uint8_t* const store_end = store + store_size;
+    uint8_t* store_end = store + current_store_size;
 
     // 1. Search for the parameter in the memory buffer
     auto it = std::search(store_begin, store_end, param_to_remove.begin(), param_to_remove.end());
@@ -40,7 +45,7 @@ bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
     // Check if the parameter was found
     if (it == store_end) {
         LOGD("Parameter '%.*s' not found.", (int)param_to_remove.size(), param_to_remove.data());
-        return false;
+        return 0;
     }
 
     uint8_t* location_of_param = it;
@@ -49,12 +54,8 @@ bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
     // 2. Check if there is padding immediately after the string
     uint8_t* const byte_after_param = location_of_param + param_to_remove.size();
     bool has_padding = false;
-
-    // Boundary check: ensure the byte after the parameter is within the buffer
-    if (byte_after_param + 1 < store_end) {
-        if (*(byte_after_param + 1) == '\0') {
-            has_padding = true;
-        }
+    if (byte_after_param + 1 < store_end && *(byte_after_param + 1) == '\0') {
+        has_padding = true;
     }
 
     // 3. Perform the conditional action
@@ -62,11 +63,24 @@ bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
         // CASE A: Padding exists. Overwrite the parameter with zeros.
         LOGD("Padding found. Overwriting parameter with zeros.");
         memset(location_of_param, 0, param_to_remove.size());
-        return false;  // Size did not change
+        return 0;  // Return 0 to avoid actions based on the return value of this function.
     } else {
         // CASE B: No padding exists (or parameter is at the very end).
         // Remove the parameter by shifting the rest of the memory forward.
         LOGD("No padding found. Removing parameter and shifting memory.");
+
+        // 4. Deduce the key_value_store boundary via heuristic rules
+        if (store_size == 0) {
+            it = std::search(byte_after_param, store_end, heuristic_store_boundary.begin(),
+                             heuristic_store_boundary.end());
+            if (it == store_end) {
+                LOGD("Unable to deduce the key_value_store boundary");
+                return 0;
+            } else {
+                current_store_size = it - store_begin;
+                store_end = it;
+            }
+        }
 
         // Calculate what to move
         uint8_t* source = byte_after_param;
@@ -78,29 +92,33 @@ bool ModifyStoreInPlace(uint8_t* store, uint32_t store_size) {
             safe_memmove(destination, source, bytes_to_move);
         }
 
-        // 4. Update the total size of the store
-        store_size -= param_to_remove.size();
-        LOGD("Store size changed. New size: %u", store_size);
-
-        return true;  // Size changed
+        // 5. Update the total size of the store
+        current_store_size -= param_to_remove.size();
+        LOGD("Store size changed. New size: %u", current_store_size);
+        return current_store_size;
     }
 }
 
 DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
     uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    if (store_resized) {
-        LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p\n", header);
-        size = size - param_to_remove.size();
+    LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p, returns %u.\n", header, size);
+    if (new_store_size != 0) {
+        size = new_store_size;
+        LOGD("Overwrite the return value with %u.", size);
     }
     return size;
 }
 
 DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
-    LOGD("OatHeader::GetKeyValueStore() called on object at %p\n", header);
+    LOGD("OatHeader::GetKeyValueStore() called on object at %p.", header);
     uint8_t* key_value_store_ = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
     uint32_t key_value_store_size_ = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
     LOGD("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store_, key_value_store_size_);
-    store_resized = ModifyStoreInPlace(key_value_store_, key_value_store_size_);
+    if (key_value_store_size_ > 16 * 1024 || key_value_store_size_ < 512) {
+        LOGW("Invalid KeyValueStore size, to be deduced via boundary checking.");
+        key_value_store_size_ = 0;
+    }
+    new_store_size = ModifyStoreInPlace(key_value_store_, key_value_store_size_);
 
     return key_value_store_;
 }
@@ -110,10 +128,10 @@ DCL_HOOK_FUNC(void, _ZNK3art9OatHeader15ComputeChecksumEPj, void* header, uint32
     const uint8_t* key_value_store_ = oat_header->GetKeyValueStore();
     uint32_t key_value_store_size_ = oat_header->GetKeyValueStoreSize();
     LOGD("KeyValueStore via offset: [addr: %p, size: %u]", key_value_store_, key_value_store_size_);
-    store_resized =
+    new_store_size =
         ModifyStoreInPlace(const_cast<uint8_t*>(key_value_store_), key_value_store_size_);
-    if (store_resized) {
-        oat_header->SetKeyValueStoreSize(key_value_store_size_ - param_to_remove.size());
+    if (new_store_size != 0) {
+        oat_header->SetKeyValueStoreSize(new_store_size);
     }
     old__ZNK3art9OatHeader15ComputeChecksumEPj(header, checksum);
     LOGD("ComputeChecksum called:  %" PRIu32, *checksum);
