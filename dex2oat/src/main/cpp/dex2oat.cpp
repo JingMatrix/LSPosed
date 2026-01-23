@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
         exec_argv.push_back(argv[i]);
     }
 
-    // Append performance/hooking flags
+    // Append hooking flags to disable inline
     exec_argv.push_back("--inline-max-code-units=0");
     exec_argv.push_back(nullptr);
 
@@ -175,7 +175,6 @@ int main(int argc, char **argv) {
 
     // Set LD_PRELOAD to point to the hooker library FD
     std::string preload_val = "LD_PRELOAD=/proc/self/fd/" + std::to_string(hooker_fd);
-    // Note: putenv requires a pointer to a string that lives as long as the environment
     // We use setenv which manages its own memory.
     setenv("LD_PRELOAD", ("/proc/self/fd/" + std::to_string(hooker_fd)).c_str(), 1);
 
@@ -185,7 +184,7 @@ int main(int argc, char **argv) {
         LOGD("DEX2OAT_CMD set to %s", argv[0]);
     }
 
-    LOGD("Executing via linker: %s executing %s", linker_path, stock_fd_path);
+    LOGI("Executing via linker: %s executing %s", linker_path, stock_fd_path);
 
     // Perform the execution
     execve(linker_path, const_cast<char *const *>(exec_argv.data()), environ);

@@ -119,14 +119,15 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
         const bool has_padding =
             value_end + 1 < end && *(value_end + 1) == '\0' && IsNonDeterministic(key);
 
-        if (key == "dex2oat-cmdline" && value.find(kParamToRemove) != std::string_view::npos) {
+        if (key == art::OatHeader::kDex2OatCmdLineKey &&
+            value.find(kParamToRemove) != std::string_view::npos) {
             std::string cleaned_cmd = process_cmd(value, g_binary_path);
             LOGI("Spoofing cmdline: Original size %zu -> New size %zu", value.length(),
                  cleaned_cmd.length());
 
             // We can overwrite in-place if the padding is enabled
             if (has_padding) {
-                LOGD("In-place spoofing dex2oat-cmdline (padding detected)");
+                LOGI("In-place spoofing dex2oat-cmdline (padding detected)");
 
                 // Zero out the entire original value range to be safe
                 size_t original_capacity = value.length();
@@ -143,7 +144,7 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
             modified = true;
         } else {
             new_store[std::string(key)] = std::string(value);
-            LOGD("Parsed item:\t[%s:%s]", key.data(), value.data());
+            LOGI("Parsed item:\t[%s:%s]", key.data(), value.data());
         }
 
         ptr = value_end + 1;
@@ -175,7 +176,7 @@ DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header
 DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
     uint8_t* key_value_store = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
     uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    LOGD("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store, size);
+    LOGI("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store, size);
 
     // Bounds check to avoid memory corruption on invalid headers
     if (size > 0 && size < 64 * 1024) {
@@ -191,13 +192,13 @@ DCL_HOOK_FUNC(void, _ZNK3art9OatHeader15ComputeChecksumEPj, void* header, uint32
 
     uint8_t* store = const_cast<uint8_t*>(oat_header->GetKeyValueStore());
     uint32_t size = oat_header->GetKeyValueStoreSize();
-    LOGD("KeyValueStore via offset: [addr: %p, size: %u]", store, size);
+    LOGI("KeyValueStore via offset: [addr: %p, size: %u]", store, size);
 
     SpoofKeyValueStore(store, size);
 
     // Call original to compute checksum on our modified data
     old__ZNK3art9OatHeader15ComputeChecksumEPj(header, checksum);
-    LOGD("OAT Checksum recalculated: 0x%08X", *checksum);
+    LOGV("OAT Checksum recalculated: 0x%08X", *checksum);
 }
 
 #undef DCL_HOOK_FUNC
@@ -230,7 +231,7 @@ __attribute__((constructor)) static void initialize() {
             dev = info.dev;
             inode = info.inode;
             if (g_binary_path.empty()) g_binary_path = std::string(info.path);
-            LOGD("Found target: %s (dev: %ju, inode: %ju)", info.path.data(), (uintmax_t)dev,
+            LOGV("Found target: %s (dev: %ju, inode: %ju)", info.path.data(), (uintmax_t)dev,
                  (uintmax_t)inode);
             break;
         }
