@@ -79,10 +79,10 @@ public:
         return offsetof(OatHeader, key_value_store_);
     }
 
-    uint32_t GetKeyValueStoreSize() const;
-    const uint8_t* GetKeyValueStore() const;
+    uint32_t getKeyValueStoreSize() const;
+    const uint8_t* getKeyValueStore() const;
 
-    void SetKeyValueStoreSize(uint32_t new_size);
+    void setKeyValueStoreSize(uint32_t new_size);
 
     void ComputeChecksum(/*inout*/ uint32_t* checksum) const;
 

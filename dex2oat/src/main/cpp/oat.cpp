@@ -2,15 +2,16 @@
 
 namespace art {
 
-uint32_t OatHeader::GetKeyValueStoreSize() const {
+// Helpers based on the header file, renamed intentionally to avoid confusing PLT hook targets.
+uint32_t OatHeader::getKeyValueStoreSize() const {
     return *(uint32_t*)((uintptr_t)this + OatHeader::Get_key_value_store_size_Offset());
 }
 
-const uint8_t* OatHeader::GetKeyValueStore() const {
+const uint8_t* OatHeader::getKeyValueStore() const {
     return (const uint8_t*)((uintptr_t)this + OatHeader::Get_key_value_store_Offset());
 }
 
-void OatHeader::SetKeyValueStoreSize(uint32_t new_size) {
+void OatHeader::setKeyValueStoreSize(uint32_t new_size) {
     *reinterpret_cast<uint32_t*>((uintptr_t)this + Get_key_value_store_size_Offset()) = new_size;
 }
 

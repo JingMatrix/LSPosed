@@ -22,6 +22,7 @@
 namespace {
 const std::string_view kParamToRemove = "--inline-max-code-units=0";
 std::string g_binary_path;  // The original binary path
+int g_size_change = 0;
 }  // namespace
 
 /**
@@ -99,7 +100,6 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
     const char* ptr = reinterpret_cast<const char*>(key_value_store_);
     const char* const end = ptr + size_limit;
     std::map<std::string, std::string> new_store;
-    bool modified = false;
     LOGD("Parsing KeyValueStore [%p - %p]", ptr, end);
 
     while (ptr < end && *ptr != '\0') {
@@ -141,7 +141,7 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
 
             // Standard logic: store in map and rebuild later
             new_store[std::string(key)] = std::move(cleaned_cmd);
-            modified = true;
+            g_size_change = cleaned_cmd.length() - value.length();
         } else {
             new_store[std::string(key)] = std::string(value);
             LOGI("Parsed item:\t[%s:%s]", key.data(), value.data());
@@ -155,7 +155,7 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
         }
     }
 
-    if (modified) {
+    if (g_size_change != 0) {
         WriteKeyValueStore(new_store, key_value_store_);
         return true;
     }
@@ -169,7 +169,7 @@ bool SpoofKeyValueStore(uint8_t* key_value_store_, uint32_t size_limit) {
 DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
     auto size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
     LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p, returns %u.\n", header, size);
-    return size;
+    return size + g_size_change;
 }
 
 // For Android version < 16
@@ -177,11 +177,7 @@ DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
     uint8_t* key_value_store = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
     uint32_t size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
     LOGI("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store, size);
-
-    // Bounds check to avoid memory corruption on invalid headers
-    if (size > 0 && size < 64 * 1024) {
-        SpoofKeyValueStore(key_value_store, size);
-    }
+    SpoofKeyValueStore(key_value_store, size);
     return key_value_store;
 }
 
@@ -190,11 +186,12 @@ DCL_HOOK_FUNC(void, _ZNK3art9OatHeader15ComputeChecksumEPj, void* header, uint32
     auto* oat_header = reinterpret_cast<art::OatHeader*>(header);
     LOGD("OatHeader::GetKeyValueStore() called on object at %p.", header);
 
-    uint8_t* store = const_cast<uint8_t*>(oat_header->GetKeyValueStore());
-    uint32_t size = oat_header->GetKeyValueStoreSize();
+    uint8_t* store = const_cast<uint8_t*>(oat_header->getKeyValueStore());
+    uint32_t size = oat_header->getKeyValueStoreSize();
     LOGI("KeyValueStore via offset: [addr: %p, size: %u]", store, size);
 
     SpoofKeyValueStore(store, size);
+    if (g_size_change != 0) oat_header->setKeyValueStoreSize(size + g_size_change);
 
     // Call original to compute checksum on our modified data
     old__ZNK3art9OatHeader15ComputeChecksumEPj(header, checksum);
