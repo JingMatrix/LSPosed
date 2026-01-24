@@ -72,17 +72,11 @@ public:
     static constexpr const char kTrueValue[] = "true";
     static constexpr const char kFalseValue[] = "false";
 
-    static constexpr size_t Get_key_value_store_size_Offset() {
-        return offsetof(OatHeader, key_value_store_size_);
-    }
-    static constexpr size_t Get_key_value_store_Offset() {
-        return offsetof(OatHeader, key_value_store_);
-    }
-
-    uint32_t getKeyValueStoreSize() const;
-    const uint8_t* getKeyValueStore() const;
-
-    void setKeyValueStoreSize(uint32_t new_size);
+    // Added helpers to access fields.
+    // NOTE: They are fragile due to different Android versions and compiler optimizations.
+    uint32_t getKeyValueStoreSize() const { return key_value_store_size_; }
+    const uint8_t* getKeyValueStore() const { return key_value_store_; }
+    void setKeyValueStoreSize(uint32_t new_size) { key_value_store_size_ = new_size; }
 
     void ComputeChecksum(/*inout*/ uint32_t* checksum) const;
 
