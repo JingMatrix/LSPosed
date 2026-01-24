@@ -174,7 +174,6 @@ bool SpoofKeyValueStore(uint8_t* store, uint32_t store_size) {
 
 DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
     auto size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    LOGD("OatHeader::GetKeyValueStoreSize() called on object at %p, returns %u.\n", header, size);
     return size + g_size_change;
 }
 
