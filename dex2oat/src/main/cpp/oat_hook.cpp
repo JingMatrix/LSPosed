@@ -107,7 +107,7 @@ bool SpoofKeyValueStore(uint8_t* store) {
     std::map<std::string, std::string> new_store_map;
     LOGI("Parsing KeyValueStore [%p - %p] of size %u", ptr, store_end, store_size);
 
-    int size_change = 0;
+    bool store_modified = false;
 
     while (ptr < store_end && *ptr != '\0') {
         // Find key
@@ -148,7 +148,7 @@ bool SpoofKeyValueStore(uint8_t* store) {
 
             // Standard logic: store in map and rebuild later
             new_store_map[std::string(key)] = std::move(cleaned_cmd);
-            size_change = cleaned_cmd.length() - value.length();
+            store_modified = true;
         } else {
             new_store_map[std::string(key)] = std::string(value);
             LOGI("Parsed item:\t[%s:%s]", key.data(), value.data());
@@ -162,7 +162,7 @@ bool SpoofKeyValueStore(uint8_t* store) {
         }
     }
 
-    if (size_change != 0) {
+    if (store_modified) {
         uint8_t* const new_store_end = WriteKeyValueStore(new_store_map, store);
         *store_size_ptr = new_store_end - store;
         LOGI("Store size set to %u", *store_size_ptr);
@@ -240,7 +240,7 @@ __attribute__((constructor)) static void initialize() {
     // 3. Register hooks for various ART versions
     PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader16GetKeyValueStoreEv);
 
-    // If the standard store hook fails or we are on newer Android, try the Checksum hook
+    // If the standard store hook fails (on newer Android), try the Checksum hook
     if (!lsplt::CommitHook()) {
         PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader15ComputeChecksumEPj);
         lsplt::CommitHook();
