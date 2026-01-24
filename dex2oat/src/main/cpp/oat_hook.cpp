@@ -22,7 +22,6 @@
 namespace {
 const std::string_view kParamToRemove = "--inline-max-code-units=0";
 std::string g_binary_path;  // The original binary path
-int g_size_change = 0;
 }  // namespace
 
 /**
@@ -68,7 +67,7 @@ std::string process_cmd(std::string_view sv, std::string_view new_cmd_path) {
 /**
  * Re-serializes the Key-Value map back into the OAT header memory space.
  */
-void WriteKeyValueStore(const std::map<std::string, std::string>& key_values, uint8_t* store) {
+uint8_t* WriteKeyValueStore(const std::map<std::string, std::string>& key_values, uint8_t* store) {
     LOGD("Writing KeyValueStore back to memory");
     char* data_ptr = reinterpret_cast<char*>(store);
 
@@ -82,10 +81,7 @@ void WriteKeyValueStore(const std::map<std::string, std::string>& key_values, ui
     }
     LOGI("Written KeyValueStore with size: %zu", reinterpret_cast<uint8_t*>(data_ptr) - store);
 
-    // If the store shrunk, zero out the space between the NEW end and the OLD end
-    if (g_size_change < 0) {
-        std::memset(data_ptr, 0, -g_size_change);
-    }
+    return reinterpret_cast<uint8_t*>(data_ptr);
 }
 
 // Helper function to test if a header field could have variable length
@@ -100,30 +96,35 @@ bool IsNonDeterministic(const std::string_view& key) {
  *
  * @return true if the store was modified in-place or successfully rebuilt.
  */
-bool SpoofKeyValueStore(uint8_t* store, uint32_t store_size) {
+bool SpoofKeyValueStore(uint8_t* store) {
     if (!store) return false;
 
-    const char* ptr = reinterpret_cast<const char*>(store);
-    const char* const end = ptr + store_size;
-    std::map<std::string, std::string> new_store;
-    LOGD("Parsing KeyValueStore [%p - %p]", ptr, end);
+    uint32_t* const store_size_ptr = reinterpret_cast<uint32_t*>(store - sizeof(uint32_t));
+    uint32_t const store_size = *store_size_ptr;
 
-    while (ptr < end && *ptr != '\0') {
+    const char* ptr = reinterpret_cast<const char*>(store);
+    const char* const store_end = ptr + store_size;
+    std::map<std::string, std::string> new_store_map;
+    LOGI("Parsing KeyValueStore [%p - %p] of size %u", ptr, store_end, store_size);
+
+    int size_change = 0;
+
+    while (ptr < store_end && *ptr != '\0') {
         // Find key
-        const char* key_end = reinterpret_cast<const char*>(std::memchr(ptr, 0, end - ptr));
+        const char* key_end = reinterpret_cast<const char*>(std::memchr(ptr, 0, store_end - ptr));
         if (!key_end) break;
         std::string_view key(ptr, key_end - ptr);
 
         // Find value
         const char* value_start = key_end + 1;
-        if (value_start >= end) break;
+        if (value_start >= store_end) break;
         const char* value_end =
-            reinterpret_cast<const char*>(std::memchr(value_start, 0, end - value_start));
+            reinterpret_cast<const char*>(std::memchr(value_start, 0, store_end - value_start));
         if (!value_end) break;
         std::string_view value(value_start, value_end - value_start);
 
         const bool has_padding =
-            value_end + 1 < end && *(value_end + 1) == '\0' && IsNonDeterministic(key);
+            value_end + 1 < store_end && *(value_end + 1) == '\0' && IsNonDeterministic(key);
 
         if (key == art::OatHeader::kDex2OatCmdLineKey &&
             value.find(kParamToRemove) != std::string_view::npos) {
@@ -146,10 +147,10 @@ bool SpoofKeyValueStore(uint8_t* store, uint32_t store_size) {
             }
 
             // Standard logic: store in map and rebuild later
-            new_store[std::string(key)] = std::move(cleaned_cmd);
-            g_size_change = cleaned_cmd.length() - value.length();
+            new_store_map[std::string(key)] = std::move(cleaned_cmd);
+            size_change = cleaned_cmd.length() - value.length();
         } else {
-            new_store[std::string(key)] = std::string(value);
+            new_store_map[std::string(key)] = std::string(value);
             LOGI("Parsed item:\t[%s:%s]", key.data(), value.data());
         }
 
@@ -161,8 +162,10 @@ bool SpoofKeyValueStore(uint8_t* store, uint32_t store_size) {
         }
     }
 
-    if (g_size_change != 0) {
-        WriteKeyValueStore(new_store, store);
+    if (size_change != 0) {
+        uint8_t* const new_store_end = WriteKeyValueStore(new_store_map, store);
+        *store_size_ptr = new_store_end - store;
+        LOGI("Store size set to %u", *store_size_ptr);
         return true;
     }
     return false;
@@ -172,18 +175,11 @@ bool SpoofKeyValueStore(uint8_t* store, uint32_t store_size) {
     ret (*old_##func)(__VA_ARGS__) = nullptr;                                                      \
     ret new_##func(__VA_ARGS__)
 
-DCL_HOOK_FUNC(uint32_t, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv, void* header) {
-    auto size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    return size + g_size_change;
-}
-
 // For Android version < 16
 DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
-    uint8_t* key_value_store = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
-    uint32_t key_value_store_size = old__ZNK3art9OatHeader20GetKeyValueStoreSizeEv(header);
-    LOGI("KeyValueStore via hook: [addr: %p, size: %u]", key_value_store, key_value_store_size);
+    uint8_t* const key_value_store = old__ZNK3art9OatHeader16GetKeyValueStoreEv(header);
 
-    SpoofKeyValueStore(key_value_store, key_value_store_size);
+    SpoofKeyValueStore(key_value_store);
 
     return key_value_store;
 }
@@ -191,14 +187,9 @@ DCL_HOOK_FUNC(uint8_t*, _ZNK3art9OatHeader16GetKeyValueStoreEv, void* header) {
 // For Android version 16+ : Intercept during checksum calculation
 DCL_HOOK_FUNC(void, _ZNK3art9OatHeader15ComputeChecksumEPj, void* header, uint32_t* checksum) {
     auto* oat_header = reinterpret_cast<art::OatHeader*>(header);
-    LOGD("OatHeader::GetKeyValueStore() called on object at %p.", header);
+    uint8_t* const store = const_cast<uint8_t*>(oat_header->getKeyValueStore());
 
-    uint8_t* store = const_cast<uint8_t*>(oat_header->getKeyValueStore());
-    uint32_t size = oat_header->getKeyValueStoreSize();
-    LOGI("KeyValueStore via header file: [addr: %p, size: %u]", store, size);
-
-    SpoofKeyValueStore(store, size);
-    if (g_size_change != 0) oat_header->setKeyValueStoreSize(size + g_size_change);
+    SpoofKeyValueStore(store);
 
     // Call original to compute checksum on our modified data
     old__ZNK3art9OatHeader15ComputeChecksumEPj(header, checksum);
@@ -247,7 +238,6 @@ __attribute__((constructor)) static void initialize() {
     }
 
     // 3. Register hooks for various ART versions
-    PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader20GetKeyValueStoreSizeEv);
     PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader16GetKeyValueStoreEv);
 
     // If the standard store hook fails or we are on newer Android, try the Checksum hook
