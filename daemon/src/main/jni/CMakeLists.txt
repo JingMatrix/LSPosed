@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(daemon)
 
-add_subdirectory(${EXTERNAL_ROOT} external)
+add_subdirectory(${VECTOR_ROOT}/external external)
 
 set(SOURCES
         dex2oat.cpp

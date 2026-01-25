@@ -47,7 +47,7 @@ constexpr int LAST_APP_ZYGOTE_ISOLATED_UID = 98999;
 constexpr int SHARED_RELRO_UID = 1037;
 constexpr int PER_USER_RANGE = 100000;
 
-static constexpr uid_t kAidInjected = INJECTED_AID;
+static constexpr uid_t kAidInjected = INJECTED_UID;
 static constexpr uid_t kAidInet = 3003;
 
 void MagiskLoader::LoadDex(JNIEnv *env, PreloadedDex &&dex) {

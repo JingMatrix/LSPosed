@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lspd)
 
-add_subdirectory(${CORE_ROOT} core)
+add_subdirectory(${VECTOR_ROOT}/core/src/main/jni core)
 
 configure_file(template/loader.cpp src/loader.cpp)
 

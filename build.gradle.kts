@@ -32,17 +32,30 @@ plugins {
     alias(libs.plugins.ktfmt)
 }
 
+val repo = jgit.repo()
+val commitCount = (repo?.commitCount("refs/remotes/origin/master") ?: 1) + 4200
+val latestTag = repo?.latestTag?.removePrefix("v") ?: "1.0"
+
+val injectedPackageName by extra("com.android.shell")
+val injectedPackageUid by extra(2000)
+
+val defaultManagerPackageName by extra("org.lsposed.manager")
+val verCode by extra(commitCount)
+val verName by extra(latestTag)
+
+
 cmaker {
     default {
         arguments.addAll(
             arrayOf(
-                "-DEXTERNAL_ROOT=${File(rootDir.absolutePath, "external")}",
-                "-DCORE_ROOT=${File(rootDir.absolutePath, "core/src/main/jni")}",
+                "-DVECTOR_ROOT=${rootDir.absolutePath}",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             )
         )
         val flags = arrayOf(
-            "-DINJECTED_AID=$injectedPackageUid",
+            "-DINJECTED_UID=$injectedPackageUid",
+            "-DVERSION_CODE=${verCode}",
+            "-DVERSION_NAME='\"${verName}\"'",
             "-Wno-gnu-string-literal-operator-template",
             "-Wno-c++2b-extensions",
         )
@@ -59,16 +72,7 @@ cmaker {
     }
 }
 
-val repo = jgit.repo()
-val commitCount = (repo?.commitCount("refs/remotes/origin/master") ?: 1) + 4200
-val latestTag = repo?.latestTag?.removePrefix("v") ?: "1.0"
 
-val injectedPackageName by extra("com.android.shell")
-val injectedPackageUid by extra(2000)
-
-val defaultManagerPackageName by extra("org.lsposed.manager")
-val verCode by extra(commitCount)
-val verName by extra(latestTag)
 val androidTargetSdkVersion by extra(36)
 val androidMinSdkVersion by extra(27)
 val androidBuildToolsVersion by extra("36.0.0")
