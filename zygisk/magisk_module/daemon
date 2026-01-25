@@ -3,6 +3,7 @@
 dir=${0%/*}
 tmpLspdApk="/data/local/tmp/daemon.apk"
 debug=@DEBUG@
+flavor=@FLAVOR@
 
 if [ -r $tmpLspdApk ]; then
   java_options="-Djava.class.path=$tmpLspdApk"
@@ -34,7 +35,7 @@ if [ ! -S "/dev/socket/zygote" ]; then
     fi
   done
 fi
-$debug && log -p d -t "LSPosed" "start daemon $*"
+$debug && log -p d -t "LSPosed" "start $flavor daemon $*"
 
 # shellcheck disable=SC2086
 exec /system/bin/app_process $java_options /system/bin --nice-name=lspd org.lsposed.lspd.Main "$@" >/dev/null 2>&1
