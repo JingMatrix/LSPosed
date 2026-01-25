@@ -165,7 +165,8 @@ int main(int argc, char **argv) {
         exec_argv.push_back(argv[i]);
     }
 
-    // Append hooking flags to disable inline
+    // Append hooking flags to disable inline, which is our purpose of this wrapper, since we cannot
+    // hook inlined target methods.
     exec_argv.push_back("--inline-max-code-units=0");
     exec_argv.push_back(nullptr);
 
@@ -175,7 +176,6 @@ int main(int argc, char **argv) {
 
     // Set LD_PRELOAD to point to the hooker library FD
     std::string preload_val = "LD_PRELOAD=/proc/self/fd/" + std::to_string(hooker_fd);
-    // We use setenv which manages its own memory.
     setenv("LD_PRELOAD", ("/proc/self/fd/" + std::to_string(hooker_fd)).c_str(), 1);
 
     // Pass original argv[0] as DEX2OAT_CMD

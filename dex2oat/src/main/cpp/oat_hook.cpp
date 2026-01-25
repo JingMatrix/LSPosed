@@ -13,15 +13,15 @@
 #include "oat.h"
 
 /**
- * This library is injected into dex2oat to intercept the generation of OAT headers.
- * Our wrapper runs dex2oat via the linker with extra flags. Without this hook,
- * the resulting OAT file would record the linker path and the extra flags in its
- * "dex2oat-cmdline" key, which can be used to detect the wrapper.
+ * This library is injected into dex2oat to intercept the generation of OAT headers. Our wrapper
+ * runs dex2oat via the linker with extra flags. Without this hook, the resulting OAT file would
+ * record the transferred fd path of wrapper and the extra flags in its "dex2oat-cmdline" key, which
+ * can be used to detect the wrapper.
  */
 
 namespace {
 const std::string_view kParamToRemove = "--inline-max-code-units=0";
-std::string g_binary_path;  // The original binary path
+std::string g_binary_path = getenv("DEX2OAT_CMD");  // The original binary path
 }  // namespace
 
 /**
@@ -79,7 +79,7 @@ uint8_t* WriteKeyValueStore(const std::map<std::string, std::string>& key_values
         std::memcpy(data_ptr, value.c_str(), value.length() + 1);
         data_ptr += value.length() + 1;
     }
-    LOGI("Written KeyValueStore with size: %zu", reinterpret_cast<uint8_t*>(data_ptr) - store);
+    LOGD("Written KeyValueStore with size: %zu", reinterpret_cast<uint8_t*>(data_ptr) - store);
 
     return reinterpret_cast<uint8_t*>(data_ptr);
 }
@@ -211,22 +211,16 @@ void register_hook(dev_t dev, ino_t inode, const char* symbol, void* new_func, v
 #define PLT_HOOK_REGISTER(DEV, INODE, NAME) PLT_HOOK_REGISTER_SYM(DEV, INODE, #NAME, NAME)
 
 __attribute__((constructor)) static void initialize() {
-    // 1. Determine the target binary name
-    const char* env_cmd = getenv("DEX2OAT_CMD");
-    if (env_cmd) {
-        g_binary_path = env_cmd;
-    }
-
     dev_t dev = 0;
     ino_t inode = 0;
 
-    // 2. Locate the dex2oat binary in memory to get its device and inode for PLT hooking
+    // Locate the dex2oat binary in memory to get its device and inode for PLT hooking
     for (const auto& info : lsplt::MapInfo::Scan()) {
         if (info.path.find("bin/dex2oat") != std::string::npos) {
             dev = info.dev;
             inode = info.inode;
             if (g_binary_path.empty()) g_binary_path = std::string(info.path);
-            LOGV("Found target: %s (dev: %ju, inode: %ju)", info.path.data(), (uintmax_t)dev,
+            LOGD("Found target: %s (dev: %ju, inode: %ju)", info.path.data(), (uintmax_t)dev,
                  (uintmax_t)inode);
             break;
         }
@@ -237,10 +231,10 @@ __attribute__((constructor)) static void initialize() {
         return;
     }
 
-    // 3. Register hooks for various ART versions
+    // Register hook for the standard KeyValueStore getter
     PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader16GetKeyValueStoreEv);
 
-    // If the standard store hook fails (on newer Android), try the Checksum hook
+    // If the standard store hook fails (e.g., on Android 16+), try the Checksum hook
     if (!lsplt::CommitHook()) {
         PLT_HOOK_REGISTER(dev, inode, _ZNK3art9OatHeader15ComputeChecksumEPj);
         lsplt::CommitHook();

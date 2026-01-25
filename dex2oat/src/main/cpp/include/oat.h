@@ -72,8 +72,8 @@ public:
     static constexpr const char kTrueValue[] = "true";
     static constexpr const char kFalseValue[] = "false";
 
-    // Added helper to access fields.
-    // NOTE: It is fragile due to different Android versions and compiler optimizations.
+    // Added helper to access the key_value_store_ field, which could be fragile across
+    // different Android versions and compiler optimizations.
     const uint8_t* getKeyValueStore() const { return key_value_store_; }
 
     void ComputeChecksum(/*inout*/ uint32_t* checksum) const;
