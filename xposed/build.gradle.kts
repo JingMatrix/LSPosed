@@ -20,4 +20,5 @@ android {
 
 dependencies {
     compileOnly(libs.androidx.annotation)
+    compileOnly(projects.hiddenapi.stubs)
 }

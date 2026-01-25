@@ -1,5 +1,4 @@
-package org.lsposed.lspd.nativebridge
-// TODO: refactor the JNI and thus change the package name
+package org.matrix.vector.nativebridge
 
 import dalvik.annotation.optimization.FastNative
 import io.github.libxposed.api.utils.DexParser
