@@ -14,8 +14,8 @@ import androidx.annotation.Nullable;
 
 import org.lsposed.lspd.core.BuildConfig;
 import org.lsposed.lspd.models.Module;
-import org.lsposed.lspd.nativebridge.HookBridge;
-import org.lsposed.lspd.nativebridge.NativeAPI;
+import org.matrix.vector.nativebridge.HookBridge;
+import org.matrix.vector.nativebridge.NativeAPI;
 import org.lsposed.lspd.service.ILSPInjectedModuleService;
 import org.lsposed.lspd.util.LspModuleClassLoader;
 import org.lsposed.lspd.util.Utils.Log;

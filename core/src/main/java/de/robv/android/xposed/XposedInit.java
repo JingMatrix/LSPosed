@@ -42,8 +42,8 @@ import android.util.ArrayMap;
 
 import org.lsposed.lspd.impl.LSPosedContext;
 import org.lsposed.lspd.models.PreLoadedApk;
-import org.lsposed.lspd.nativebridge.NativeAPI;
-import org.lsposed.lspd.nativebridge.ResourcesHook;
+import org.matrix.vector.nativebridge.NativeAPI;
+import org.matrix.vector.nativebridge.ResourcesHook;
 import org.lsposed.lspd.util.LspModuleClassLoader;
 import org.lsposed.lspd.util.Utils.Log;
 

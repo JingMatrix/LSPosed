@@ -2,7 +2,7 @@ package org.lsposed.lspd.impl;
 
 import androidx.annotation.NonNull;
 
-import org.lsposed.lspd.nativebridge.HookBridge;
+import org.matrix.vector.nativebridge.HookBridge;
 import org.lsposed.lspd.util.Utils.Log;
 
 import java.lang.reflect.Executable;

@@ -45,7 +45,7 @@ std::map<const std::string, std::string> signatures = {
         { "Landroid/content/res/XRes", ""},
         { "Landroid/content/res/XModule", ""},
         { "Lorg/lsposed/lspd/core/", ""},
-        { "Lorg/lsposed/lspd/nativebridge/", ""},
+        { "Lorg/matrix/vector/nativebridge/", ""},
         { "Lorg/lsposed/lspd/service/", ""},
 };
 

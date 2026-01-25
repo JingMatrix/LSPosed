@@ -3,7 +3,7 @@ package org.lsposed.lspd.hooker;
 import android.os.Build;
 
 import org.lsposed.lspd.impl.LSPosedBridge;
-import org.lsposed.lspd.nativebridge.HookBridge;
+import org.matrix.vector.nativebridge.HookBridge;
 
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.annotations.AfterInvocation;

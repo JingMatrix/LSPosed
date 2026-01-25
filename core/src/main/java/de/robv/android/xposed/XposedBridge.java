@@ -27,8 +27,8 @@ import android.util.Log;
 
 import org.lsposed.lspd.impl.LSPosedBridge;
 import org.lsposed.lspd.impl.LSPosedHookCallback;
-import org.lsposed.lspd.nativebridge.HookBridge;
-import org.lsposed.lspd.nativebridge.ResourcesHook;
+import org.matrix.vector.nativebridge.HookBridge;
+import org.matrix.vector.nativebridge.ResourcesHook;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Executable;
