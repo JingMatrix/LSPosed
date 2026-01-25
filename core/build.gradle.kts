@@ -56,9 +56,9 @@ copy {
 }
 
 dependencies {
-    api(projects.xposed)
-    implementation(projects.external.apache)
-    implementation(projects.external.axml)
+    api(project(":xposed"))
+    implementation(project(":external:apache"))
+    implementation(project(":external:axml"))
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)
     implementation(projects.services.managerService)
