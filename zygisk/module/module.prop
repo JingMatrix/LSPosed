@@ -1,0 +1,7 @@
+id=zygisk_vector
+name=Vector
+version=${versionName} (${versionCode})
+versionCode=${versionCode}
+author=${authorList}
+description=A modern, Xposed-compatible framework for Android application hooking. Supports Android 8.1 ~ 16.
+updateJson=https://raw.githubusercontent.com/JingMatrix/Vector/master/zygisk/update.json
