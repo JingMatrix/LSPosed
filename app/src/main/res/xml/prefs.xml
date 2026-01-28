@@ -132,6 +132,11 @@
             android:key="update_channel"
             android:summary="%s"
             android:title="@string/settings_update_channel" />
+        <Preference
+            android:icon="@drawable/ic_round_update_24"
+            android:key="ignored_updates"
+            android:summary="@string/settings_ignored_updates_summary_empty"
+            android:title="@string/settings_ignored_updates_title" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/settings_backup_and_restore">

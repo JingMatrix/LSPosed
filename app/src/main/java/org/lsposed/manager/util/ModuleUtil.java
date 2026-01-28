@@ -57,6 +57,7 @@ import java.util.zip.ZipFile;
 public final class ModuleUtil {
     // xposedminversion below this
     public static int MIN_MODULE_VERSION = 2; // reject modules with
+    private static final String PREF_IGNORED_UPDATES = "ignored_module_updates";
     private static ModuleUtil instance = null;
     private final PackageManager pm;
     private final Set<ModuleListener> listeners = ConcurrentHashMap.newKeySet();
@@ -83,6 +84,53 @@ public final class ModuleUtil {
             App.getExecutorService().submit(instance::reloadInstalledModules);
         }
         return instance;
+    }
+
+    public static boolean isUpdateIgnored(@Nullable String packageName) {
+        if (packageName == null) return false;
+        var ignored = App.getPreferences().getStringSet(PREF_IGNORED_UPDATES, Collections.emptySet());
+        return ignored != null && ignored.contains(packageName);
+    }
+
+    @NonNull
+    public static Set<String> getIgnoredUpdates() {
+        var ignored = App.getPreferences().getStringSet(PREF_IGNORED_UPDATES, Collections.emptySet());
+        if (ignored == null || ignored.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(ignored);
+    }
+
+    public static void setIgnoredUpdates(@Nullable Set<String> packageNames) {
+        var pref = App.getPreferences();
+        if (packageNames == null || packageNames.isEmpty()) {
+            pref.edit().remove(PREF_IGNORED_UPDATES).apply();
+            notifyIgnoredUpdatesChanged();
+            return;
+        }
+        pref.edit().putStringSet(PREF_IGNORED_UPDATES, new HashSet<>(packageNames)).apply();
+        notifyIgnoredUpdatesChanged();
+    }
+
+    public static void setUpdateIgnored(@Nullable String packageName, boolean ignored) {
+        if (packageName == null) return;
+        var pref = App.getPreferences();
+        var current = pref.getStringSet(PREF_IGNORED_UPDATES, Collections.emptySet());
+        var updated = new HashSet<>(current != null ? current : Collections.emptySet());
+        if (ignored) {
+            updated.add(packageName);
+        } else {
+            updated.remove(packageName);
+        }
+        pref.edit().putStringSet(PREF_IGNORED_UPDATES, updated).apply();
+        notifyIgnoredUpdatesChanged();
+    }
+
+    private static void notifyIgnoredUpdatesChanged() {
+        ModuleUtil local = instance;
+        if (local != null) {
+            local.listeners.forEach(ModuleListener::onModulesReloaded);
+        }
     }
 
     public static int extractIntPart(String str) {
