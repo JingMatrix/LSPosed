@@ -195,6 +195,10 @@
     <string name="settings_translation_contributors">譯者</string>
     <string name="settings_translation">參與翻譯</string>
     <string name="settings_translation_summary">幫助我們翻譯 %s 到您的語言</string>
+    <string name="settings_ignored_updates_title">已忽略的模組更新</string>
+    <string name="settings_ignored_updates_summary">已忽略模組：%1$d</string>
+    <string name="settings_ignored_updates_summary_empty">沒有忽略的模組</string>
+    <string name="settings_ignored_updates_empty">沒有忽略的模組。</string>
     <string name="settings_create_shortcut_summary">建立可以開啟寄生管理員的捷徑</string>
     <string name="settings_shortcut_pinned_hint">捷徑已釘選</string>
     <string name="settings_unsupported_pin_shortcut_summary">目前的預設啟動器不支援釘選捷徑</string>

@@ -198,6 +198,10 @@ JingMatrix</string>
     <string name="settings_translation_summary">帮助我们把 %s 翻译到你的语言</string>
     <string name="settings_create_shortcut_summary">创建一个能打开寄生管理器的快捷方式</string>
     <string name="settings_shortcut_pinned_hint">已创建快捷方式</string>
+    <string name="settings_ignored_updates_title">已忽略的模块更新</string>
+    <string name="settings_ignored_updates_summary">已忽略模块：%1$d</string>
+    <string name="settings_ignored_updates_summary_empty">没有忽略的模块</string>
+    <string name="settings_ignored_updates_empty">没有忽略的模块。</string>
     <string name="settings_unsupported_pin_shortcut_summary">当前默认桌面不支持固定快捷方式</string>
     <string name="settings_enable_status_notification">状态通知</string>
     <string name="settings_enable_status_notification_summary">显示一个通知以打开寄生管理器</string>
