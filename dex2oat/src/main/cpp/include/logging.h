@@ -1,10 +1,10 @@
 #pragma once
 
-#include <errno.h>
 #include <android/log.h>
+#include <errno.h>
 
 #ifndef LOG_TAG
-#define LOG_TAG "LSPosedDex2Oat"
+#define LOG_TAG "VectorDex2Oat"
 #endif
 
 #ifdef LOG_DISABLED
@@ -15,11 +15,7 @@
 #define LOGE(...) 0
 #else
 #ifndef NDEBUG
-#define LOGD(fmt, ...)                                                                             \
-    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG,                                                \
-                        "%s:%d#%s"                                                                 \
-                        ": " fmt,                                                                  \
-                        __FILE_NAME__, __LINE__, __PRETTY_FUNCTION__ __VA_OPT__(, ) __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGV(fmt, ...)                                                                             \
     __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG,                                              \
                         "%s:%d#%s"                                                                 \

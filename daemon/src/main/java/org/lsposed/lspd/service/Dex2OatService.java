@@ -40,6 +40,7 @@ import androidx.annotation.RequiresApi;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -67,15 +68,74 @@ public class Dex2OatService implements Runnable {
         }
     }
 
+    /**
+     * Checks the ELF header of the target file.
+     * If 32-bit -> Assigns to Index 0 (Release) or 1 (Debug).
+     * If 64-bit -> Assigns to Index 2 (Release) or 3 (Debug).
+     */
+    private void checkAndAddDex2Oat(String path) {
+        if (path == null)
+            return;
+        File file = new File(path);
+        if (!file.exists())
+            return;
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] header = new byte[5];
+            if (fis.read(header) != 5)
+                return;
+
+            // 1. Verify ELF Magic: 0x7F 'E' 'L' 'F'
+            if (header[0] != 0x7F || header[1] != 'E' || header[2] != 'L' || header[3] != 'F') {
+                return;
+            }
+
+            // 2. Check Architecture (header[4]): 1 = 32-bit, 2 = 64-bit
+            boolean is32Bit = (header[4] == 1);
+            boolean is64Bit = (header[4] == 2);
+            boolean isDebug = path.contains("dex2oatd");
+
+            int index = -1;
+
+            if (is32Bit) {
+                index = isDebug ? 1 : 0; // Index 0/1 maps to r32/d32 in C++
+            } else if (is64Bit) {
+                index = isDebug ? 3 : 2; // Index 2/3 maps to r64/d64 in C++
+            }
+
+            // 3. Assign to the detected slot
+            if (index != -1 && dex2oatArray[index] == null) {
+                dex2oatArray[index] = path;
+                try {
+                    // Open the FD for the wrapper to use later
+                    fdArray[index] = Os.open(path, OsConstants.O_RDONLY, 0);
+                    Log.i(TAG, "Detected " + path + " as " + (is64Bit ? "64-bit" : "32-bit") + " -> Assigned Index "
+                            + index);
+                } catch (ErrnoException e) {
+                    Log.e(TAG, "Failed to open FD for " + path, e);
+                    dex2oatArray[index] = null;
+                }
+            }
+        } catch (IOException e) {
+            // File not readable, skip
+        }
+    }
+
     public Dex2OatService() {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
-            openDex2oat(Process.is64Bit() ? 2 : 0, "/apex/com.android.runtime/bin/dex2oat");
-            openDex2oat(Process.is64Bit() ? 3 : 1, "/apex/com.android.runtime/bin/dex2oatd");
+            // Android 10: Check the standard path.
+            // Logic will detect if it is 32-bit and put it in Index 0.
+            checkAndAddDex2Oat("/apex/com.android.runtime/bin/dex2oat");
+            checkAndAddDex2Oat("/apex/com.android.runtime/bin/dex2oatd");
+
+            // Check for explicit 64-bit paths (just in case)
+            checkAndAddDex2Oat("/apex/com.android.runtime/bin/dex2oat64");
+            checkAndAddDex2Oat("/apex/com.android.runtime/bin/dex2oatd64");
         } else {
-            openDex2oat(0, "/apex/com.android.art/bin/dex2oat32");
-            openDex2oat(1, "/apex/com.android.art/bin/dex2oatd32");
-            openDex2oat(2, "/apex/com.android.art/bin/dex2oat64");
-            openDex2oat(3, "/apex/com.android.art/bin/dex2oatd64");
+            checkAndAddDex2Oat("/apex/com.android.art/bin/dex2oat32");
+            checkAndAddDex2Oat("/apex/com.android.art/bin/dex2oatd32");
+            checkAndAddDex2Oat("/apex/com.android.art/bin/dex2oat64");
+            checkAndAddDex2Oat("/apex/com.android.art/bin/dex2oatd64");
         }
 
         openDex2oat(4, "/data/adb/modules/zygisk_lsposed/bin/liboat_hook32.so");

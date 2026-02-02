@@ -193,9 +193,18 @@ public class ConfigFileManager {
     public static boolean chattr0(Path path) {
         try {
             var dir = Os.open(path.toString(), OsConstants.O_RDONLY, 0);
+            // Clear all special file attributes on the directory
             HiddenApiBridge.Os_ioctlInt(dir, Process.is64Bit() ? 0x40086602 : 0x40046602, 0);
             Os.close(dir);
             return true;
+        } catch (ErrnoException e) {
+            // If the operation is not supported (ENOTSUP), it means the filesystem doesn't support attributes.
+            // We can assume the file is not immutable and proceed.
+            if (e.errno == OsConstants.ENOTSUP) {
+                return true;
+            }
+            Log.d(TAG, "chattr 0", e);
+            return false;
         } catch (Throwable e) {
             Log.d(TAG, "chattr 0", e);
             return false;

@@ -36,11 +36,19 @@ android {
         }
     }
 
+    sourceSets {
+        named("main") {
+            java.srcDirs("src/main/java", "../libxposed/service/src/main")
+            aidl.srcDirs("src/main/aidl", "../libxposed/interface/src/main/aidl")
+        }
+    }
+
     aidlPackagedList += "org/lsposed/lspd/models/Module.aidl"
     aidlPackagedList += "org/lsposed/lspd/models/PreloadedApk.aidl"
     namespace = "org.lsposed.lspd.daemonservice"
 }
 
 dependencies {
+    compileOnly(libs.androidx.annotation)
     compileOnly(projects.hiddenapi.stubs)
 }

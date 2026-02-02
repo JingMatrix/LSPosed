@@ -1,11 +1,11 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
-nav = "2.9.5"
+agp = "8.13.1"
+kotlin = "2.2.21"
+nav = "2.9.6"
 appcenter = "5.0.5"
-libxposed = "100"
 glide = "5.0.5"
-okhttp = "5.2.0"
+okhttp = "5.3.2"
+ktfmt = "0.25.0"
 
 [plugins]
 agp-lib = { id = "com.android.library", version.ref = "agp" }
@@ -13,6 +13,7 @@ agp-app = { id = "com.android.application", version.ref = "agp" }
 kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 nav-safeargs = { id = "androidx.navigation.safeargs", version.ref = "nav" }
 autoresconfig = { id = "dev.rikka.tools.autoresconfig", version = "1.2.2" }
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 materialthemebuilder = { id = "dev.rikka.tools.materialthemebuilder", version = "1.5.1" }
 lsplugin-resopt = { id = "org.lsposed.lsplugin.resopt", version = "1.6" }
 lsplugin-apksign = { id = "org.lsposed.lsplugin.apksign", version = "1.4" }
@@ -31,7 +32,7 @@ rikkax-recyclerview = { module = "dev.rikka.rikkax.recyclerview:recyclerview-ktx
 rikkax-widget-borderview = { module = "dev.rikka.rikkax.widget:borderview", version = "1.1.0" }
 rikkax-widget-mainswitchbar = { module = "dev.rikka.rikkax.widget:mainswitchbar", version = "1.0.2" }
 
-androidx-activity = { module = "androidx.activity:activity", version = "1.11.0" }
+androidx-activity = { module = "androidx.activity:activity", version = "1.12.1" }
 androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
 androidx-browser = { module = "androidx.browser:browser", version = "1.9.0" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.1" }
@@ -41,7 +42,7 @@ androidx-navigation-fragment = { group = "androidx.navigation", name = "navigati
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
 androidx-preference = { module = "androidx.preference:preference", version = "1.2.1" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.4.0" }
-androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version = "1.2.0-beta01" }
+androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version = "1.2.0" }
 
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
@@ -57,6 +58,3 @@ gson = { module = "com.google.code.gson:gson", version = "2.13.2" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version = "6.1" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
-
-libxposed-api = { group = "io.github.libxposed", name = "api", version.ref = "libxposed" }
-libxposed-interface = { group = "io.github.libxposed", name = "interface", version.ref = "libxposed" }

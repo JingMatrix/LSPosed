@@ -54,6 +54,8 @@
     <string name="system_prop_incorrect"><![CDATA[Vissa nödvändiga systemegenskaper är raderade eller ändrade.<br/>Moduler kan komma att ogiltigförklara.]]></string>
     <string name="need_update">Behöver uppdateras</string>
     <string name="please_update_summary">Vänligen installera den senaste versionen av LSPosed</string>
+    <string name="developer_warning_title">Tips för utvecklare av moduler</string>
+    <string name="developer_warning_summary">Inaktivera optimeringar för distribution i Android Studio, eller använd kommandot `gradlew installDebug` för att installera. Annars kommer modulen apk inte att uppdateras.</string>
     <string name="info_api_version">API version</string>
     <string name="info_framework_version">Ramverk version</string>
     <string name="info_manager_package_name">Namn på managerpaket</string>
@@ -139,9 +141,13 @@
     <string name="menu_show_denylist">Neka</string>
     <string name="failed_to_save_scope_list">Det gick inte att spara omfattningslistan</string>
     <string name="app_version">Version: %1$s</string>
+    <string name="menu_select">Välj</string>
     <string name="use_recommended">Rekommenderad</string>
     <string name="no_scope_selected_has_recommended">Du valde inte någon app. Välj rekommenderade appar?</string>
     <string name="use_recommended_message">Välj rekommenderade appar?</string>
+    <string name="menu_select_all">Alla</string>
+    <string name="menu_select_none">Ingen</string>
+    <string name="menu_auto_include">Automatisk inkludering</string>
     <string name="module_is_not_activated_yet">Xposed modul är inte aktiverad än</string>
     <string name="requested_by_module">Rekommenderad</string>
     <string name="update_available">Uppdatering tillgänglig: %1$s</string>
@@ -166,6 +172,8 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Inaktivera utförliga loggar</string>
     <string name="settings_disable_verbose_log_summary">Begäran om att inkludera verbose-loggar i rapporten</string>
+    <string name="settings_enable_log_watchdog">Aktivera loggövervakning</string>
+    <string name="settings_enable_log_watchdog_summary">Loggövervakning av LSPosed ändrar systemegenskaper, vilket kan utnyttjas för att upptäcka LSPosed</string>
     <string name="pure_black_dark_theme">Svart mörkt tema</string>
     <string name="pure_black_dark_theme_summary">Använd det rena svarta temat om mörkt tema är aktiverat</string>
     <string name="settings_group_theme">Tema</string>

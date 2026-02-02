@@ -229,7 +229,8 @@ void Logcat::ProcessBuffer(struct log_msg *buf) {
                      tag == "APatchD"sv || tag == "Dobby"sv || tag.starts_with("dex2oat"sv) ||
                      tag == "KernelSU"sv || tag == "LSPlant"sv || tag == "LSPlt"sv ||
                      tag.starts_with("LSPosed"sv) || tag == "Magisk"sv || tag == "SELinux"sv ||
-                     tag == "TEESimulator"sv || tag.starts_with("zygisk"sv))) [[unlikely]] {
+                     tag == "TEESimulator"sv || tag.starts_with("Vector"sv) ||
+                     tag.starts_with("zygisk"sv))) [[unlikely]] {
         verbose_print_count_ += PrintLogLine(entry, verbose_file_.get());
     }
     if (entry.pid == my_pid_ && tag == "LSPosedLogcat"sv) [[unlikely]] {

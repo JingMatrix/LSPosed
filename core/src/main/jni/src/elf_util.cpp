@@ -454,6 +454,18 @@ bool ElfImg::findModuleBase() {
         }
     }
 
+    // Step 3 (Fallback): If the pattern was not found, find the first `r--p` entry.
+    if (!found_block) {
+        LOGD("`r-xp` pattern not found. Falling back to first `r--p` entry.");
+        for (const auto &entry : filtered_list) {
+            if (strcmp(entry.perms, "r--p") == 0) {
+                found_block = &entry;
+                LOGD("Found first `r--p` block at {:#x}", found_block->start_addr);
+                break;  // Fallback found, exit loop.
+            }
+        }
+    }
+
     if (!found_block) {
         LOGE("Fatal: Could not determine a base address for {}", elf.data());
         return false;
