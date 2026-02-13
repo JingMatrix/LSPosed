@@ -210,8 +210,14 @@ public class LSPosedContext implements XposedInterface {
 
     @Nullable
     @Override
-    public Object invokeOrigin(@NonNull Method method, @Nullable Object thisObject, Object[] args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+    public Object invokeOrigin(@NonNull Method method, @Nullable Object thisObject, Object... args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
         return HookBridge.invokeOriginalMethod(method, thisObject, args);
+    }
+
+    @Override
+    public <T> void invokeOrigin(@NonNull Constructor<T> constructor, @NonNull T thisObject, Object... args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+        // The bridge returns an Object (null for void/constructors), which we discard.
+        HookBridge.invokeOriginalMethod(constructor, thisObject, args);
     }
 
     private static char getTypeShorty(Class<?> type) {
@@ -255,6 +261,11 @@ public class LSPosedContext implements XposedInterface {
             throw new IllegalArgumentException("Cannot invoke special on static method: " + method);
         }
         return HookBridge.invokeSpecialMethod(method, getExecutableShorty(method), method.getDeclaringClass(), thisObject, args);
+    }
+
+    @Override
+    public <T> void invokeSpecial(@NonNull Constructor<T> constructor, @NonNull T thisObject, Object... args) throws InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+        HookBridge.invokeSpecialMethod(constructor, getExecutableShorty(constructor), constructor.getDeclaringClass(), thisObject, args);
     }
 
     @NonNull
