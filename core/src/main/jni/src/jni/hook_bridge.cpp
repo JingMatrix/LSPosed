@@ -322,10 +322,10 @@ LSP_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass callbac
     return res;
 }
 
-LSP_DEF_NATIVE_METHOD(jobject, HookBridge, getStaticInitializer, jclass clazz) {
+LSP_DEF_NATIVE_METHOD(jobject, HookBridge, getStaticInitializer, jclass target_class) {
     // <clinit> is the internal name for a static initializer.
     // Its signature is always ()V (no arguments, void return).
-    jmethodID mid = env->GetStaticMethodID(clazz, "<clinit>", "()V");
+    jmethodID mid = env->GetStaticMethodID(target_class, "<clinit>", "()V");
     if (!mid) {
         // If GetStaticMethodID fails, it throws an exception.
         // We clear it and return null to let the Java side handle it gracefully.
@@ -334,7 +334,7 @@ LSP_DEF_NATIVE_METHOD(jobject, HookBridge, getStaticInitializer, jclass clazz) {
     }
     // Convert the method ID to a java.lang.reflect.Method object.
     // The last parameter must be JNI_TRUE because it's a static method.
-    return env->ToReflectedMethod(clazz, mid, JNI_TRUE);
+    return env->ToReflectedMethod(target_class, mid, JNI_TRUE);
 }
 
 static JNINativeMethod gMethods[] = {

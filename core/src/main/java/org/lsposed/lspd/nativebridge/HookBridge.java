@@ -1,6 +1,7 @@
 package org.lsposed.lspd.nativebridge;
 
 import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 
 import dalvik.annotation.optimization.FastNative;
