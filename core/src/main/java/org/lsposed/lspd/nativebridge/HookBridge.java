@@ -25,4 +25,12 @@ public class HookBridge {
     public static native boolean setTrusted(Object cookie);
 
     public static native Object[][] callbackSnapshot(Class<?> hooker_callback, Executable method);
+
+    /**
+     * Retrieves the static initializer (<clinit>) of a class as a Method object.
+     * Standard Java reflection cannot access this.
+     * @param clazz The class to inspect.
+     * @return A Method object for the static initializer, or null if it doesn't exist.
+     */
+    public static native Method getStaticInitializer(Class<?> clazz);
 }

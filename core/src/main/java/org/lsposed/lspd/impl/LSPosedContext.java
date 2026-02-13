@@ -189,6 +189,27 @@ public class LSPosedContext implements XposedInterface {
         return LSPosedBridge.doHook(origin, priority, hooker);
     }
 
+    @Override
+    @NonNull
+    public <T> MethodUnhooker<Constructor<T>> hookClassInitializer(@NonNull Class<T> origin, @NonNull Class<? extends Hooker> hooker) {
+        return hookClassInitializer(origin, PRIORITY_DEFAULT, hooker);
+    }
+
+    @Override
+    @NonNull
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <T> MethodUnhooker<Constructor<T>> hookClassInitializer(@NonNull Class<T> origin, int priority, @NonNull Class<? extends Hooker> hooker) {
+        Method staticInitializer = HookBridge.getStaticInitializer(origin);
+
+        // The class might not have a static initializer block
+        if (staticInitializer == null) {
+            throw new IllegalArgumentException("Class " + origin.getName() + " has no static initializer");
+        }
+
+        // Use the existing doHook logic. It will return a MethodUnhooker<Method>.
+        return (MethodUnhooker) LSPosedBridge.doHook(staticInitializer, priority, hooker);
+    }
+
     private static boolean doDeoptimize(@NonNull Executable method) {
         if (Modifier.isAbstract(method.getModifiers())) {
             throw new IllegalArgumentException("Cannot deoptimize abstract methods: " + method);
