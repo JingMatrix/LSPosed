@@ -151,6 +151,8 @@
     <string name="module_is_not_activated_yet">Xposed module is not activated yet</string>
     <string name="requested_by_module">Recommended</string>
     <string name="update_available">Update available: %1$s</string>
+    <string name="ignore_updates">Ignore updates</string>
+    <string name="allow_updates">Allow updates</string>
     <string name="module_disabled_no_selection">Module %s has been disabled since no app selected.</string>
     <string name="android_framework">System Framework</string>
     <string name="menu_backup_and_restore">Backup</string>
@@ -207,6 +209,10 @@
     <string name="update_channel_stable">Stable</string>
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Nightly build</string>
+    <string name="settings_ignored_updates_title">Ignored module updates</string>
+    <string name="settings_ignored_updates_summary">Ignored modules: %1$d</string>
+    <string name="settings_ignored_updates_summary_empty">No ignored modules</string>
+    <string name="settings_ignored_updates_empty">There are no ignored modules.</string>
     <string name="settings_xposed_api_call_protection">Xposed API call protection</string>
     <string name="settings_xposed_api_call_protection_summary">Block dynamically loaded module code to use Xposed API, this may break some modules but benefit security</string>
     <!-- Module Repo -->
