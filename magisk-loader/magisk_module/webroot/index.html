@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>LSPosed</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+:root{
+--bg:#000000;
+--surface:#1c1c1e;
+--grouped:#2c2c2e;
+--separator:#38383a;
+--accent:#0a84ff;
+--success:#30d158;
+--danger:#ff453a;
+--warning:#ff9f0a;
+--text:#ffffff;
+--secondary:#8e8e93;
+--tertiary:#636366;
+--ios-ease:cubic-bezier(0.32,0.72,0,1);
+--ios-spring:cubic-bezier(0.175,0.885,0.32,1.275);
+}
+@media (prefers-reduced-motion:reduce){
+*{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body.lock-scroll{overflow:hidden;height:100vh}
+.container{max-width:430px;margin:0 auto;padding:20px 0 calc(20px + env(safe-area-inset-bottom));position:relative}
+.header{padding:60px 20px 30px;text-align:center;animation:slideDown 0.6s var(--ios-ease)}
+@keyframes slideDown{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
+.status-ring{width:120px;height:120px;margin:0 auto 20px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.2s var(--ios-spring)}
+.status-ring:active{transform:scale(0.92)}
+.status-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) 0deg,var(--accent) var(--progress,180deg),var(--surface) var(--progress,180deg));mask:radial-gradient(transparent 62%,black 63%);-webkit-mask:radial-gradient(transparent 62%,black 63%);animation:rotate 20s linear infinite}
+@keyframes rotate{to{transform:rotate(360deg)}}
+.status-ring.active::before{background:conic-gradient(var(--success) 0deg,var(--success) 270deg,var(--surface) 270deg)}
+.status-ring.inactive::before{background:conic-gradient(var(--secondary) 0deg,var(--secondary) 90deg,var(--surface) 90deg)}
+.status-icon{width:80px;height:80px;background:var(--surface);border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:1;position:relative}
+.module-badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;min-width:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);animation:badgePop 0.4s var(--ios-spring)}
+@keyframes badgePop{from{transform:scale(0)}to{transform:scale(1)}}
+.status-icon .material-icons-round{font-size:55px;color:var(--accent)}
+.status-ring.active .status-icon .material-icons-round{color:var(--success)}
+.status-ring.inactive .status-icon .material-icons-round{color:var(--secondary)}
+.title{font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-bottom:6px}
+.subtitle{font-size:15px;color:var(--secondary);font-weight:400}
+.section{margin-bottom:28px;padding:0 20px;animation:fadeUp 0.5s var(--ios-ease) 0.1s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.section-title{font-size:13px;text-transform:uppercase;color:var(--secondary);margin-bottom:8px;padding-left:12px;font-weight:600;letter-spacing:0.5px}
+.list{background:var(--surface);border-radius:12px;overflow:hidden}
+.item{display:flex;align-items:center;padding:14px 16px;min-height:56px;cursor:pointer;position:relative;transition:background 0.2s;-webkit-user-select:none;user-select:none}
+.item:not(:last-child)::after{content:"";position:absolute;left:56px;right:0;bottom:0;height:0.5px;background:var(--separator)}
+.item:active{background:var(--grouped)}
+.item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+.item-icon .material-icons-round{font-size:20px}
+.item-icon.blue{background:rgba(10,132,255,0.15)}
+.item-icon.blue .material-icons-round{color:var(--accent)}
+.item-icon.green{background:rgba(48,209,88,0.15)}
+.item-icon.green .material-icons-round{color:var(--success)}
+.item-icon.red{background:rgba(255,69,58,0.15)}
+.item-icon.red .material-icons-round{color:var(--danger)}
+.item-icon.orange{background:rgba(255,149,0,0.15)}
+.item-icon.orange .material-icons-round{color:#ff9500}
+.item-icon.purple{background:rgba(175,82,222,0.15)}
+.item-icon.purple .material-icons-round{color:#af52de}
+.item-icon.gray{background:var(--grouped)}
+.item-icon.gray .material-icons-round{color:var(--secondary)}
+.item-icon.yellow{background:rgba(255,204,0,0.15)}
+.item-icon.yellow .material-icons-round{color:#ffcc00}
+.item-content{flex:1;min-width:0}
+.item-label{font-size:17px;font-weight:400;margin-bottom:1px}
+.item-detail{font-size:13px;color:var(--secondary);line-height:1.3}
+.item-value{font-size:17px;color:var(--secondary);margin-right:4px}
+.item-chevron{color:var(--tertiary);font-size:20px;margin-left:4px;transition:transform 0.3s var(--ios-ease)}
+.item.expanded .item-chevron{transform:rotate(90deg)}
+.refresh-hint{text-align:center;padding:40px 20px;color:var(--tertiary);font-size:13px;animation:fadeUp 0.5s var(--ios-ease) 0.3s both}
+.refresh-hint .material-icons-round{font-size:24px;margin-bottom:8px;display:block}
+.sheet{position:fixed;inset:0;z-index:100;visibility:hidden;opacity:0;transition:opacity 0.3s}
+.sheet.active{visibility:visible;opacity:1}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px)}
+.sheet-content{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:24px 24px 0 0;padding:20px 0 calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform 0.4s var(--ios-ease);max-height:85vh;display:flex;flex-direction:column}
+.sheet.active .sheet-content{transform:translateY(0)}
+.sheet-handle{width:36px;height:5px;background:var(--tertiary);border-radius:3px;margin:0 auto 20px;opacity:0.5;flex-shrink:0}
+.sheet-header{text-align:center;margin-bottom:16px;padding:0 20px;flex-shrink:0}
+.sheet-title{font-size:20px;font-weight:600;margin-bottom:4px}
+.sheet-subtitle{font-size:15px;color:var(--secondary)}
+.search-box{padding:0 20px 12px;flex-shrink:0}
+.search-input{width:100%;height:36px;background:var(--grouped);border:1px solid var(--separator);border-radius:10px;padding:0 12px;color:var(--text);font-size:15px;outline:none;transition:border-color 0.2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--tertiary)}
+.sheet-body{flex:1;overflow-y:auto;padding:0 20px;min-height:0}
+.module-list{display:flex;flex-direction:column;gap:8px}
+.module-item{background:var(--grouped);border-radius:10px;padding:12px;cursor:pointer;transition:background 0.2s;border:1px solid transparent}
+.module-item:hover{background:var(--separator)}
+.module-item:active{transform:scale(0.98)}
+.module-item.selected{border-color:var(--accent);background:rgba(10,132,255,0.1)}
+.module-name{font-size:15px;font-weight:500;margin-bottom:2px}
+.module-meta{font-size:12px;color:var(--secondary);display:flex;gap:12px}
+.module-status{font-size:12px;color:var(--success)}
+.module-status.inactive{color:var(--secondary)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--tertiary)}
+.sheet-actions{padding:16px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.format-toggle{display:flex;gap:8px;margin-bottom:8px}
+.format-btn{flex:1;height:32px;border-radius:8px;border:1px solid var(--separator);background:transparent;color:var(--secondary);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.format-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn{height:50px;border-radius:12px;border:none;font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,opacity 0.2s;-webkit-user-select:none;user-select:none}
+.btn:active{transform:scale(0.96);opacity:0.8}
+.btn-default{background:var(--grouped);color:var(--text)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.toast-container{position:fixed;top:0;left:0;right:0;z-index:200;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;display:flex;justify-content:center}
+.toast{background:rgba(30,30,30,0.95);backdrop-filter:blur(20px);color:#fff;padding:12px 20px;border-radius:20px;font-size:15px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.3);transform:translateY(-100px);opacity:0;transition:transform 0.4s var(--ios-spring),opacity 0.3s;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.1)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--success);flex-shrink:0}
+.toast-icon.error{background:var(--danger)}
+.toast-icon .material-icons-round{font-size:14px;color:#fff}
+.skeleton{animation:skeleton-pulse 2s ease-in-out infinite}
+@keyframes skeleton-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.skeleton-header{text-align:center;padding:60px 20px 30px}
+.skeleton-ring{width:120px;height:120px;margin:0 auto 20px;border-radius:50%;background:var(--surface)}
+.skeleton-title{width:140px;height:28px;background:var(--surface);border-radius:6px;margin:0 auto 8px}
+.skeleton-subtitle{width:100px;height:16px;background:var(--surface);border-radius:4px;margin:0 auto}
+.skeleton-section{padding:0 20px;margin-bottom:28px}
+.skeleton-label{width:80px;height:13px;background:var(--surface);border-radius:3px;margin-bottom:8px;margin-left:12px}
+.skeleton-list{background:var(--surface);border-radius:12px;height:56px}
+.loading{position:fixed;inset:0;background:var(--bg);z-index:50}
+.hidden{display:none !important}
+
+.trouble-item{background:var(--surface);border-radius:12px;margin-bottom:12px;overflow:hidden;transition:all 0.3s var(--ios-ease)}
+.trouble-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;position:relative;-webkit-user-select:none;user-select:none}
+.trouble-header:active{background:var(--grouped)}
+.trouble-header::after{content:"";position:absolute;left:56px;right:16px;bottom:0;height:0.5px;background:var(--separator);opacity:0;transition:opacity 0.2s}
+.trouble-item.expanded .trouble-header::after{opacity:1}
+.trouble-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0;background:var(--grouped)}
+.trouble-icon .material-icons-round{font-size:20px;color:var(--warning)}
+.trouble-content{max-height:0;overflow:hidden;transition:max-height 0.4s var(--ios-ease),padding 0.4s var(--ios-ease)}
+.trouble-item.expanded .trouble-content{max-height:800px;padding:0 16px 16px}
+.trouble-text{font-size:14px;color:var(--secondary);line-height:1.5;margin-bottom:12px}
+.trouble-text strong{color:var(--text);font-weight:600}
+.trouble-text code{background:var(--grouped);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;color:var(--accent)}
+.trouble-actions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.trouble-btn{height:40px;border-radius:10px;border:1px solid var(--separator);background:var(--grouped);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s}
+.trouble-btn:active{transform:scale(0.96);background:var(--separator)}
+.trouble-btn .material-icons-round{font-size:18px}
+.trouble-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.note-box{background:rgba(255,159,10,0.1);border-left:3px solid var(--warning);padding:12px;border-radius:8px;margin:12px 0;font-size:13px;color:var(--secondary);line-height:1.4}
+.note-box strong{color:var(--warning)}
+.note-box.danger{background:rgba(255,69,58,0.1);border-left-color:var(--danger)}
+.note-box.danger strong{color:var(--danger)}
+.code-block{background:var(--grouped);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:var(--text);overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin:8px 0;position:relative}
+.code-block::after{content:"tap to copy";position:absolute;top:4px;right:8px;font-size:10px;color:var(--tertiary);opacity:0.6;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.quick-actions{display:flex;gap:8px;overflow-x:auto;padding:0 20px 12px;margin-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.quick-actions::-webkit-scrollbar{display:none}
+.quick-btn{flex-shrink:0;height:36px;border-radius:18px;border:1px solid var(--separator);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0 14px;transition:all 0.2s;white-space:nowrap}
+.quick-btn:active{transform:scale(0.95);background:var(--grouped)}
+.quick-btn .material-icons-round{font-size:16px}
+.quick-btn.warning{border-color:var(--warning);color:var(--warning)}
+.quick-btn.danger{border-color:var(--danger);color:var(--danger)}
+
+.info-btn{position:fixed;top:calc(16px + env(safe-area-inset-top));right:16px;width:36px;height:36px;border-radius:50%;background:rgba(28,28,30,0.8);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:90;transition:all 0.3s var(--ios-ease);box-shadow:0 2px 8px rgba(0,0,0,0.3);opacity:0;transform:translateY(-20px);pointer-events:none}
+.info-btn.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.info-btn:active{transform:scale(0.9);background:var(--accent)}
+.info-btn .material-icons-round{font-size:20px;color:var(--secondary);transition:color 0.2s}
+.info-btn:hover .material-icons-round{color:var(--accent)}
+.info-btn.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(10,132,255,0.4)}50%{box-shadow:0 0 0 8px rgba(10,132,255,0)}}
+
+.info-sheet{position:fixed;inset:0;z-index:100;visibility:hidden;opacity:0;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;padding:20px}
+.info-sheet.active{visibility:visible;opacity:1}
+.info-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)}
+.info-card{position:relative;background:rgba(28,28,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px;width:100%;max-width:340px;transform:scale(0.9) translateY(20px);opacity:0;transition:all 0.4s var(--ios-spring);box-shadow:0 20px 40px rgba(0,0,0,0.4);display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.info-sheet.active .info-card{transform:scale(1) translateY(0);opacity:1}
+.info-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--grouped);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s}
+.info-close:active{transform:scale(0.9);background:var(--danger)}
+.info-close .material-icons-round{font-size:16px;color:var(--secondary)}
+.info-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#5856d6);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 4px 12px rgba(10,132,255,0.3)}
+.info-icon .material-icons-round{font-size:28px;color:#fff}
+.info-quote{font-size:14px;line-height:1.6;color:var(--text);text-align:center;margin:0;font-style:italic;position:relative;padding:0 8px}
+.info-divider{height:1px;background:var(--separator);margin:20px 0}
+.info-credit{text-align:center;font-size:14px;color:var(--secondary);margin:0 0 32px}
+.info-social{margin-top:0;display:flex;justify-content:center;width:100%}
+.info-link-btn{width:100%;height:50px;border-radius:12px;background:var(--grouped);border:1px solid var(--separator);display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text);text-decoration:none;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.info-link-btn:active{transform:scale(0.96);background:var(--accent);border-color:var(--accent);color:#fff}
+.info-link-btn .material-icons-round{font-size:20px;color:var(--accent);transition:color 0.2s}
+.info-link-btn:active .material-icons-round{color:#fff}
+.info-social{margin-top:4px;display:flex;justify-content:center;width:100%}
+.info-social .material-icons-round{font-size:28px;padding:12px;border-radius:14px;cursor:pointer;color:var(--accent);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 18px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.05);transition:all 0.25s var(--ios-ease)}
+.info-social .material-icons-round:active{transform:scale(0.9);background:var(--accent);color:#fff;border-color:var(--accent)}
+.github-badge{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 18px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 18px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.05);transition:all .25s var(--ios-ease);margin-top:8px}
+.github-badge:active{transform:scale(.95);background:var(--accent);border-color:var(--accent);color:#fff}
+.github-badge svg{flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="loading" id="loader">
+<div class="skeleton">
+  <div class="skeleton-header">
+    <div class="skeleton-ring"></div>
+    <div class="skeleton-title"></div>
+    <div class="skeleton-subtitle"></div>
+  </div>
+  <div class="skeleton-section">
+    <div class="skeleton-label"></div>
+    <div class="skeleton-list"></div>
+  </div>
+</div>
+</div>
+
+<button class="info-btn" id="infoBtn" onclick="showInfo()" aria-label="About">
+  <span class="material-icons-round">info</span>
+</button>
+
+<div class="container hidden" id="container">
+<div class="header">
+  <div class="status-ring" id="statusRing" onclick="refreshData()">
+    <div class="status-icon">
+      <span class="material-icons-round" id="statusIcon">extension</span>
+      <div class="module-badge hidden" id="moduleBadge">0</div>
+    </div>
+  </div>
+  <div class="title" id="appName">LSPosed</div>
+  <div class="subtitle" id="appVersion">Unknown Version</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Status</div>
+  <div class="list">
+    <div class="item" onclick="toggle()">
+      <div class="item-icon blue" id="toggleIcon"><span class="material-icons-round">power_settings_new</span></div>
+      <div class="item-content">
+        <div class="item-label" id="toggleLabel">Disable Module</div>
+        <div class="item-detail" id="toggleDetail">Currently active</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Information</div>
+  <div class="list">
+    <div class="item" onclick="showCopy()" oncontextmenu="event.preventDefault();quickCopy()">
+      <div class="item-icon gray"><span class="material-icons-round">content_copy</span></div>
+      <div class="item-content">
+        <div class="item-label">Copy Information</div>
+        <div class="item-detail" id="lastUpdated">Long-press for quick copy</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="item" onclick="launch()">
+      <div class="item-icon purple"><span class="material-icons-round">launch</span></div>
+      <div class="item-content">
+        <div class="item-label">Launch Manager</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Quick Fix</div>
+  <div class="quick-actions">
+    <button class="quick-btn warning" onclick="grantShellRoot()">
+      <span class="material-icons-round">shield</span>
+      Grant Shell Root
+    </button>
+    <button class="quick-btn" onclick="installManager()">
+      <span class="material-icons-round">system_update</span>
+      Install Manager
+    </button>
+    <button class="quick-btn" onclick="pullLogs()">
+      <span class="material-icons-round">description</span>
+      Pull Logs
+    </button>
+    <button class="quick-btn danger" onclick="showRebootOptions()">
+      <span class="material-icons-round">refresh</span>
+      Reboot Options
+    </button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Troubleshooting</div>
+  
+  <div class="trouble-item" id="trouble1">
+    <div class="trouble-header" onclick="toggleTrouble('trouble1')">
+      <div class="trouble-icon"><span class="material-icons-round">build</span></div>
+      <div class="item-content">
+        <div class="item-label">Debug CI Build</div>
+        <div class="item-detail">Flash latest debug version</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        <strong>Before reporting issues:</strong> Flash the debug version of the latest CI build from GitHub Actions. Debug builds contain fixes not yet in releases and provide necessary logs for maintainers.
+        <div class="note-box">
+          <strong>Note:</strong> Only pick builds from the <strong>master branch</strong>, not work-in-progress pull requests.
+        </div>
+        For non-Magisk users: Flash the latest Zygisk module (NeoZygisk, ReZygisk, or ZygiskNext) in debug mode if possible.
+      </div>
+      <div class="trouble-actions">
+        <button class="trouble-btn primary" onclick="openLink('https://nightly.link/JingMatrix/LSPosed/workflows/core/master')">
+          <span class="material-icons-round">download</span>
+          Download CI Build
+        </button>
+        <button class="trouble-btn" onclick="openLink('https://github.com/JingMatrix/LSPosed/actions')">
+          <span class="material-icons-round">open_in_new</span>
+          View GitHub Actions
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="trouble-item" id="trouble2">
+    <div class="trouble-header" onclick="toggleTrouble('trouble2')">
+      <div class="trouble-icon"><span class="material-icons-round">block</span></div>
+      <div class="item-content">
+        <div class="item-label">Manager Won't Open</div>
+        <div class="item-detail">Fix "Cannot open manager" issues</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        <strong>Solution 1:</strong> Grant root permission to system Shell (<code>com.android.shell</code>) app.
+        <div class="trouble-actions">
+          <button class="trouble-btn primary" onclick="grantShellRoot()">
+            <span class="material-icons-round">shield</span>
+            Grant Root to Shell
+          </button>
+        </div>
+        
+        <strong>Solution 2:</strong> Install LSPosed manager as a user application using ADB:
+        <div class="code-block" onclick="copyCode(this)">adb shell su -c cp /data/adb/modules/zygisk_lsposed/manager.apk /data/local/tmp && adb pull /data/local/tmp/manager.apk && adb install ./manager.apk</div>
+        Then open manager normally from your launcher.
+      </div>
+    </div>
+  </div>
+
+  <div class="trouble-item" id="trouble3">
+    <div class="trouble-header" onclick="toggleTrouble('trouble3')">
+      <div class="trouble-icon"><span class="material-icons-round">bug_report</span></div>
+      <div class="item-content">
+        <div class="item-label">How to Provide Logs</div>
+        <div class="item-detail">Collect logs for issue reports</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        <strong>Method 1 - Via Manager:</strong> Open LSPosed manager successfully and upload the generated logs in your issue. Manager automatically saves logs from the previous session.
+        
+        <strong>Method 2 - Via Daemon (when Zygisk crashes):</strong>
+        <div class="code-block" onclick="copyCode(this)">adb shell su -c 'cat "/data/adb/lspd/log/verbose_*" > /data/local/tmp/lsposed_verbose.log && chown shell:shell /data/local/tmp/lsposed_verbose.log' && adb pull /data/local/tmp/lsposed_verbose.log</div>
+        
+        <strong>Method 3 - Via Logcat (manager cannot open):</strong>
+        <div class="code-block" onclick="copyCode(this)">adb logcat -s Magisk lspd nativeloader AndroidRuntime LSPosed LSPosed-Bridge LSPlant LSPosedContext LSPlt LSPosedService Dobby '*:F' zygiskd64 zygisk-core64 zygisk-ptrace64 zygiskd32 zygisk-core32 zygisk-ptrace32 > lsposed.log</div>
+        <div class="note-box">
+          <strong>Important:</strong> Connect phone, authorize ADB, run <code>adb reboot</code>, then run the logcat command immediately when screen turns on to capture boot logs.
+        </div>
+        
+        <strong>Log Locations:</strong>
+        <br>• <code>/data/adb/lspd/log</code> - Current logs
+        <br>• <code>/data/adb/lspd/log.old</code> - Previous logs
+      </div>
+      <div class="trouble-actions">
+        <button class="trouble-btn primary" onclick="pullLogs()">
+          <span class="material-icons-round">save</span>
+          Pull Logs to /sdcard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="trouble-item" id="trouble4">
+    <div class="trouble-header" onclick="toggleTrouble('trouble4')">
+      <div class="trouble-icon"><span class="material-icons-round">security</span></div>
+      <div class="item-content">
+        <div class="item-label">SEPolicy Issues</div>
+        <div class="item-detail">Fix "not loaded properly"</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        If you see "SEPolicy is not loaded properly":
+        <br><br>
+        <strong>Solution 1:</strong> Reinstall the latest version of Magisk
+        <br><br>
+        <strong>Solution 2:</strong> Use KernelSU instead
+        <div class="trouble-actions">
+          <button class="trouble-btn" onclick="openLink('https://github.com/tiann/KernelSU')">
+            <span class="material-icons-round">open_in_new</span>
+            KernelSU GitHub
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trouble-item" id="trouble5">
+    <div class="trouble-header" onclick="toggleTrouble('trouble5')">
+      <div class="trouble-icon"><span class="material-icons-round">extension_off</span></div>
+      <div class="item-content">
+        <div class="item-label">ZygiskNext Compatibility</div>
+        <div class="item-detail">Fix compatibility issues</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        If using ZygiskNext and experiencing issues:
+        <br><br>
+        <strong>Option 1:</strong> Set denylist to <strong>unmount</strong> mode
+        <br><br>
+        <strong>Option 2:</strong> Set denylist to <strong>disable</strong> mode
+        <br><br>
+        <strong>Option 3:</strong> Grant root permission to shell manually if you want to use enforcing mode
+        <div class="trouble-actions">
+          <button class="trouble-btn primary" onclick="grantShellRoot()">
+            <span class="material-icons-round">shield</span>
+            Grant Root to Shell
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trouble-item" id="trouble6">
+    <div class="trouble-header" onclick="toggleTrouble('trouble6')">
+      <div class="trouble-icon"><span class="material-icons-round">settings_backup_restore</span></div>
+      <div class="item-content">
+        <div class="item-label">System Maintenance</div>
+        <div class="item-detail">Reboot options & cache clear</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="trouble-content">
+      <div class="trouble-text">
+        <div class="note-box danger">
+          <strong>Warning:</strong> "Soft Reboot" kills zygote process directly and can cause graphics driver hangs on some devices. Use "System Restart" instead for a safer graceful reboot.
+        </div>
+        
+        <strong>System Restart:</strong> Graceful Android restart via ActivityManager
+        <br><br>
+        <strong>Full Reboot:</strong> Complete system restart (recommended after module changes)
+        <br><br>
+        <strong>Recovery:</strong> Reboot to recovery mode
+        <br><br>
+        <strong>Clear Logs:</strong> Delete old log files
+      </div>
+      <div class="trouble-actions">
+        <button class="trouble-btn primary" onclick="reboot('restart')">
+          <span class="material-icons-round">refresh</span>
+          System Restart
+        </button>
+        <button class="trouble-btn" onclick="reboot('reboot')">
+          <span class="material-icons-round">restart_alt</span>
+          Full Reboot
+        </button>
+        <button class="trouble-btn" onclick="reboot('reboot recovery')">
+          <span class="material-icons-round">medical_services</span>
+          Recovery
+        </button>
+        <button class="trouble-btn danger" onclick="clearLogs()">
+          <span class="material-icons-round">delete</span>
+          Clear Old Logs
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Links</div>
+  <div class="list">
+    <div class="item" onclick="openLink('https://nightly.link/JingMatrix/LSPosed/workflows/core/master')">
+      <div class="item-icon orange"><span class="material-icons-round">download</span></div>
+      <div class="item-content">
+        <div class="item-label">Nightly Builds</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="item" onclick="openLink('https://github.com/JingMatrix/LSPosed/issues')">
+      <div class="item-icon red"><span class="material-icons-round">bug_report</span></div>
+      <div class="item-content">
+        <div class="item-label">Report Issue</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="item" onclick="openLink('https://github.com/sponsors/JingMatrix')">
+      <div class="item-icon green"><span class="material-icons-round">favorite</span></div>
+      <div class="item-content">
+        <div class="item-label">Support Developer</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+    <div class="item" onclick="openLink('https://crowdin.com/project/lsposed_jingmatrix')">
+      <div class="item-icon blue"><span class="material-icons-round">translate</span></div>
+      <div class="item-content">
+        <div class="item-label">Help Translate</div>
+      </div>
+      <span class="material-icons-round item-chevron">chevron_right</span>
+    </div>
+  </div>
+</div>
+
+<div class="refresh-hint">
+  <span class="material-icons-round">refresh</span>
+  Pull down or tap ring to refresh
+</div>
+</div>
+
+<div class="sheet" id="sheet" onclick="closeSheet(event)">
+<div class="sheet-backdrop"></div>
+<div class="sheet-content" onclick="event.stopPropagation()">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="sheetTitle">Confirm</div>
+    <div class="sheet-subtitle" id="sheetSubtitle">Are you sure?</div>
+  </div>
+  <div class="search-box hidden" id="searchBox">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search modules..." oninput="filterModules(this.value)">
+  </div>
+  <div class="sheet-body hidden" id="sheetBody">
+    <div class="module-list" id="moduleList"></div>
+  </div>
+  <div class="sheet-actions" id="sheetActions">
+    <div class="format-toggle hidden" id="formatToggle">
+      <button class="format-btn active" onclick="setFormat('text')" id="btnText">Text</button>
+      <button class="format-btn" onclick="setFormat('json')" id="btnJson">JSON</button>
+      <button class="format-btn" onclick="setFormat('csv')" id="btnCsv">CSV</button>
+    </div>
+    <button class="btn btn-default" onclick="closeSheet()">Cancel</button>
+    <button class="btn btn-primary" id="sheetAction" onclick="executeAction()">Confirm</button>
+  </div>
+</div>
+</div>
+
+<div class="sheet" id="rebootSheet" onclick="closeRebootSheet(event)">
+<div class="sheet-backdrop"></div>
+<div class="sheet-content" onclick="event.stopPropagation()">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Reboot Options</div>
+    <div class="sheet-subtitle">Choose restart method</div>
+  </div>
+  <div class="sheet-body" style="padding:0 20px">
+    <div class="module-list" style="gap:10px">
+      <div class="module-item" onclick="reboot('restart')" style="background:var(--grouped);border:1px solid var(--accent)">
+        <div class="module-name" style="color:var(--accent);font-weight:600">System Restart (Recommended)</div>
+        <div class="module-meta">Graceful restart via ActivityManager</div>
+      </div>
+      <div class="module-item" onclick="reboot('reboot')">
+        <div class="module-name">Full Reboot</div>
+        <div class="module-meta">Complete hardware restart. Use after module installation.</div>
+      </div>
+      <div class="module-item" onclick="reboot('reboot recovery')">
+        <div class="module-name">Recovery Mode</div>
+        <div class="module-meta">Reboot to custom recovery (TWRP/Lineage Recovery).</div>
+      </div>
+      <div class="module-item" onclick="reboot('reboot bootloader')">
+        <div class="module-name">Bootloader</div>
+        <div class="module-meta">Fastboot/bootloader mode</div>
+      </div>
+      <div class="note-box danger" style="margin-top:10px">
+        <strong>Avoid:</strong> Direct zygote kill can cause graphics driver hangs on some devices, resulting in bootstuck.
+      </div>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn btn-default" onclick="closeRebootSheet()">Cancel</button>
+  </div>
+</div>
+</div>
+
+<div class="info-sheet" id="infoSheet" onclick="closeInfo(event)">
+<div class="info-backdrop"></div>
+<div class="info-card" onclick="event.stopPropagation()">
+  <button class="info-close" onclick="closeInfo()">
+    <span class="material-icons-round">close</span>
+  </button>
+  <div class="info-icon">
+    <span class="material-icons-round">favorite</span>
+  </div>
+  <div class="info-quote">
+    Open source turns users into contributors
+  </div>
+  <div class="info-divider"></div>
+  <div class="info-credit">
+    WebUI by <strong>𝗠𝗘𝗢𝗪𝗻𝗮 💅</strong>
+  </div>
+  <div class="info-social" onclick="openLink('https://github.com/meowdump');closeInfo();">
+    <div class="github-badge">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M12 .5C5.65.5.75 5.4.75 11.75c0 4.98 3.23 9.2 7.71 10.69.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.92-3.14.68-3.8-1.35-3.8-1.35-.52-1.31-1.27-1.66-1.27-1.66-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.24.73-1.53-2.5-.28-5.13-1.25-5.13-5.55 0-1.22.44-2.23 1.16-3.02-.12-.29-.5-1.44.11-3 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.64 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.56.23 2.71.11 3 .72.79 1.16 1.8 1.16 3.02 0 4.31-2.63 5.27-5.14 5.55.41.35.78 1.04.78 2.1 0 1.52-.01 2.74-.01 3.11 0 .3.2.65.78.54 4.47-1.49 7.7-5.71 7.7-10.69C23.25 5.4 18.35.5 12 .5z"/>
+      </svg>
+      <span>GitHub</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast-container">
+<div class="toast" id="toast">
+  <div class="toast-icon"><span class="material-icons-round">check</span></div>
+  <span id="toastText">Done</span>
+</div>
+</div>
+
+<script>
+let lsposedData=null;
+let allModules=[];
+let filteredModules=[];
+let pendingAction=null;
+let copyText="";
+let currentFormat="text";
+let touchStartY=0;
+let isRefreshing=false;
+
+async function shell(cmd){
+return new Promise((res,rej)=>{
+  const cb=`_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
+  window[cb]=(c,so,se)=>{
+    delete window[cb];
+    c===0?res((so||"").replace(/\r/g,"")):rej(new Error(se||so||"Fail"));
+  };
+  ksu.exec(cmd,"{}",cb);
+});
+}
+
+async function load(){
+try{
+  const prop=await shell("cat /data/adb/modules/zygisk_lsposed/module.prop 2>/dev/null");
+  if(!prop.trim())throw new Error("Not found");
+  
+  lsposedData=parse(prop);
+  lsposedData.disabled=await checkDisable();
+  lsposedData.lastUpdated=await getLastUpdated();
+  
+  allModules=[];
+  const dirs=await shell("ls -1 /data/adb/modules/ 2>/dev/null");
+  const modulePromises=dirs.split("\n").filter(d=>d).map(async dir=>{
+    try{
+      const p=await shell(`cat "/data/adb/modules/${dir}/module.prop" 2>/dev/null`);
+      if(p){
+        const m=parse(p);
+        m.disabled=await shell(`[ -f "/data/adb/modules/${dir}/disable" ]&&echo 1||echo 0`).then(r=>r.trim()==="1");
+        m.path=dir;
+        return m;
+      }
+    }catch(e){}
+    return null;
+  });
+  
+  const results=await Promise.all(modulePromises);
+  allModules=results.filter(m=>m!==null);
+  
+  render();
+  document.getElementById("loader").classList.add("hidden");
+  document.getElementById("container").classList.remove("hidden");
+  
+  setTimeout(()=>{
+    document.getElementById("infoBtn").classList.add("visible","pulse");
+    setTimeout(()=>document.getElementById("infoBtn").classList.remove("pulse"),4000);
+  },1000);
+  
+  setupScrollListener();
+}catch(e){
+  document.getElementById("appName").textContent="Not Found";
+  document.getElementById("appVersion").textContent="Install zygisk_lsposed";
+  document.getElementById("statusRing").classList.add("inactive");
+  document.getElementById("statusIcon").textContent="error";
+  document.getElementById("statusIcon").style.color="var(--secondary)";
+  document.getElementById("loader").classList.add("hidden");
+  document.getElementById("container").classList.remove("hidden");
+  setupScrollListener();
+}
+}
+
+function setupScrollListener(){
+let lastScroll=0;
+const infoBtn=document.getElementById("infoBtn");
+const threshold=100;
+
+window.addEventListener("scroll",()=>{
+  const currentScroll=window.pageYOffset||document.documentElement.scrollTop;
+  
+  if(currentScroll<=threshold){
+    infoBtn.classList.add("visible");
+  }else{
+    infoBtn.classList.remove("visible");
+  }
+  
+  lastScroll=currentScroll;
+},{passive:true});
+}
+
+function parse(content){
+const d={};
+for(const line of content.split("\n")){
+  const t=line.trim();
+  if(!t||t.startsWith("#"))continue;
+  const i=t.indexOf("=");
+  if(i>0)d[t.substring(0,i).trim()]=t.substring(i+1).trim();
+}
+return d;
+}
+
+async function checkDisable(){
+try{
+  await shell("[ -f /data/adb/modules/zygisk_lsposed/disable ]");
+  return true;
+}catch{return false}
+}
+
+async function getLastUpdated(){
+try{
+  const stat=await shell("stat -c %Y /data/adb/modules/zygisk_lsposed/module.prop 2>/dev/null");
+  const date=new Date(parseInt(stat)*1000);
+  return date.toLocaleDateString();
+}catch{return null}
+}
+
+function render(){
+const d=lsposedData;
+const disabled=d.disabled;
+
+document.getElementById("appName").textContent=d.name||"LSPosed";
+document.getElementById("appVersion").textContent=d.version||"Unknown";
+
+if(d.lastUpdated){
+  document.getElementById("lastUpdated").textContent=`Updated: ${d.lastUpdated}`;
+}
+
+const ring=document.getElementById("statusRing");
+const icon=document.getElementById("statusIcon");
+const badge=document.getElementById("moduleBadge");
+
+badge.textContent=allModules.length;
+badge.classList.remove("hidden");
+
+if(disabled){
+  ring.classList.add("inactive");
+  ring.classList.remove("active");
+  icon.textContent="extension_off";
+  document.getElementById("toggleLabel").textContent="Enable Module";
+  document.getElementById("toggleDetail").textContent="Currently disabled";
+  document.getElementById("toggleIcon").className="item-icon green";
+}else{
+  ring.classList.add("active");
+  ring.classList.remove("inactive");
+  icon.textContent="extension";
+  document.getElementById("toggleLabel").textContent="Disable Module";
+  document.getElementById("toggleDetail").textContent="Currently active";
+  document.getElementById("toggleIcon").className="item-icon red";
+}
+}
+
+async function refreshData(){
+if(isRefreshing)return;
+isRefreshing=true;
+const ring=document.getElementById("statusRing");
+ring.style.transform="scale(0.9)";
+setTimeout(()=>ring.style.transform="",200);
+await load();
+toast("Refreshed");
+isRefreshing=false;
+}
+
+function toggle(){
+const a=lsposedData.disabled?"enable":"disable";
+pendingAction=a;
+document.getElementById("sheetTitle").textContent=`${a.charAt(0).toUpperCase()+a.slice(1)} Module`;
+document.getElementById("sheetSubtitle").textContent=`This will ${a==="enable"?"activate":"deactivate"} LSPosed on next boot`;
+document.getElementById("searchBox").classList.add("hidden");
+document.getElementById("sheetBody").classList.add("hidden");
+document.getElementById("formatToggle").classList.add("hidden");
+document.getElementById("sheetAction").textContent="Confirm";
+document.getElementById("sheetAction").onclick=doToggle;
+document.getElementById("sheet").classList.add("active");
+}
+
+async function doToggle(){
+const p="/data/adb/modules/zygisk_lsposed/disable";
+try{
+  if(pendingAction==="enable"){
+    await shell(`rm -f "${p}"`);
+    toast("Enabled successfully");
+  }else{
+    await shell(`touch "${p}"&&chmod 0644 "${p}"`);
+    toast("Disabled successfully");
+  }
+  closeSheet();
+  setTimeout(load,300);
+}catch(e){
+  toast("Error",true);
+}
+}
+
+function showCopy(){
+filteredModules=[...allModules];
+renderModuleList();
+document.getElementById("sheetTitle").textContent="Export Information";
+document.getElementById("sheetSubtitle").textContent=`${allModules.length} modules installed`;
+document.getElementById("searchBox").classList.remove("hidden");
+document.getElementById("sheetBody").classList.remove("hidden");
+document.getElementById("formatToggle").classList.remove("hidden");
+document.getElementById("sheetAction").textContent="Copy";
+document.getElementById("sheetAction").onclick=doCopy;
+updateCopyText();
+document.getElementById("sheet").classList.add("active");
+}
+
+function renderModuleList(){
+const list=document.getElementById("moduleList");
+if(filteredModules.length===0){
+  list.innerHTML='<div class="empty-state">No modules found</div>';
+  return;
+}
+list.innerHTML=filteredModules.map((m,i)=>`
+  <div class="module-item" onclick="toggleModuleSelection(${i})" id="mod-${i}">
+    <div class="module-name">${m.name||"Unnamed"}</div>
+    <div class="module-meta">
+      <span>${m.version||"N/A"}</span>
+      <span class="module-status ${m.disabled?'inactive':''}">${m.disabled?'Inactive':'Active'}</span>
+    </div>
+  </div>
+`).join('');
+}
+
+function filterModules(query){
+const q=query.toLowerCase();
+filteredModules=allModules.filter(m=>
+  (m.name||"").toLowerCase().includes(q)||
+  (m.id||"").toLowerCase().includes(q)
+);
+renderModuleList();
+}
+
+function toggleModuleSelection(index){
+const el=document.getElementById(`mod-${index}`);
+el.classList.toggle("selected");
+updateCopyText();
+}
+
+function setFormat(fmt){
+currentFormat=fmt;
+document.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active'));
+document.getElementById(`btn${fmt.charAt(0).toUpperCase()+fmt.slice(1)}`).classList.add('active');
+updateCopyText();
+}
+
+function updateCopyText(){
+const selected=filteredModules.filter((_,i)=>document.getElementById(`mod-${i}`)?.classList.contains('selected'));
+const modules=selected.length>0?selected:filteredModules;
+
+if(currentFormat==="json"){
+  const data={
+    framework:lsposedData?{
+      name:lsposedData.name,
+      version:lsposedData.version,
+      author:lsposedData.author,
+      status:lsposedData.disabled?"inactive":"active"
+    }:null,
+    modules:modules.map(m=>({
+      name:m.name,
+      id:m.id,
+      version:m.version,
+      author:m.author,
+      status:m.disabled?"inactive":"active"
+    }))
+  };
+  copyText=JSON.stringify(data,null,2);
+}else if(currentFormat==="csv"){
+  const lines=["Name,ID,Version,Author,Status"];
+  if(lsposedData){
+    lines.unshift(`LSPosed,${lsposedData.id||"N/A"},${lsposedData.version||"N/A"},${lsposedData.author||"N/A"},${lsposedData.disabled?"Inactive":"Active"}`);
+  }
+  modules.forEach(m=>{
+    lines.push(`"${m.name||""}","${m.id||""}","${m.version||""}","${m.author||""}",${m.disabled?"Inactive":"Active"}`);
+  });
+  copyText=lines.join("\n");
+}else{
+  copyText="";
+  if(modules.length){
+    copyText+=`Installed Modules (${modules.length})\n`;
+    modules.forEach((m,i)=>{
+      copyText+=`\n[${i+1}] ${m.name||"Unnamed"}\n`;
+      copyText+=`ID: ${m.id||"N/A"}\n`;
+      copyText+=`Version: ${m.version||"N/A"}\n`;
+      copyText+=`Author: ${m.author||"N/A"}\n`;
+      copyText+=`Status: ${m.disabled?"Inactive":"Active"}\n`;
+    });
+  }
+}
+}
+
+async function doCopy(){
+try{
+  if(ksu.copy)ksu.copy(copyText);
+  else{
+    const t=document.createElement("textarea");
+    t.value=copyText;
+    t.style.cssText="position:fixed;opacity:0";
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand("copy");
+    document.body.removeChild(t);
+  }
+  toast(`Copied ${currentFormat.toUpperCase()} format`);
+  closeSheet();
+}catch(e){
+  toast("Failed to copy",true);
+}
+}
+
+function quickCopy(){
+updateCopyText();
+doCopy();
+}
+
+async function launch(){
+try{
+  await shell("sh /data/adb/modules/zygisk_lsposed/action.sh >/dev/null 2>&1 &");
+  toast("Launching manager...");
+}catch(e){
+  toast("Launch failed",true);
+}
+}
+
+async function openLink(u){
+await shell(`am start -a android.intent.action.VIEW -d "${u}" --user 0 >/dev/null 2>&1 &`);
+}
+
+function closeSheet(e){
+if(e&&e.target.id!=="sheet"&&!e.target.classList.contains("sheet-backdrop"))return;
+document.getElementById("sheet").classList.remove("active");
+}
+
+function executeAction(){}
+
+function toast(msg,isError=false){
+const t=document.getElementById("toast");
+const icon=t.querySelector(".toast-icon");
+const text=document.getElementById("toastText");
+text.textContent=msg;
+icon.className="toast-icon";
+if(isError){
+  icon.classList.add("error");
+  icon.innerHTML='<span class="material-icons-round">close</span>';
+}else{
+  icon.innerHTML='<span class="material-icons-round">check</span>';
+}
+t.classList.add("show");
+setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+function toggleTrouble(id){
+const el=document.getElementById(id);
+const isExpanded=el.classList.contains('expanded');
+document.querySelectorAll('.trouble-item').forEach(item=>item.classList.remove('expanded'));
+if(!isExpanded)el.classList.add('expanded');
+}
+
+async function grantShellRoot(){
+try{
+  await shell("pm grant com.android.shell android.permission.WRITE_SECURE_SETTINGS 2>/dev/null; su -c 'supolicy --live \"allow shell shell * *\"' 2>/dev/null || true");
+  toast("Granted root to shell");
+}catch(e){
+  toast("Grant failed - try manual",true);
+}
+}
+
+async function installManager(){
+try{
+  await shell("cp /data/adb/modules/zygisk_lsposed/manager.apk /data/local/tmp/manager.apk && chmod 644 /data/local/tmp/manager.apk");
+  await shell("am start -a android.intent.action.VIEW -d file:///data/local/tmp/manager.apk -t application/vnd.android.package-archive --user 0 >/dev/null 2>&1 &");
+  toast("Installing manager...");
+}catch(e){
+  toast("Install failed",true);
+}
+}
+
+async function pullLogs(){
+try{
+  const timestamp=new Date().toISOString().replace(/[:.]/g,"-");
+  await shell(`mkdir -p /sdcard/LSPosed_Logs/${timestamp} && cp /data/adb/lspd/log/* /sdcard/LSPosed_Logs/${timestamp}/ 2>/dev/null; cat /data/adb/lspd/log/verbose_* > /sdcard/LSPosed_Logs/${timestamp}/verbose_combined.log 2>/dev/null || true`);
+  toast("Logs saved to /sdcard/LSPosed_Logs/");
+}catch(e){
+  toast("Failed to pull logs",true);
+}
+}
+
+async function reboot(type){
+try{
+  if(type==="restart"){
+    await shell("am start -a android.intent.action.REBOOT 2>/dev/null || svc power reboot 2>/dev/null || am restart 2>/dev/null || true");
+    toast("System restarting...");
+  }else if(type==="reboot"){
+    await shell("reboot >/dev/null 2>&1 &");
+    toast("Rebooting...");
+  }else{
+    await shell(`${type} >/dev/null 2>&1 &`);
+    toast("Rebooting...");
+  }
+}catch(e){
+  toast("Reboot failed",true);
+}
+}
+
+function showRebootOptions(){
+document.getElementById("rebootSheet").classList.add("active");
+}
+
+function closeRebootSheet(e){
+if(e&&e.target.id!=="rebootSheet"&&!e.target.classList.contains("sheet-backdrop"))return;
+document.getElementById("rebootSheet").classList.remove("active");
+}
+
+async function clearLogs(){
+try{
+  await shell("rm -rf /data/adb/lspd/log.old/* 2>/dev/null || true");
+  toast("Cleared old logs");
+}catch(e){
+  toast("Clear failed",true);
+}
+}
+
+function copyCode(el){
+const text=el.textContent;
+if(ksu.copy){
+  ksu.copy(text);
+  toast("Copied to clipboard");
+}else{
+  const t=document.createElement("textarea");
+  t.value=text;
+  t.style.cssText="position:fixed;opacity:0";
+  document.body.appendChild(t);
+  t.select();
+  document.execCommand("copy");
+  document.body.removeChild(t);
+  toast("Copied to clipboard");
+}
+}
+
+function showInfo(){
+document.body.classList.add("lock-scroll");
+document.getElementById("infoSheet").classList.add("active");
+}
+
+function closeInfo(e){
+if(e&&e.target.id!=="infoSheet"&&!e.target.classList.contains("info-backdrop"))return;
+document.body.classList.remove("lock-scroll");
+document.getElementById("infoSheet").classList.remove("active");
+}
+
+document.addEventListener('touchstart',e=>{
+if(e.touches[0].clientY<100)touchStartY=e.touches[0].clientY;
+}, {passive:true});
+
+document.addEventListener('touchmove',e=>{
+if(touchStartY>0&&e.touches[0].clientY-touchStartY>100&&document.scrollingElement.scrollTop===0){
+  refreshData();
+  touchStartY=0;
+}
+}, {passive:true});
+
+window.onload=load;
+</script>
+</body>
+</html>
