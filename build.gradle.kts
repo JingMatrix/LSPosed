@@ -65,7 +65,7 @@ val versionCodeProvider by extra(providers.of(GitCommitCountValueSource::class.j
 val versionNameProvider by extra(providers.of(GitLatestTagValueSource::class.java) {})
 
 val repo = jgit.repo()
-val commitCount = (repo?.commitCount("refs/remotes/origin/master") ?: 1) + 4200
+val commitCount = (repo?.commitCount("refs/remotes/origin/master") ?: 1)
 val latestTag = repo?.latestTag?.removePrefix("v") ?: "1.0"
 
 val injectedPackageName by extra("com.android.shell")
