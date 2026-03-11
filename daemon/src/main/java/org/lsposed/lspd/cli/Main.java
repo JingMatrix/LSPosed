@@ -788,13 +788,13 @@ public class Main implements Runnable {
         Parcel data = Parcel.obtain();
         Parcel reply = Parcel.obtain();
         ILSPApplicationService service;
+        int TRANSACTION_CODE = ('_' << 24) | ('V' << 16) | ('E' << 8) | 'C';
         try {
-            data.writeInterfaceToken("LSPosed");
             data.writeInt(2);
             data.writeString("lsp-cli:" + org.lsposed.lspd.util.SignInfo.CLI_UUID);
             data.writeStrongBinder(new Binder());
 
-            if (!activityService.transact(1598837584, data, reply, 0)) {
+            if (!activityService.transact(TRANSACTION_CODE, data, reply, 0)) {
                 throw new RemoteException("Transaction to activity service failed.");
             }
             reply.readException();
