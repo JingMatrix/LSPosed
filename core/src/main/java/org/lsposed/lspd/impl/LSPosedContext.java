@@ -311,12 +311,29 @@ public class LSPosedContext implements XposedInterface {
 
     @Override
     public void log(@NonNull String message) {
-        Log.i(TAG, mPackageName + ": " + message);
+        log(Log.INFO, null, message, null);
     }
 
     @Override
     public void log(@NonNull String message, @NonNull Throwable throwable) {
-        Log.e(TAG, mPackageName + ": " + message, throwable);
+        log(Log.ERROR, null, message, throwable);
+    }
+
+    @Override
+    public void log(int priority, @Nullable String tag, @NonNull String msg, @Nullable Throwable tr) {
+        String finalTag = (tag != null) ? tag : TAG;
+
+        // Format the message with the package name prefix
+        String prefix = (mPackageName != null) ? mPackageName + ": " : "";
+        StringBuilder fullMsg = new StringBuilder(prefix).append(msg);
+
+        // Handle the Throwable if present
+        if (tr != null) {
+            fullMsg.append("\n").append(Log.getStackTraceString(tr));
+        }
+
+        // Use the low-level println to handle dynamic priorities
+        Log.println(priority, finalTag, fullMsg.toString());
     }
 
     @Override
