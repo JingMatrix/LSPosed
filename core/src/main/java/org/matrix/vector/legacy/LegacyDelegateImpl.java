@@ -2,13 +2,13 @@ package org.matrix.vector.legacy;
 
 import android.content.res.XResources;
 
-import org.lsposed.lspd.util.MetaDataReader;
 import org.lsposed.lspd.util.Utils;
 import org.matrix.vector.impl.core.VectorServiceClient;
 import org.matrix.vector.impl.di.LegacyFrameworkDelegate;
 import org.matrix.vector.impl.di.LegacyPackageInfo;
 import org.matrix.vector.impl.di.OriginalInvoker;
 import org.matrix.vector.impl.hooks.VectorLegacyCallback;
+import org.matrix.vector.impl.utils.VectorMetaDataReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -103,12 +103,12 @@ public class LegacyDelegateImpl implements LegacyFrameworkDelegate {
         int xposedminversion = -1;
         boolean xposedsharedprefs = false;
         try {
-            Map<String, Object> metaData = MetaDataReader.getMetaData(new File(lpparam.appInfo.sourceDir));
+            Map<String, Object> metaData = VectorMetaDataReader.getMetaData(new File(lpparam.appInfo.sourceDir));
             Object minVersionRaw = metaData.get("xposedminversion");
             if (minVersionRaw instanceof Integer) {
                 xposedminversion = (Integer) minVersionRaw;
             } else if (minVersionRaw instanceof String) {
-                xposedminversion = MetaDataReader.extractIntPart((String) minVersionRaw);
+                xposedminversion = VectorMetaDataReader.extractIntPart((String) minVersionRaw);
             }
             xposedsharedprefs = metaData.containsKey("xposedsharedprefs");
         } catch (NumberFormatException | IOException ignored) {

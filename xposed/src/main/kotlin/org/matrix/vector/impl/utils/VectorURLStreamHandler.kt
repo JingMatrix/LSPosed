@@ -1,4 +1,4 @@
-package org.matrix.vector.impl.util
+package org.matrix.vector.impl.utils
 
 import android.net.Uri
 import java.io.File

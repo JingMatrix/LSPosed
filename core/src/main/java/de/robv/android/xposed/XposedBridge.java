@@ -25,8 +25,8 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.util.Log;
 
-import org.lsposed.lspd.impl.LSPosedBridge;
-import org.lsposed.lspd.impl.LSPosedHookCallback;
+import org.matrix.vector.impl.hooks.VectorNativeHooker;
+import org.matrix.vector.impl.hooks.VectorLegacyCallback;
 import org.matrix.vector.nativebridge.HookBridge;
 import org.matrix.vector.nativebridge.ResourcesHook;
 
@@ -133,7 +133,7 @@ public final class XposedBridge {
      * Returns the currently installed version of the Xposed framework.
      */
     public static int getXposedVersion() {
-        return XposedInterface.API;
+        return XposedInterface.LIB_API;
     }
 
     /**
@@ -207,7 +207,7 @@ public final class XposedBridge {
             throw new IllegalArgumentException("callback should not be null!");
         }
 
-        if (!HookBridge.hookMethod(false, (Executable) hookMethod, LSPosedBridge.NativeHooker.class, callback.priority, callback)) {
+        if (!HookBridge.hookMethod(false, (Executable) hookMethod, VectorNativeHooker.class, callback.priority, callback)) {
             log("Failed to hook " + hookMethod);
             return null;
         }
@@ -385,12 +385,12 @@ public final class XposedBridge {
 
     public static class LegacyApiSupport<T extends Executable> {
         private final XC_MethodHook.MethodHookParam<T> param;
-        private final LSPosedHookCallback<T> callback;
+        private final VectorLegacyCallback<T> callback;
         private final Object[] snapshot;
 
         private int beforeIdx;
 
-        public LegacyApiSupport(LSPosedHookCallback<T> callback, Object[] legacySnapshot) {
+        public LegacyApiSupport(VectorLegacyCallback<T> callback, Object[] legacySnapshot) {
             this.param = new XC_MethodHook.MethodHookParam<>();
             this.callback = callback;
             this.snapshot = legacySnapshot;
@@ -404,15 +404,11 @@ public final class XposedBridge {
                     cb.beforeHookedMethod(param);
                 } catch (Throwable t) {
                     XposedBridge.log(t);
-
-                    // reset result (ignoring what the unexpectedly exiting callback did)
                     param.setResult(null);
                     param.returnEarly = false;
-                    continue;
                 }
 
                 if (param.returnEarly) {
-                    // skip remaining "before" callbacks and corresponding "after" callbacks
                     beforeIdx++;
                     break;
                 }
@@ -430,8 +426,6 @@ public final class XposedBridge {
                     cb.afterHookedMethod(param);
                 } catch (Throwable t) {
                     XposedBridge.log(t);
-
-                    // reset to last result (ignoring what the unexpectedly exiting callback did)
                     if (lastThrowable == null) {
                         param.setResult(lastResult);
                     } else {
@@ -442,21 +436,26 @@ public final class XposedBridge {
             syncronizeApi(param, callback, false);
         }
 
-        private void syncronizeApi(XC_MethodHook.MethodHookParam<T> param, LSPosedHookCallback<T> callback, boolean forward) {
+        private void syncronizeApi(XC_MethodHook.MethodHookParam<T> param, VectorLegacyCallback<T> callback, boolean forward) {
             if (forward) {
-                param.method = callback.method;
-                param.thisObject = callback.thisObject;
-                param.args = callback.args;
-                param.result = callback.result;
-                param.throwable = callback.throwable;
-                param.returnEarly = callback.isSkipped;
+                param.method = callback.getMethod();
+                param.thisObject = callback.getThisObject();
+                param.args = callback.getArgs();
+                param.result = callback.getResult();
+                param.throwable = callback.getThrowable();
+                param.returnEarly = callback.isSkipped();
             } else {
-                callback.method = param.method;
-                callback.thisObject = param.thisObject;
-                callback.args = param.args;
-                callback.result = param.result;
-                callback.throwable = param.throwable;
-                callback.isSkipped = param.returnEarly;
+                callback.setThisObject(param.thisObject);
+                callback.setArgs(param.args);
+
+                // Only write the result/throwable back if the legacy module explicitly skipped execution
+                if (param.returnEarly) {
+                    if (param.throwable != null) {
+                        callback.setThrowable(param.throwable);
+                    } else {
+                        callback.setResult(param.result);
+                    }
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package org.matrix.vector.impl.core
 
 import java.lang.reflect.Executable
+import org.lsposed.lspd.util.Utils
 import org.matrix.vector.nativebridge.HookBridge
 
 /**
@@ -9,7 +10,8 @@ import org.matrix.vector.nativebridge.HookBridge
  */
 object VectorDeopter {
 
-    private fun deoptMethods(where: String, cl: ClassLoader?) {
+    @JvmStatic
+    fun deoptMethods(where: String, cl: ClassLoader?) {
         val targets = VectorInlinedCallers.get(where)
         if (targets.isEmpty()) return
 
@@ -39,8 +41,9 @@ object VectorDeopter {
         deoptMethods(VectorInlinedCallers.KEY_BOOT_IMAGE, null)
     }
 
-    fun deoptResourceMethods(isMiui: Boolean) {
-        if (isMiui) {
+    @JvmStatic
+    fun deoptResourceMethods() {
+        if (Utils.isMIUI) {
             deoptMethods(VectorInlinedCallers.KEY_BOOT_IMAGE_MIUI_RES, null)
         }
     }

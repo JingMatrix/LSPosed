@@ -20,8 +20,6 @@
 
 package de.robv.android.xposed;
 
-import static org.lsposed.lspd.core.ApplicationServiceClient.serviceClient;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -31,8 +29,9 @@ import android.preference.PreferenceManager;
 import com.android.internal.util.XmlUtils;
 
 import org.lsposed.lspd.core.BuildConfig;
-import org.lsposed.lspd.util.MetaDataReader;
 import org.lsposed.lspd.util.Utils.Log;
+import org.matrix.vector.impl.core.VectorServiceClient;
+import org.matrix.vector.impl.utils.VectorMetaDataReader;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.File;
@@ -167,14 +166,14 @@ public final class XSharedPreferences implements SharedPreferences {
             int xposedminversion = -1;
             boolean xposedsharedprefs = false;
             try {
-                Map<String, Object> metaData = MetaDataReader.getMetaData(new File(m.get()));
+                Map<String, Object> metaData = VectorMetaDataReader.getMetaData(new File(m.get()));
                 isModule = metaData.containsKey("xposedminversion");
                 if (isModule) {
                     Object minVersionRaw = metaData.get("xposedminversion");
                     if (minVersionRaw instanceof Integer) {
                         xposedminversion = (Integer) minVersionRaw;
                     } else if (minVersionRaw instanceof String) {
-                        xposedminversion = MetaDataReader.extractIntPart((String) minVersionRaw);
+                        xposedminversion = VectorMetaDataReader.extractIntPart((String) minVersionRaw);
                     }
                     xposedsharedprefs = metaData.containsKey("xposedsharedprefs");
                 }
@@ -184,7 +183,7 @@ public final class XSharedPreferences implements SharedPreferences {
             newModule = isModule && (xposedminversion > 92 || xposedsharedprefs);
         }
         if (newModule) {
-            mFile = new File(serviceClient.getPrefsPath(packageName), prefFileName + ".xml");
+            mFile = new File(VectorServiceClient.INSTANCE.getPrefsPath(packageName), prefFileName + ".xml");
         } else {
             mFile = new File(Environment.getDataDirectory(), "data/" + packageName + "/shared_prefs/" + prefFileName + ".xml");
         }
@@ -201,7 +200,7 @@ public final class XSharedPreferences implements SharedPreferences {
             Path path = mFile.toPath();
             try {
                 if (sWatcher == null) {
-                    sWatcher = new File(serviceClient.getPrefsPath("")).toPath().getFileSystem().newWatchService();
+                    sWatcher = new File(VectorServiceClient.INSTANCE.getPrefsPath("")).toPath().getFileSystem().newWatchService();
                     if (BuildConfig.DEBUG) Log.d(TAG, "Created WatchService instance");
                 }
                 mWatchKey = path.getParent().register(sWatcher, StandardWatchEventKinds.ENTRY_CREATE,

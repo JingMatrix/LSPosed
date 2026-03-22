@@ -1,4 +1,4 @@
-package org.matrix.vector.impl.util
+package org.matrix.vector.impl.utils
 
 import java.io.ByteArrayOutputStream
 import java.io.File

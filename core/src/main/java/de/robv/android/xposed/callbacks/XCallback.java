@@ -22,7 +22,7 @@ package de.robv.android.xposed.callbacks;
 
 import android.os.Bundle;
 
-import org.lsposed.lspd.deopt.PrebuiltMethodsDeopter;
+import org.matrix.vector.impl.core.VectorDeopter;
 
 import java.io.Serializable;
 
@@ -137,7 +137,7 @@ abstract public class XCallback {
             // deopt methods in system apps or priv-apps, this would be not necessary
             // only if we found out how to recompile their apks
             XC_LoadPackage.LoadPackageParam lpp = (XC_LoadPackage.LoadPackageParam) param;
-            PrebuiltMethodsDeopter.deoptMethods(lpp.packageName, lpp.classLoader);
+            VectorDeopter.deoptMethods(lpp.packageName, lpp.classLoader);
         }
 
         if (param.callbacks == null)

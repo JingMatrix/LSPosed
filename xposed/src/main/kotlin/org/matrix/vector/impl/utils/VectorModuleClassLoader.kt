@@ -1,4 +1,4 @@
-package org.matrix.vector.impl.util
+package org.matrix.vector.impl.utils
 
 import android.os.Build
 import android.os.SharedMemory

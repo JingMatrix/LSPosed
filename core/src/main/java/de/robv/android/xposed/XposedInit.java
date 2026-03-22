@@ -20,8 +20,6 @@
 
 package de.robv.android.xposed;
 
-import static org.lsposed.lspd.core.ApplicationServiceClient.serviceClient;
-import static org.lsposed.lspd.deopt.PrebuiltMethodsDeopter.deoptResourceMethods;
 import static de.robv.android.xposed.XposedBridge.hookAllMethods;
 import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
@@ -40,11 +38,13 @@ import android.os.IBinder;
 import android.os.Process;
 import android.util.ArrayMap;
 
-import org.lsposed.lspd.impl.LSPosedContext;
 import org.lsposed.lspd.models.PreLoadedApk;
+import org.matrix.vector.impl.core.VectorDeopter;
+import org.matrix.vector.impl.core.VectorModuleManager;
+import org.matrix.vector.impl.core.VectorServiceClient;
+import org.matrix.vector.impl.utils.VectorModuleClassLoader;
 import org.matrix.vector.nativebridge.NativeAPI;
 import org.matrix.vector.nativebridge.ResourcesHook;
-import org.lsposed.lspd.util.LspModuleClassLoader;
 import org.lsposed.lspd.util.Utils.Log;
 
 import java.io.File;
@@ -74,7 +74,7 @@ public final class XposedInit {
             return;
         }
 
-        deoptResourceMethods();
+        VectorDeopter.deoptResourceMethods();
 
         if (!ResourcesHook.initXResourcesNative()) {
             Log.e(TAG, "Cannot hook resources");
@@ -224,7 +224,7 @@ public final class XposedInit {
     }
 
     public static void loadLegacyModules() {
-        var moduleList = serviceClient.getLegacyModulesList();
+        var moduleList = VectorServiceClient.INSTANCE.getLegacyModulesList();
         moduleList.forEach(module -> {
             var apk = module.apkPath;
             var name = module.packageName;
@@ -238,9 +238,9 @@ public final class XposedInit {
 
     public static void loadModules(ActivityThread at) {
         var packages = (ArrayMap<?, ?>) XposedHelpers.getObjectField(at, "mPackages");
-        serviceClient.getModulesList().forEach(module -> {
+        VectorServiceClient.INSTANCE.getModulesList().forEach(module -> {
             loadedModules.put(module.packageName, Optional.empty());
-            if (!LSPosedContext.loadModule(at, module)) {
+            if (!VectorModuleManager.INSTANCE.loadModule(module, startsSystemServer, VectorServiceClient.INSTANCE.getProcessName())) {
                 loadedModules.remove(module.packageName);
             } else {
                 packages.remove(module.packageName);
@@ -311,7 +311,7 @@ public final class XposedInit {
         var librarySearchPath = sb.toString();
 
         var initLoader = XposedInit.class.getClassLoader();
-        var mcl = LspModuleClassLoader.loadApk(apk, file.preLoadedDexes, librarySearchPath, initLoader);
+        var mcl = VectorModuleClassLoader.loadApk(apk, file.preLoadedDexes, librarySearchPath, initLoader);
 
         try {
             if (mcl.loadClass(XposedBridge.class.getName()).getClassLoader() != initLoader) {

@@ -6,11 +6,11 @@ import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import java.io.File
+import org.lsposed.lspd.models.Module
+import org.lsposed.lspd.util.Utils.Log
 import org.matrix.vector.impl.VectorContext
 import org.matrix.vector.impl.VectorLifecycleManager
-import org.matrix.vector.impl.util.VectorModuleClassLoader
-import org.matrix.vector.lspd.models.Module
-import org.matrix.vector.lspd.util.Utils.Log
+import org.matrix.vector.impl.utils.VectorModuleClassLoader
 import org.matrix.vector.nativebridge.NativeAPI
 
 /**
@@ -66,7 +66,7 @@ object VectorModuleManager {
                 VectorContext(
                     packageName = module.packageName,
                     applicationInfo = module.applicationInfo,
-                    service = VectorServiceClient, // Our IPC client
+                    service = module.service, // Our IPC client
                 )
 
             // 4. Instantiate the module entry classes
