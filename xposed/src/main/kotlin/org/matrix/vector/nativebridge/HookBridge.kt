@@ -57,5 +57,5 @@ object HookBridge {
     @JvmStatic
     external fun callbackSnapshot(hooker_callback: Class<*>, method: Executable): Array<Array<Any?>>
 
-    @JvmStatic external fun getStaticInitializer(clazz: Class<*>): Method
+    @JvmStatic external fun getStaticInitializer(clazz: Class<*>): Method?
 }

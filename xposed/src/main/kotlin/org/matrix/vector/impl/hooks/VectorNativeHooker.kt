@@ -10,6 +10,7 @@ import java.lang.reflect.Executable
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import org.matrix.vector.impl.di.VectorBootstrap
 import org.matrix.vector.nativebridge.HookBridge
 
 /** Builder for configuring and registering hooks. */
@@ -82,10 +83,9 @@ class VectorNativeHooker<T : Executable>(private val method: T) {
         }
 
         val terminal: (Any?, Array<Any?>) -> Any? = { tObj, tArgs ->
-            val processor = LegacySupport.processor
-
-            if (legacyHooks.isNotEmpty() && processor != null) {
-                processor.process(method, tObj, tArgs, legacyHooks) {
+            val delegate = VectorBootstrap.delegate
+            if (legacyHooks.isNotEmpty() && delegate != null) {
+                delegate.processLegacyHook(method, tObj, tArgs, legacyHooks) {
                     invokeOriginalSafely(tObj, tArgs)
                 }
             } else {

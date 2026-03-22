@@ -9,6 +9,15 @@ import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.lspd.service.ILSPInjectedModuleService
 import org.lsposed.lspd.service.IRemotePreferenceCallback
 
+@Suppress("DEPRECATION", "UNCHECKED_CAST")
+private inline fun <reified T> Bundle.getSerializableCompat(key: String): T? {
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        getSerializable(key, java.io.Serializable::class.java) as? T
+    } else {
+        getSerializable(key) as? T
+    }
+}
+
 @Suppress("UNCHECKED_CAST")
 internal class VectorRemotePreferences(service: ILSPInjectedModuleService, group: String) :
     SharedPreferences {
@@ -23,7 +32,8 @@ internal class VectorRemotePreferences(service: ILSPInjectedModuleService, group
                 val changes = ArraySet<String>()
 
                 if (bundle.containsKey("delete")) {
-                    val deletes = bundle.getSerializable("delete") as? Set<String>
+                    val deletes =
+                        bundle.getSerializableCompat<Set<String>>("delete") as? Set<String>
                     if (deletes != null) {
                         changes.addAll(deletes)
                         for (key in deletes) {
@@ -33,7 +43,8 @@ internal class VectorRemotePreferences(service: ILSPInjectedModuleService, group
                 }
 
                 if (bundle.containsKey("put")) {
-                    val puts = bundle.getSerializable("put") as? Map<String, Any>
+                    val puts =
+                        bundle.getSerializableCompat<Map<String, Any>>("put") as? Map<String, Any>
                     if (puts != null) {
                         map.putAll(puts)
                         changes.addAll(puts.keys)
@@ -54,7 +65,8 @@ internal class VectorRemotePreferences(service: ILSPInjectedModuleService, group
         try {
             val output = service.requestRemotePreferences(group, callback)
             if (output.containsKey("map")) {
-                val initialMap = output.getSerializable("map") as? Map<String, Any>
+                val initialMap =
+                    output.getSerializableCompat<Map<String, Any>>("map") as? Map<String, Any>
                 if (initialMap != null) {
                     map.putAll(initialMap)
                 }

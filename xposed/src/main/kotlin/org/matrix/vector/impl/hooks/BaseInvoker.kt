@@ -5,6 +5,7 @@ import io.github.libxposed.api.XposedInterface.Invoker
 import java.lang.reflect.Constructor
 import java.lang.reflect.Executable
 import java.lang.reflect.Method
+import org.matrix.vector.impl.di.VectorBootstrap
 import org.matrix.vector.nativebridge.HookBridge
 
 /**
@@ -42,9 +43,9 @@ internal abstract class BaseInvoker<T : Invoker<T, U>, U : Executable>(
                     allModernHooks.filter { it.priority <= currentType.maxPriority }.toTypedArray()
 
                 val terminal: (Any?, Array<Any?>) -> Any? = { tObj, tArgs ->
-                    val processor = LegacySupport.processor
-                    if (legacyHooks.isNotEmpty() && processor != null) {
-                        processor.process(executable, tObj, tArgs, legacyHooks) {
+                    val delegate = VectorBootstrap.delegate
+                    if (legacyHooks.isNotEmpty() && delegate != null) {
+                        delegate.processLegacyHook(executable, tObj, tArgs, legacyHooks) {
                             HookBridge.invokeOriginalMethod(executable, tObj, *tArgs)
                         }
                     } else {
@@ -131,7 +132,7 @@ internal class VectorCtorInvoker<T : Any>(constructor: Constructor<T>) :
     @Suppress("UNCHECKED_CAST")
     override fun newInstance(vararg args: Any?): T {
         // 1. Allocate memory without invoking <init>
-        val obj = HookBridge.allocateObject(executable.declaringClass) as T
+        val obj = HookBridge.allocateObject(executable.declaringClass)
         // 2. Drive the invocation (origin or chain) utilizing the allocated object
         proceedInvocation(obj, args)
         return obj
@@ -144,7 +145,7 @@ internal class VectorCtorInvoker<T : Any>(constructor: Constructor<T>) :
                 "$subClass is not inherited from ${executable.declaringClass}"
             )
         }
-        val obj = HookBridge.allocateObject(subClass) as U
+        val obj = HookBridge.allocateObject(subClass)
         HookBridge.invokeSpecialMethod(
             executable,
             getExecutableShorty(),

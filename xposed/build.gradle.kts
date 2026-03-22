@@ -16,6 +16,11 @@ android {
 
 dependencies {
     implementation(projects.services.daemonService)
+    implementation(projects.external.apache)
+    implementation(projects.external.axml)
+    implementation(projects.hiddenapi.bridge)
+    implementation(projects.services.daemonService)
+    implementation(projects.services.managerService)
     compileOnly(libs.androidx.annotation)
     compileOnly(projects.hiddenapi.stubs)
 }
