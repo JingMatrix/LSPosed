@@ -1,10 +1,10 @@
 package org.matrix.vector.nativebridge
 
 import dalvik.annotation.optimization.FastNative
-import io.github.libxposed.api.utils.DexParser
 import java.io.IOException
 import java.lang.reflect.Method
 import java.nio.ByteBuffer
+import org.matrix.vector.api.utils.DexParser
 
 object DexParserBridge {
     @JvmStatic
