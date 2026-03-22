@@ -23,9 +23,8 @@ import java.io.FileOutputStream
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.lspd.ILSPManagerService
-import org.lsposed.lspd.core.ApplicationServiceClient.serviceClient
-import org.lsposed.lspd.util.Hookers
 import org.lsposed.lspd.util.Utils
+import org.matrix.vector.impl.core.VectorServiceClient
 
 /** The "Parasite" logic. Injects the LSPosed Manager APK into a host process (shell). */
 @SuppressLint("StaticFieldLeak")
@@ -38,6 +37,19 @@ object ParasiticManagerHooker {
     // Manually track Activity states since the system is unaware of our spoofed activities
     private val states = ConcurrentHashMap<String, Bundle>()
     private val persistentStates = ConcurrentHashMap<String, PersistableBundle>()
+
+    private fun logD(msg: String) {
+        Utils.logD(
+            "ParasiticHooker: pkg=${ActivityThread.currentPackageName()}, prc=${ActivityThread.currentProcessName()} - $msg"
+        )
+    }
+
+    private fun logE(msg: String, t: Throwable) {
+        Utils.logE(
+            "ParasiticHooker: pkg=${ActivityThread.currentPackageName()}, prc=${ActivityThread.currentProcessName()} - $msg",
+            t,
+        )
+    }
 
     /** Constructs a hybrid PackageInfo. Combines the Manager's code with the Host's environment. */
     @Synchronized
@@ -64,7 +76,7 @@ object ParasiticManagerHooker {
                                 }
                                 sourcePath = dstPath
                             }
-                            .onFailure { Hookers.logE("Failed to copy parasitic APK", it) }
+                            .onFailure { logE("Failed to copy parasitic APK", it) }
                     }
 
                     val pkgInfo =
@@ -140,7 +152,7 @@ object ParasiticManagerHooker {
             "android.app.ActivityThread\$AppBindData",
             object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam<*>) {
-                    Hookers.logD("ActivityThread#handleBindApplication() starts")
+                    logD("ActivityThread#handleBindApplication() starts")
                     val bindData = param.args[0]
                     val hostAppInfo =
                         XposedHelpers.getObjectField(bindData, "appInfo") as ApplicationInfo
@@ -165,7 +177,7 @@ object ParasiticManagerHooker {
                         val dexPath = managerAppInfo.sourceDir
                         val pathClassLoader = param.result as ClassLoader
 
-                        Hookers.logD("Injecting DEX into LoadedApk ClassLoader: $pathClassLoader")
+                        logD("Injecting DEX into LoadedApk ClassLoader: $pathClassLoader")
                         val pathList = XposedHelpers.getObjectField(pathClassLoader, "pathList")
                         val dexPaths = XposedHelpers.callMethod(pathList, "getDexPaths") as List<*>
 
@@ -241,7 +253,7 @@ object ParasiticManagerHooker {
                 override fun afterHookedMethod(param: MethodHookParam<*>) {
                     if (!activityClientRecordClass.isInstance(param.thisObject)) return
                     param.args.filterIsInstance<ActivityInfo>().forEach { aInfo ->
-                        Hookers.logD("Restoring state for Activity: ${aInfo.name}")
+                        logD("Restoring state for Activity: ${aInfo.name}")
                         states[aInfo.name]?.let {
                             XposedHelpers.setObjectField(param.thisObject, "state", it)
                         }
@@ -368,10 +380,10 @@ object ParasiticManagerHooker {
                             "sProviderInstance",
                             instance,
                         )
-                        Hookers.logD("WebView provider initialized: $instance")
+                        logD("WebView provider initialized: $instance")
                         instance
                     } catch (e: Exception) {
-                        Hookers.logE("WebView initialization failed", e)
+                        logE("WebView initialization failed", e)
                         throw AndroidRuntimeException(e)
                     }
                 }
@@ -406,9 +418,9 @@ object ParasiticManagerHooker {
 
                             state?.let { states[aInfo.name] = it }
                             pState?.let { persistentStates[aInfo.name] = it }
-                            Hookers.logD("Saved state for ${aInfo.name}")
+                            logD("Saved state for ${aInfo.name}")
                         }
-                        .onFailure { Hookers.logE("Failed to save activity state", it) }
+                        .onFailure { logE("Failed to save activity state", it) }
                 }
             }
         XposedBridge.hookAllMethods(
@@ -434,7 +446,7 @@ object ParasiticManagerHooker {
     fun start(): Boolean {
         val binderList = mutableListOf<IBinder>()
         return try {
-            serviceClient.requestInjectedManagerBinder(binderList).use { pfd ->
+            VectorServiceClient.requestInjectedManagerBinder(binderList)!!.use { pfd ->
                 managerFd = pfd.detachFd()
                 val managerService = ILSPManagerService.Stub.asInterface(binderList[0])
                 hookForManager(managerService)

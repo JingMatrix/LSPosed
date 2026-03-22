@@ -12,6 +12,12 @@ import org.matrix.vector.impl.hooks.VectorHookBuilder
  */
 object HandleSystemServerProcessHooker : XposedInterface.Hooker {
 
+    interface Callback {
+        fun onSystemServerLoaded(classLoader: ClassLoader)
+    }
+
+    @Volatile var callback: Callback? = null
+
     @Volatile
     var systemServerCL: ClassLoader? = null
         private set
@@ -38,6 +44,7 @@ object HandleSystemServerProcessHooker : XposedInterface.Hooker {
         val startMethod = sysServerClass.getDeclaredMethod("startBootstrapServices")
 
         VectorHookBuilder(startMethod).intercept(StartBootstrapServicesHooker)
+        callback?.onSystemServerLoaded(classLoader)
     }
 }
 
