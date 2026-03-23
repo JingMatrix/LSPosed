@@ -149,8 +149,11 @@ public class LSPModuleService extends IXposedService.Stub {
     @Override
     public long getFrameworkProperties() throws RemoteException {
         ensureModule();
-        // Properly handle the return value
-        return IXposedService.PROP_CAP_SYSTEM | IXposedService.PROP_CAP_REMOTE;
+        var prop = IXposedService.PROP_CAP_SYSTEM | IXposedService.PROP_CAP_REMOTE;
+        if (ConfigManager.getInstance().dexObfuscate()) {
+            prop = prop | IXposedService.PROP_RT_API_PROTECTION;
+        }
+        return prop;
     }
 
     @Override

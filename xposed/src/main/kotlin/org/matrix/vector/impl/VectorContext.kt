@@ -37,11 +37,7 @@ class VectorContext(
     override fun getFrameworkVersionCode(): Long = BuildConfig.VERSION_CODE
 
     override fun getFrameworkProperties(): Long {
-        var props = 0L
-        // TODO: Dynamically verify capabilities through `service` if required
-        props = props or XposedInterface.PROP_CAP_REMOTE
-        props = props or XposedInterface.PROP_CAP_SYSTEM
-        return props
+        return service.getFrameworkProperties()
     }
 
     override fun hook(origin: Executable): XposedInterface.HookBuilder {
