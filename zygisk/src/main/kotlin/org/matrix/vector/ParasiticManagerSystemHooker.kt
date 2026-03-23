@@ -65,10 +65,12 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
 
                 // Hook the resolution method to inject our redirection logic
                 VectorHookBuilder(resolveMethod).intercept { chain ->
+                    Utils.logD("inside resolveMethod, calling proceed")
                     // 1. Execute the original resolution first
                     val result = chain.proceed()
 
                     val intent = chain.args[0] as? Intent ?: return@intercept result
+                    Utils.logD("proceed called, intent ${intent}")
 
                     // Check if this intent is meant for the LSPosed Manager
                     if (!intent.hasCategory(BuildConfig.ManagerPackageName + ".LAUNCH_MANAGER"))
