@@ -49,9 +49,6 @@ class VectorChain(
     override fun proceedWith(thisObject: Any): Any? = proceedWith(thisObject, args)
 
     override fun proceedWith(thisObject: Any, args: Array<Any?>): Any? {
-        if (proceedCalled) {
-            throw IllegalStateException("chain.proceed() can only be called once per interceptor.")
-        }
         proceedCalled = true
 
         // Reached the end of the modern hooks; trigger the original executable (and legacy hooks)
