@@ -15,11 +15,11 @@ object VectorStartup {
     @JvmStatic
     fun init(
         isSystem: Boolean,
-        processName: String,
-        appDir: String,
+        processName: String?,
+        appDir: String?,
         service: ILSPApplicationService?,
     ) {
-        VectorServiceClient.init(service, processName)
+        VectorServiceClient.init(service, processName ?: "android")
         VectorDeopter.deoptBootMethods()
     }
 

@@ -9,15 +9,6 @@
 #include "jni/jni_hooks.h"
 
 namespace {
-/**
- * @struct ModuleCallback
- * @brief Stores the jmethodIDs for the "modern" callback API.
- * This API separates the logic that runs before and after the original method.
- */
-struct ModuleCallback {
-    jmethodID before_method;
-    jmethodID after_method;
-};
 
 /**
  * @struct HookItem
@@ -33,7 +24,7 @@ struct HookItem {
     // Callbacks are stored in multimaps, keyed by priority.
     // std::greater<> ensures that higher priority numbers are processed first.
     std::multimap<jint, jobject, std::greater<>> legacy_callbacks;
-    std::multimap<jint, ModuleCallback, std::greater<>> modern_callbacks;
+    std::multimap<jint, jobject, std::greater<>> modern_callbacks;
 
 private:
     // The backup is an atomic jobject.
@@ -92,11 +83,7 @@ using SharedHashMap = phmap::parallel_flat_hash_map<K, V, Hash, Eq, Alloc, N, st
 SharedHashMap<jmethodID, std::unique_ptr<HookItem>> hooked_methods;
 
 // Cached JNI method and field IDs for performance.
-// Looking these up frequently is slow, so they are cached on first use.
 jmethodID invoke = nullptr;
-jmethodID callback_ctor = nullptr;
-jfieldID before_method_field = nullptr;
-jfieldID after_method_field = nullptr;
 }  // namespace
 
 namespace vector::native::jni {
@@ -168,28 +155,10 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi
     // ensuring thread-safe modification of the callback lists.
     lsplant::JNIMonitor monitor(env, backup);
 
+    // Store a global reference to the callback object itself.
     if (useModernApi) {
-        // Lazy initialization of JNI IDs for the modern API.
-        if (before_method_field == nullptr) {
-            auto callback_class = env->GetObjectClass(callback);
-            callback_ctor =
-                env->GetMethodID(callback_class, "<init>",
-                                 "(Ljava/lang/reflect/Method;Ljava/lang/reflect/Method;)V");
-            before_method_field =
-                env->GetFieldID(callback_class, "beforeInvocation", "Ljava/lang/reflect/Method;");
-            after_method_field =
-                env->GetFieldID(callback_class, "afterInvocation", "Ljava/lang/reflect/Method;");
-        }
-        // Extract the before/after methods from the Java callback object.
-        auto before_method = env->GetObjectField(callback, before_method_field);
-        auto after_method = env->GetObjectField(callback, after_method_field);
-        auto callback_type = ModuleCallback{
-            .before_method = env->FromReflectedMethod(before_method),
-            .after_method = env->FromReflectedMethod(after_method),
-        };
-        hook_item->modern_callbacks.emplace(priority, callback_type);
+        hook_item->modern_callbacks.emplace(priority, env->NewGlobalRef(callback));
     } else {
-        // For the legacy API, store a global reference to the callback object itself.
         hook_item->legacy_callbacks.emplace(priority, env->NewGlobalRef(callback));
     }
     return JNI_TRUE;
@@ -213,28 +182,18 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernA
     // Lock to safely modify the callback list.
     lsplant::JNIMonitor monitor(env, backup);
 
-    if (useModernApi) {
-        auto before_method = env->GetObjectField(callback, before_method_field);
-        auto before = env->FromReflectedMethod(before_method);
-        // Find the callback by comparing the before_method's ID.
-        for (auto i = hook_item->modern_callbacks.begin(); i != hook_item->modern_callbacks.end();
-             ++i) {
-            if (before == i->second.before_method) {
-                hook_item->modern_callbacks.erase(i);
-                return JNI_TRUE;
-            }
-        }
-    } else {
-        // Find the callback by comparing the jobject directly.
-        for (auto i = hook_item->legacy_callbacks.begin(); i != hook_item->legacy_callbacks.end();
-             ++i) {
-            if (env->IsSameObject(i->second, callback)) {
-                env->DeleteGlobalRef(i->second);  // Clean up the global reference.
-                hook_item->legacy_callbacks.erase(i);
-                return JNI_TRUE;
-            }
+    // Select the correct multimap
+    auto &callbacks = useModernApi ? hook_item->modern_callbacks : hook_item->legacy_callbacks;
+
+    // Find the callback by comparing the jobject directly.
+    for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
+        if (env->IsSameObject(i->second, callback)) {
+            env->DeleteGlobalRef(i->second);  // Clean up the global reference.
+            callbacks.erase(i);
+            return JNI_TRUE;
         }
     }
+
     return JNI_FALSE;
 }
 
@@ -561,33 +520,29 @@ VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass call
     // Lock to ensure a consistent snapshot of the callback lists.
     lsplant::JNIMonitor monitor(env, backup);
 
-    auto res = env->NewObjectArray(2, env->FindClass("[Ljava/lang/Object;"), nullptr);
-    auto modern = env->NewObjectArray((jsize)hook_item->modern_callbacks.size(),
-                                      env->FindClass("java/lang/Object"), nullptr);
-    auto legacy = env->NewObjectArray((jsize)hook_item->legacy_callbacks.size(),
-                                      env->FindClass("java/lang/Object"), nullptr);
+    // Get the generic Object class
+    jclass obj_class = env->FindClass("java/lang/Object");
+
+    // Construct the result array Object[2][]
+    // Use an existing array to reliably get the Class for Object[]
+    jobjectArray dummy_array = env->NewObjectArray(0, obj_class, nullptr);
+    jclass obj_array_class = env->GetObjectClass(dummy_array);
+    jobjectArray res = env->NewObjectArray(2, obj_array_class, nullptr);
+
+    // Create modern and legacy arrays
+    // Use 'callback_class' (VectorHookRecord) for the modern array for strict type safety
+    jobjectArray modern =
+        env->NewObjectArray((jsize)hook_item->modern_callbacks.size(), callback_class, nullptr);
+    jobjectArray legacy =
+        env->NewObjectArray((jsize)hook_item->legacy_callbacks.size(), obj_class, nullptr);
 
     jsize i = 0;
     for (const auto &callback_pair : hook_item->modern_callbacks) {
-        // The clazz argument refers to the Java class where the native method is
-        // declared, provided by the macro VECTOR_DEF_NATIVE_METHOD.
-        auto before_method =
-            env->ToReflectedMethod(clazz, callback_pair.second.before_method, JNI_FALSE);
-        auto after_method =
-            env->ToReflectedMethod(clazz, callback_pair.second.after_method, JNI_FALSE);
-        // Re-create the Java callback object from the stored method IDs.
-        auto callback_object =
-            env->NewObject(callback_class, callback_ctor, before_method, after_method);
-        env->SetObjectArrayElement(modern, i++, callback_object);
-        // Clean up local references created during object construction.
-        env->DeleteLocalRef(before_method);
-        env->DeleteLocalRef(after_method);
-        env->DeleteLocalRef(callback_object);
+        env->SetObjectArrayElement(modern, i++, callback_pair.second);
     }
 
     i = 0;
     for (const auto &callback_pair : hook_item->legacy_callbacks) {
-        // The legacy list already stores a global ref to the callback object.
         env->SetObjectArrayElement(legacy, i++, callback_pair.second);
     }
 
