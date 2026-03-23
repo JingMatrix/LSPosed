@@ -30,7 +30,7 @@ android {
         buildConfigField("String", "FRAMEWORK_NAME", """"${rootProject.name}"""")
         buildConfigField("String", "MANAGER_INJECTED_PKG_NAME", """"$injectedPackageName"""")
         buildConfigField("int", "MANAGER_INJECTED_UID", """$injectedPackageUid""")
-        buildConfigField("String", "VERSION_NAME", """"${versionCodeProvider.get()}"""")
+        buildConfigField("String", "VERSION_NAME", """"${versionNameProvider.get()}"""")
         buildConfigField("long", "VERSION_CODE", versionCodeProvider.get())
     }
 

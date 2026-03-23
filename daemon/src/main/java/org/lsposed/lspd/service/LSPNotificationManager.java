@@ -24,6 +24,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
+import org.lsposed.daemon.BuildConfig;
 import org.lsposed.daemon.R;
 import org.lsposed.lspd.util.FakeContext;
 
@@ -164,7 +165,7 @@ public class LSPNotificationManager {
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .build();
-        notification.extras.putString("android.substName", "LSPosed");
+        notification.extras.putString("android.substName", BuildConfig.FRAMEWORK_NAME);
         try {
             var nm = getNotificationManager();
             createNotificationChannel(nm);
@@ -251,7 +252,7 @@ public class LSPNotificationManager {
                 .setAutoCancel(true)
                 .setStyle(style)
                 .build();
-        notification.extras.putString("android.substName", "LSPosed");
+        notification.extras.putString("android.substName", BuildConfig.FRAMEWORK_NAME);
         try {
             var nm = getNotificationManager();
             nm.enqueueNotificationWithTag("android", opPkg, modulePackageName,
@@ -297,7 +298,7 @@ public class LSPNotificationManager {
                                 getModuleScopeIntent(modulePackageName, moduleUserId, scopePackageName, "block", callback))
                                 .build()
                 ).build();
-        notification.extras.putString("android.substName", "LSPosed");
+        notification.extras.putString("android.substName", BuildConfig.FRAMEWORK_NAME);
         try {
             var nm = getNotificationManager();
             nm.enqueueNotificationWithTag("android", opPkg, modulePackageName,
