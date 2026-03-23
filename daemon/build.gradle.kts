@@ -13,7 +13,6 @@ plugins {
     alias(libs.plugins.lsplugin.resopt)
 }
 
-
 android {
     buildFeatures {
         prefab = true

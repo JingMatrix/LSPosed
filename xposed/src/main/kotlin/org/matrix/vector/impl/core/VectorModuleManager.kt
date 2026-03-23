@@ -2,7 +2,6 @@ package org.matrix.vector.impl.core
 
 import android.os.Build
 import android.os.Process
-import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import java.io.File
@@ -76,22 +75,12 @@ object VectorModuleManager {
                             return@runCatching
                         }
 
-                        val constructor =
-                            moduleClass.getConstructor(
-                                XposedInterface::class.java,
-                                ModuleLoadedParam::class.java,
-                            )
+                        val constructor = moduleClass.getDeclaredConstructor()
+                        constructor.isAccessible = true
+                        val moduleInstance = constructor.newInstance() as XposedModule
 
-                        // Inject the Context and the loaded parameters!
-                        val moduleInstance =
-                            constructor.newInstance(
-                                vectorContext,
-                                object : ModuleLoadedParam {
-                                    override fun isSystemServer(): Boolean = isSystemServer
-
-                                    override fun getProcessName(): String = processName
-                                },
-                            ) as XposedModule
+                        // Attach the framework context to the module
+                        moduleInstance.attachFramework(vectorContext)
 
                         // Register the active module to receive future lifecycle events
                         VectorLifecycleManager.activeModules.add(moduleInstance)
