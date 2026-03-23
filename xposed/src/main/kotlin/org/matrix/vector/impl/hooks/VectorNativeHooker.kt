@@ -10,6 +10,7 @@ import java.lang.reflect.Executable
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import org.lsposed.lspd.util.Utils
 import org.matrix.vector.impl.di.VectorBootstrap
 import org.matrix.vector.nativebridge.HookBridge
 
@@ -99,19 +100,42 @@ class VectorNativeHooker<T : Executable>(private val method: T) {
 
         // Type safety validation before returning to C++
         if (returnType != null && returnType != Void.TYPE) {
-            if (result == null && returnType.isPrimitive) {
-                throw NullPointerException(
-                    "Hook returned null for a primitive return type: $method"
-                )
-            }
-            if (result != null && HookBridge.instanceOf(result, returnType)) {
-                throw ClassCastException(
-                    "Hook return type mismatch. Expected ${returnType.name}, got ${result.javaClass.name}"
-                )
+            if (result == null) {
+                if (returnType.isPrimitive) {
+                    throw NullPointerException(
+                        "Hook returned null for a primitive return type: $method"
+                    )
+                }
+            } else {
+                // Use the JNI bridge for the most reliable type check across ClassLoaders
+                if (
+                    !HookBridge.instanceOf(result, returnType) &&
+                        !isBoxingCompatible(result, returnType)
+                ) {
+                    Utils.logD(
+                        "Hook return type mismatch. Expected ${returnType.name}, got ${result.javaClass.name}"
+                    )
+                }
             }
         }
 
         return result
+    }
+
+    /** Handles primitive boxing compatibility (e.g., Integer object vs int primitive). */
+    private fun isBoxingCompatible(obj: Any, targetType: Class<*>): Boolean {
+        if (!targetType.isPrimitive) return false
+        return when (targetType) {
+            Int::class.javaPrimitiveType -> obj is Int
+            Long::class.javaPrimitiveType -> obj is Long
+            Boolean::class.javaPrimitiveType -> obj is Boolean
+            Double::class.javaPrimitiveType -> obj is Double
+            Float::class.javaPrimitiveType -> obj is Float
+            Byte::class.javaPrimitiveType -> obj is Byte
+            Char::class.javaPrimitiveType -> obj is Char
+            Short::class.javaPrimitiveType -> obj is Short
+            else -> false
+        }
     }
 
     /** Safely invokes the original method, unwrapping InvocationTargetExceptions. */

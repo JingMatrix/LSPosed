@@ -102,7 +102,7 @@ void Context::InitHooks(JNIEnv *env) {
     jni::RegisterResourcesHook(env);
     jni::RegisterHookBridge(env);
     jni::RegisterNativeApiBridge(env);
-    jni::RegisterDexParserBridge(env);
+    // jni::RegisterDexParserBridge(env);
 }
 
 lsplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobject class_loader,
