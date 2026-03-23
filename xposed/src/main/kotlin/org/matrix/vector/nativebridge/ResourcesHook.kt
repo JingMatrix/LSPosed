@@ -2,7 +2,6 @@ package org.matrix.vector.nativebridge
 
 import android.content.res.Resources
 import dalvik.annotation.optimization.FastNative
-import xposed.dummy.XResourcesSuperClass
 
 object ResourcesHook {
     @JvmStatic external fun initXResourcesNative(): Boolean
@@ -20,7 +19,7 @@ object ResourcesHook {
     @FastNative
     external fun rewriteXmlReferencesNative(
         parserPtr: Long,
-        origRes: XResourcesSuperClass,
+        origRes: Any,
         repRes: Resources,
     )
 }

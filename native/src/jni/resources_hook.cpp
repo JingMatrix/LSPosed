@@ -300,7 +300,7 @@ static JNINativeMethod gMethods[] = {
                          "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/"
                          "String;)Ljava/lang/ClassLoader;"),
     VECTOR_NATIVE_METHOD(ResourcesHook, rewriteXmlReferencesNative,
-                         "(JLxposed/dummy/XResourcesSuperClass;Landroid/content/res/Resources;)V")};
+                         "(JLjava/lang/Object;Landroid/content/res/Resources;)V")};
 
 void RegisterResourcesHook(JNIEnv *env) { REGISTER_VECTOR_NATIVE_METHODS(ResourcesHook); }
 }  // namespace vector::native::jni
