@@ -81,28 +81,32 @@ class VectorChain(
         }
     }
 
-    /** Handles exceptions thrown by module interceptors. */
+    /** Handles exceptions thrown by a hooker according to its [ExceptionMode]. */
     private fun handleInterceptorException(
         t: Throwable,
         record: VectorHookRecord,
         nextChain: VectorChain,
-        recoverThis: Any,
-        recoverArgs: Array<Any?>,
+        recoveryThis: Any,
+        recoveryArgs: Array<Any?>,
     ): Any? {
+        // Check if the exception originated from downstream (lower hooks or original method)
+        if (nextChain.proceedCalled && t === nextChain.downstreamThrowable) {
+            throw t
+        }
+
+        // Passthrough mode does not rescue the process from hooker crashes
         if (record.exceptionMode == ExceptionMode.PASSTHROUGH) {
             throw t
         }
 
-        // DEFAULT or PROTECTIVE mode: log the crash and attempt to rescue the execution.
-        Utils.logE("Hooker threw exception: ${record.hooker.javaClass.name}", t)
-
+        val hookerName = record.hooker.javaClass.name
         if (!nextChain.proceedCalled) {
-            // Crash occurred BEFORE proceed().
-            // Skip this hooker entirely and drive the chain manually.
-            return nextChain.proceedWith(recoverThis, recoverArgs)
+            // Crash occurred before calling proceed(); skip hooker and continue the chain
+            Utils.logD("Hooker [$hookerName] crashed before proceed. Skipping.", t)
+            return nextChain.proceedWith(recoveryThis, recoveryArgs)
         } else {
-            // Crash occurred AFTER proceed().
-            // Swallow the module's crash and return the real downstream state.
+            // Crash occurred after calling proceed(); suppress and restore downstream state
+            Utils.logD("Hooker [$hookerName] crashed after proceed. Restoring state.", t)
             nextChain.downstreamThrowable?.let { throw it }
             return nextChain.downstreamResult
         }

@@ -25,9 +25,11 @@ class VectorMetaDataReader private constructor(apk: File) {
                 val reader = AxmlReader(getBytesFromInputStream(inputStream))
                 reader.accept(
                     object : AxmlVisitor() {
-                        override fun child(ns: String?, name: String?): NodeVisitor {
-                            val child = super.child(ns, name)
-                            return ManifestTagVisitor(child)
+                        override fun child(ns: String?, name: String?): NodeVisitor? {
+                            // We only care about the root <manifest> tag.
+                            // Returning ManifestTagVisitor() tells the parser to start
+                            // looking at things inside <manifest>.
+                            return ManifestTagVisitor()
                         }
                     }
                 )
@@ -35,27 +37,25 @@ class VectorMetaDataReader private constructor(apk: File) {
         }
     }
 
-    private inner class ManifestTagVisitor(child: NodeVisitor?) : NodeVisitor(child) {
-        override fun child(ns: String?, name: String?): NodeVisitor {
-            val childNode = super.child(ns, name)
-            if (name == "application") {
-                return ApplicationTagVisitor(childNode)
-            }
-            return childNode
-        }
-
-        private inner class ApplicationTagVisitor(child: NodeVisitor?) : NodeVisitor(child) {
-            override fun child(ns: String?, name: String?): NodeVisitor {
-                val childNode = super.child(ns, name)
-                if (name == "meta-data") {
-                    return MetaDataVisitor(childNode)
-                }
-                return childNode
-            }
+    private inner class ManifestTagVisitor : NodeVisitor() {
+        override fun child(ns: String?, name: String?): NodeVisitor? {
+            // If we see <application>, we return a visitor to go deeper.
+            if (name == "application") return ApplicationTagVisitor()
+            // If we see <permission> or <activity>, we return null to skip them entirely.
+            return null
         }
     }
 
-    private inner class MetaDataVisitor(child: NodeVisitor?) : NodeVisitor(child) {
+    // Handles the inside of <application>
+    private inner class ApplicationTagVisitor : NodeVisitor() {
+        override fun child(ns: String?, name: String?): NodeVisitor? {
+            // We only care about <meta-data> tags.
+            if (name == "meta-data") return MetaDataVisitor()
+            return null
+        }
+    }
+
+    private inner class MetaDataVisitor : NodeVisitor() {
         var attrName: String? = null
         var attrValue: Any? = null
 
