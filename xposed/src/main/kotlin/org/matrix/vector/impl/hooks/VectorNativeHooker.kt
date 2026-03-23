@@ -98,15 +98,17 @@ class VectorNativeHooker<T : Executable>(private val method: T) {
         val result = rootChain.proceed()
 
         // Type safety validation before returning to C++
-        if (
-            returnType != null &&
-                !returnType.isPrimitive &&
-                result != null &&
-                !HookBridge.instanceOf(result, returnType)
-        ) {
-            throw ClassCastException(
-                "Return value's type from hook callback does not match the hooked method"
-            )
+        if (returnType != null && returnType != Void.TYPE) {
+            if (result == null && returnType.isPrimitive) {
+                throw NullPointerException(
+                    "Hook returned null for a primitive return type: $method"
+                )
+            }
+            if (result != null && HookBridge.instanceOf(result, returnType)) {
+                throw ClassCastException(
+                    "Hook return type mismatch. Expected ${returnType.name}, got ${result.javaClass.name}"
+                )
+            }
         }
 
         return result

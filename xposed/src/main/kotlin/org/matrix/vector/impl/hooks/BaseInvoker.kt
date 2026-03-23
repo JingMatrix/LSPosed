@@ -4,6 +4,7 @@ import io.github.libxposed.api.XposedInterface.CtorInvoker
 import io.github.libxposed.api.XposedInterface.Invoker
 import java.lang.reflect.Constructor
 import java.lang.reflect.Executable
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import org.matrix.vector.impl.di.VectorBootstrap
 import org.matrix.vector.nativebridge.HookBridge
@@ -28,7 +29,11 @@ internal abstract class BaseInvoker<T : Invoker<T, U>, U : Executable>(
     protected fun proceedInvocation(thisObject: Any?, args: Array<out Any?>): Any? {
         return when (val currentType = type) {
             is Invoker.Type.Origin -> {
-                HookBridge.invokeOriginalMethod(executable, thisObject, *args)
+                try {
+                    HookBridge.invokeOriginalMethod(executable, thisObject, args)
+                } catch (e: InvocationTargetException) {
+                    throw e.cause ?: e
+                }
             }
             is Invoker.Type.Chain -> {
                 val snapshots =

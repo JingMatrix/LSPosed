@@ -86,8 +86,8 @@ class VectorChain(
         t: Throwable,
         record: VectorHookRecord,
         nextChain: VectorChain,
-        currentThis: Any,
-        currentArgs: Array<Any?>,
+        recoverThis: Any,
+        recoverArgs: Array<Any?>,
     ): Any? {
         if (record.exceptionMode == ExceptionMode.PASSTHROUGH) {
             throw t
@@ -97,9 +97,9 @@ class VectorChain(
         Log.e("VectorChain", "Hooker threw exception: ${record.hooker.javaClass.name}", t)
 
         if (!nextChain.proceedCalled) {
-            // Crash occurred BEFORE proceed(). Skip this hooker entirely and drive the chain
-            // manually.
-            return nextChain.proceedWith(currentThis, currentArgs)
+            // Crash occurred BEFORE proceed().
+            // Skip this hooker entirely and drive the chain manually.
+            return nextChain.proceedWith(recoverThis, recoverArgs)
         } else {
             // Crash occurred AFTER proceed(). Swallow the module's crash and return the real
             // downstream state.
