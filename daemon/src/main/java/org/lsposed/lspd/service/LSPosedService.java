@@ -49,6 +49,7 @@ import org.lsposed.lspd.models.Application;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -301,26 +302,26 @@ public class LSPosedService extends ILSPosedService.Stub {
         try {
             var applicationInfo = PackageService.getApplicationInfo(scopePackageName, 0, userId);
             if (applicationInfo == null) {
-                iCallback.onScopeRequestFailed(scopePackageName, "Package not found");
+                iCallback.onScopeRequestFailed("Package not found");
                 return;
             }
 
             switch (action) {
                 case "approve" -> {
                     ConfigManager.getInstance().setModuleScope(packageName, scopePackageName, userId);
-                    iCallback.onScopeRequestApproved(scopePackageName);
+                    iCallback.onScopeRequestApproved(Collections.singletonList(scopePackageName));
                 }
-                case "deny" -> iCallback.onScopeRequestDenied(scopePackageName);
-                case "delete" -> iCallback.onScopeRequestTimeout(scopePackageName);
+                case "deny" -> iCallback.onScopeRequestFailed("Request denied by user");
+                case "delete" -> iCallback.onScopeRequestFailed("Request timeout"); 
                 case "block" -> {
                     ConfigManager.getInstance().blockScopeRequest(packageName);
-                    iCallback.onScopeRequestDenied(scopePackageName);
+                    iCallback.onScopeRequestFailed("Request blocked by configuration");
                 }
             }
             Log.i(TAG, action + " scope " + scopePackageName + " for " + packageName + " in user " + userId);
         } catch (RemoteException e) {
             try {
-                iCallback.onScopeRequestFailed(scopePackageName, e.getMessage());
+                iCallback.onScopeRequestFailed(e.getMessage());
             } catch (RemoteException ignored) {
                 // callback died
             }

@@ -123,15 +123,15 @@ public class LSPModuleService extends IXposedService.Stub {
     }
 
     @Override
-    public int getAPIVersion() throws RemoteException {
+    public int getApiVersion() throws RemoteException {
         ensureModule();
-        return API;
+        return IXposedService.LIB_API;
     }
 
     @Override
     public String getFrameworkName() throws RemoteException {
         ensureModule();
-        return "LSPosed";
+        return BuildConfig.FRAMEWORK_NAME;
     }
 
     @Override
@@ -147,9 +147,10 @@ public class LSPModuleService extends IXposedService.Stub {
     }
 
     @Override
-    public int getFrameworkPrivilege() throws RemoteException {
+    public long getFrameworkProperties() throws RemoteException {
         ensureModule();
-        return IXposedService.FRAMEWORK_PRIVILEGE_ROOT;
+        // Properly handle the return value
+        return IXposedService.PROP_CAP_SYSTEM | IXposedService.PROP_CAP_REMOTE;
     }
 
     @Override
@@ -165,26 +166,28 @@ public class LSPModuleService extends IXposedService.Stub {
     }
 
     @Override
-    public void requestScope(String packageName, IXposedScopeCallback callback) throws RemoteException {
+    public void requestScope(List<String> packages, IXposedScopeCallback callback) throws RemoteException {
         var userId = ensureModule();
-        if (ConfigManager.getInstance().scopeRequestBlocked(loadedModule.packageName)) {
-            callback.onScopeRequestDenied(packageName);
+        if (!ConfigManager.getInstance().scopeRequestBlocked(loadedModule.packageName)) {
+            for (String packageName : packages) {
+                LSPNotificationManager.requestModuleScope(loadedModule.packageName, userId, packageName, callback);
+            }
         } else {
-            LSPNotificationManager.requestModuleScope(loadedModule.packageName, userId, packageName, callback);
-            callback.onScopeRequestPrompted(packageName);
+            callback.onScopeRequestFailed("Scope request blocked by user configuration");
         }
     }
 
     @Override
-    public String removeScope(String packageName) throws RemoteException {
+    public void removeScope(List<String> packages) throws RemoteException {
         var userId = ensureModule();
-        try {
-            if (!ConfigManager.getInstance().removeModuleScope(loadedModule.packageName, packageName, userId)) {
-                return "Invalid request";
+        for (String packageName : packages) {
+            try {
+                if (!ConfigManager.getInstance().removeModuleScope(loadedModule.packageName, packageName, userId)) {
+                    Log.w(TAG, "Failed to remove scope: " + packageName + " (Invalid request)");
+                }
+            } catch (Throwable e) {
+                Log.e(TAG, "Error removing scope for " + packageName, e);
             }
-            return null;
-        } catch (Throwable e) {
-            return e.getMessage();
         }
     }
 

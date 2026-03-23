@@ -34,7 +34,7 @@ interface ILSPManagerService {
 
     ParcelFileDescriptor getModulesLog() = 17;
 
-    int getXposedVersionCode() = 18;
+    long getXposedVersionCode() = 18;
 
     String getXposedVersionName() = 19;
 

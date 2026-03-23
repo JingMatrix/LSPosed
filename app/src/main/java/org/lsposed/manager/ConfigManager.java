@@ -63,7 +63,7 @@ public class ConfigManager {
         }
     }
 
-    public static int getXposedVersionCode() {
+    public static long getXposedVersionCode() {
         try {
             return LSPManagerServiceHolder.getService().getXposedVersionCode();
         } catch (RemoteException e) {

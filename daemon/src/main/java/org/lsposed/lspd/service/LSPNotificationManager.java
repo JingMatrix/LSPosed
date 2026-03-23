@@ -305,7 +305,7 @@ public class LSPNotificationManager {
                     notification, 0);
         } catch (RemoteException e) {
             try {
-                callback.onScopeRequestFailed(scopePackageName, e.getMessage());
+                callback.onScopeRequestFailed(e.getMessage());
             } catch (RemoteException ignored) {
             }
             Log.e(TAG, "request module scope", e);

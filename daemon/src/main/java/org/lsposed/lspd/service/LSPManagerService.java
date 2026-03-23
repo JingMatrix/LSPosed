@@ -268,11 +268,11 @@ public class LSPManagerService extends ILSPManagerService.Stub {
 
     @Override
     public int getXposedApiVersion() {
-        return IXposedService.API;
+        return IXposedService.LIB_API;
     }
 
     @Override
-    public int getXposedVersionCode() {
+    public long getXposedVersionCode() {
         return BuildConfig.VERSION_CODE;
     }
 
