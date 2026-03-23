@@ -25,7 +25,6 @@ internal class VectorURLStreamHandler(jarFileName: String) : Handler() {
     fun getEntryUrlOrNull(entryName: String): URL? {
         if (jarFile.getEntry(entryName) != null) {
             return try {
-                // Using Android's Uri.encode instead of internal sun.net.www.ParseUtil
                 val encodedName = Uri.encode(entryName, "/")
                 URL("jar", null, -1, "$fileUri!/$encodedName", this)
             } catch (e: MalformedURLException) {

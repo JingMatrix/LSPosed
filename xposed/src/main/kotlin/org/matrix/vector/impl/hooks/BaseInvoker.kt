@@ -136,9 +136,9 @@ internal class VectorCtorInvoker<T : Any>(constructor: Constructor<T>) :
 
     @Suppress("UNCHECKED_CAST")
     override fun newInstance(vararg args: Any?): T {
-        // 1. Allocate memory without invoking <init>
+        // Allocate memory without invoking <init>
         val obj = HookBridge.allocateObject(executable.declaringClass)
-        // 2. Drive the invocation (origin or chain) utilizing the allocated object
+        // Drive the invocation (origin or chain) utilizing the allocated object
         proceedInvocation(obj, args)
         return obj
     }

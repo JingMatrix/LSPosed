@@ -35,10 +35,7 @@ data class TargetExecutable(
     }
 }
 
-/**
- * Provides a registry of methods known to inline target framework hooks. Deoptimizing these callers
- * forces the ART runtime to fall back to intercept mode.
- */
+/** Provides a registry of methods known to inline target framework hooks. */
 object VectorInlinedCallers {
     const val KEY_BOOT_IMAGE = "boot_image"
     const val KEY_BOOT_IMAGE_MIUI_RES = "boot_image_miui_res"
@@ -151,7 +148,6 @@ object VectorInlinedCallers {
             )
 
         callers[KEY_SYSTEM_SERVER] = emptyList()
-        callers["com.android.systemui"] = emptyList()
     }
 
     fun get(where: String): List<TargetExecutable> = callers[where] ?: emptyList()

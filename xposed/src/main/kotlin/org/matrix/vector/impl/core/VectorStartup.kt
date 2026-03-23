@@ -25,14 +25,14 @@ object VectorStartup {
 
     @JvmStatic
     fun bootstrap(isSystem: Boolean, systemServerStarted: Boolean) {
-        // 1. Crash Dump Interceptor
+        // Crash Dump Interceptor
         Thread::class
             .java
             .declaredMethods
             .firstOrNull { it.name == "dispatchUncaughtException" }
             ?.let { VectorHookBuilder(it).intercept(CrashDumpHooker) }
 
-        // 2. Process-specific Interceptors
+        // Process-specific Interceptors
         if (isSystem) {
             val zygoteInitClass = Class.forName("com.android.internal.os.ZygoteInit")
             zygoteInitClass.declaredMethods
@@ -50,7 +50,7 @@ object VectorStartup {
                 .forEach { VectorHookBuilder(it).intercept(DexTrustHooker) }
         }
 
-        // 3. Application Load Interceptors
+        // Application Load Interceptors
         val loadedApkClass = Class.forName("android.app.LoadedApk")
         loadedApkClass.declaredConstructors.forEach {
             // Hook all constructors of LoadedApk to catch early instantiations securely
@@ -61,13 +61,13 @@ object VectorStartup {
             .filter { it.name == "createOrUpdateClassLoaderLocked" }
             .forEach { VectorHookBuilder(it).intercept(LoadedApkCreateCLHooker) }
 
-        // 4. ActivityThread Attachment Interceptor
+        // ActivityThread Attachment Interceptor
         val activityThreadClass = Class.forName("android.app.ActivityThread")
         activityThreadClass.declaredMethods
             .filter { it.name == "attach" }
             .forEach { VectorHookBuilder(it).intercept(AppAttachHooker) }
 
-        // 5. Late System Server Injection
+        // Late System Server Injection
         if (systemServerStarted) {
             val activityService: IBinder? = android.os.ServiceManager.getService("activity")
             if (activityService != null) {

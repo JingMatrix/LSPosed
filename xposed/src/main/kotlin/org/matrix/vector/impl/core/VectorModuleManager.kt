@@ -14,8 +14,8 @@ import org.matrix.vector.impl.utils.VectorModuleClassLoader
 import org.matrix.vector.nativebridge.NativeAPI
 
 /**
- * Responsible for loading modern (API 101) modules into the target process. Handles ClassLoader
- * isolation and injects the framework context into the module instances.
+ * Responsible for loading modules into the target process. Handles ClassLoader isolation and
+ * injects the framework context into the module instances.
  */
 object VectorModuleManager {
 
@@ -28,7 +28,7 @@ object VectorModuleManager {
         try {
             Log.d(TAG, "Loading module ${module.packageName}")
 
-            // 1. Construct the native library search path
+            // Construct the native library search path
             val librarySearchPath = buildString {
                 val abis =
                     if (Process.is64Bit()) Build.SUPPORTED_64_BIT_ABIS
@@ -38,7 +38,7 @@ object VectorModuleManager {
                 }
             }
 
-            // 2. Create the isolated ClassLoader for the module
+            // Create the isolated ClassLoader for the module
             val initLoader = XposedModule::class.java.classLoader
             val moduleClassLoader =
                 VectorModuleClassLoader.loadApk(
@@ -53,15 +53,11 @@ object VectorModuleManager {
                 moduleClassLoader.loadClass(XposedModule::class.java.name).classLoader !==
                     initLoader
             ) {
-                Log.e(TAG, "  Cannot load module: ${module.packageName}")
-                Log.e(
-                    TAG,
-                    "  The Xposed API classes are compiled into the module's APK (implementation instead of compileOnly).",
-                )
+                Log.e(TAG, "The Xposed API classes are compiled into ${module.packageName}")
                 return false
             }
 
-            // 3. Create the Context that will be injected into the module
+            // Create the Context that will be injected into the module
             val vectorContext =
                 VectorContext(
                     packageName = module.packageName,
@@ -69,18 +65,17 @@ object VectorModuleManager {
                     service = module.service, // Our IPC client
                 )
 
-            // 4. Instantiate the module entry classes
+            // Instantiate the module entry classes
             for (className in module.file.moduleClassNames) {
                 runCatching {
                         val moduleClass = moduleClassLoader.loadClass(className)
-                        Log.d(TAG, "  Loading class $moduleClass")
+                        Log.d(TAG, "Loading class $moduleClass")
 
                         if (!XposedModule::class.java.isAssignableFrom(moduleClass)) {
-                            Log.e(TAG, "    Class does not extend XposedModule, skipping.")
+                            Log.e(TAG, "Class does not extend XposedModule, skipping.")
                             return@runCatching
                         }
 
-                        // Look for the constructor required by API 101
                         val constructor =
                             moduleClass.getConstructor(
                                 XposedInterface::class.java,
@@ -113,7 +108,7 @@ object VectorModuleManager {
                     .onFailure { e -> Log.e(TAG, "    Failed to instantiate class $className", e) }
             }
 
-            // 5. Register any native JNI entrypoints declared by the module
+            // Register any native JNI entrypoints declared by the module
             module.file.moduleLibraryNames.forEach { libraryName ->
                 NativeAPI.recordNativeEntrypoint(libraryName)
             }

@@ -4,10 +4,12 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.RemoteException
 import android.util.ArraySet
+import io.github.libxposed.api.error.XposedFrameworkError
 import java.util.TreeMap
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.lspd.service.ILSPInjectedModuleService
 import org.lsposed.lspd.service.IRemotePreferenceCallback
+import org.lsposed.lspd.util.Utils.Log
 
 @Suppress("DEPRECATION", "UNCHECKED_CAST")
 private inline fun <reified T> Bundle.getSerializableCompat(key: String): T? {
@@ -72,7 +74,8 @@ internal class VectorRemotePreferences(service: ILSPInjectedModuleService, group
                 }
             }
         } catch (e: RemoteException) {
-            // Initial load failed. Error handling is deferred to the caller's context if necessary.
+            Log.e("VectorContext", "Failed to request remote preferences for group: $group", e)
+            throw XposedFrameworkError("Remote preferences IPC failure", e)
         }
     }
 

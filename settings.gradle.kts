@@ -20,14 +20,13 @@ rootProject.name = "Vector"
 
 include(
     ":app",
-    ":core",
     ":daemon",
     ":dex2oat",
     ":external:axml",
     ":external:apache",
     ":hiddenapi:stubs",
     ":hiddenapi:bridge",
-    ":magisk-loader",
+    ":legacy",
     ":services:manager-service",
     ":services:daemon-service",
     ":xposed",

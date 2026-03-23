@@ -319,7 +319,7 @@ object ParasiticManagerHooker {
                             // Create a fake original context to satisfy internal package checks
                             info.applicationInfo.packageName = "$managerPackage.origin"
                             val compatibilityInfo =
-                                HiddenApiBridge.Resources_getCompatibilityInfo(ctx!!.resources)
+                                HiddenApiBridge.Resources_getCompatibilityInfo(ctx.resources)
                             val originalPkgInfo =
                                 ActivityThread.currentActivityThread()
                                     .getPackageInfoNoCheck(info.applicationInfo, compatibilityInfo)

@@ -4,12 +4,15 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import org.lsposed.lspd.models.Module
 import org.lsposed.lspd.service.ILSPApplicationService
+import org.lsposed.lspd.util.Utils.Log
 
 /**
  * Singleton client for managing IPC communication with the injected manager service. Handles Binder
  * death gracefully and ensures safe remote execution.
  */
 object VectorServiceClient : ILSPApplicationService, IBinder.DeathRecipient {
+
+    private const val TAG = "VectorServiceClient"
 
     private var service: ILSPApplicationService? = null
     var processName: String = ""
@@ -25,7 +28,8 @@ object VectorServiceClient : ILSPApplicationService, IBinder.DeathRecipient {
                     binder.linkToDeath(this, 0)
                 }
                 .onFailure {
-                    // Log failure to link to death
+                    Log.e(TAG, "Failed to link to death for service in process: $niceName", it)
+                    service = null
                 }
         }
     }

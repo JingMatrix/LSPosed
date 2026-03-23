@@ -59,6 +59,9 @@ object LoadedApkCreateCLHooker : XposedInterface.Hooker {
         val result = chain.proceed()
         val loadedApk = chain.thisObject ?: return result
 
+        // LoadedApk.createOrUpdateClassLoaderLocked(List<String> addedPaths) is called with
+        // addedPaths == null when Android is creating the ClassLoader for the very first time for
+        // this app.
         if (
             chain.args.firstOrNull() != null || !LoadedApkCtorHooker.trackedApks.contains(loadedApk)
         ) {
@@ -90,7 +93,7 @@ object LoadedApkCreateCLHooker : XposedInterface.Hooker {
             val appInfo =
                 loadedApk.getFieldValue<ApplicationInfo>("mApplicationInfo") ?: return result
 
-            // 1. Dispatch Modern Lifecycle
+            // Dispatch Modern Lifecycle
             val defaultClassLoader =
                 loadedApk.getFieldValue<ClassLoader>("mDefaultClassLoader") ?: classLoader
             VectorLifecycleManager.dispatchPackageLoaded(
@@ -100,7 +103,7 @@ object LoadedApkCreateCLHooker : XposedInterface.Hooker {
                 defaultClassLoader,
             )
 
-            // 2. Dispatch Legacy Lifecycle
+            // Dispatch Legacy Lifecycle
             VectorBootstrap.withLegacy { delegate ->
                 delegate.onPackageLoaded(
                     LegacyPackageInfo(

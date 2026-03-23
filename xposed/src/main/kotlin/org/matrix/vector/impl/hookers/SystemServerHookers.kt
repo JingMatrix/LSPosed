@@ -65,10 +65,10 @@ object StartBootstrapServicesHooker : XposedInterface.Hooker {
 
     /** Dispatches module loading events. */
     fun dispatchSystemServerLoaded(classLoader: ClassLoader) {
-        // 1. Dispatch to modern framework modules
+        // Dispatch to modern framework modules
         VectorLifecycleManager.dispatchSystemServerStarting(classLoader)
 
-        // 2. Dispatch to legacy framework modules
+        // Dispatch to legacy framework modules
         VectorBootstrap.withLegacy { delegate -> delegate.onSystemServerLoaded(classLoader) }
     }
 }

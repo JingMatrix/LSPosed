@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.ExceptionMode
 import java.lang.reflect.Executable
-import org.lsposed.lspd.util.Utils.Log
+import org.lsposed.lspd.util.Utils
 
 /** Represents a registered hook configuration, stored natively by [HookBridge]. */
 data class VectorHookRecord(
@@ -94,15 +94,15 @@ class VectorChain(
         }
 
         // DEFAULT or PROTECTIVE mode: log the crash and attempt to rescue the execution.
-        Log.e("VectorChain", "Hooker threw exception: ${record.hooker.javaClass.name}", t)
+        Utils.logE("Hooker threw exception: ${record.hooker.javaClass.name}", t)
 
         if (!nextChain.proceedCalled) {
             // Crash occurred BEFORE proceed().
             // Skip this hooker entirely and drive the chain manually.
             return nextChain.proceedWith(recoverThis, recoverArgs)
         } else {
-            // Crash occurred AFTER proceed(). Swallow the module's crash and return the real
-            // downstream state.
+            // Crash occurred AFTER proceed().
+            // Swallow the module's crash and return the real downstream state.
             nextChain.downstreamThrowable?.let { throw it }
             return nextChain.downstreamResult
         }

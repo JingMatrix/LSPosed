@@ -1,0 +1,3 @@
+-keep class android.** { *; }
+-keep class de.robv.android.xposed.** {*;}
+-keep class org.matrix.vector.Startup {*;}

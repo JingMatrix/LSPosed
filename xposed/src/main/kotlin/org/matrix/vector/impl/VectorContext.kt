@@ -30,11 +30,11 @@ class VectorContext(
 
     private val remotePrefs = ConcurrentHashMap<String, SharedPreferences>()
 
-    override fun getFrameworkName(): String = "Vector"
+    override fun getFrameworkName(): String = BuildConfig.FRAMEWORK_NAME
 
-    override fun getFrameworkVersion(): String = "1.0.0"
+    override fun getFrameworkVersion(): String = BuildConfig.VERSION_NAME
 
-    override fun getFrameworkVersionCode(): Long = 1L
+    override fun getFrameworkVersionCode(): Long = BuildConfig.VERSION_CODE
 
     override fun getFrameworkProperties(): Long {
         var props = 0L
@@ -102,6 +102,8 @@ class VectorContext(
 /** Manages the dispatching of modern lifecycle events to loaded modules. */
 object VectorLifecycleManager {
 
+    private const val TAG = "VectorLifecycle"
+
     val activeModules: MutableSet<XposedModule> = ConcurrentHashMap.newKeySet()
 
     fun dispatchPackageLoaded(
@@ -125,7 +127,7 @@ object VectorLifecycleManager {
             runCatching { module.onPackageLoaded(param) }
                 .onFailure {
                     Log.e(
-                        "VectorLifecycle",
+                        TAG,
                         "Error in onPackageLoaded for ${module.moduleApplicationInfo.packageName}",
                         it,
                     )
@@ -163,7 +165,7 @@ object VectorLifecycleManager {
             runCatching { module.onPackageReady(param) }
                 .onFailure {
                     Log.e(
-                        "VectorLifecycle",
+                        TAG,
                         "Error in onPackageReady for ${module.moduleApplicationInfo.packageName}",
                         it,
                     )
@@ -181,7 +183,7 @@ object VectorLifecycleManager {
             runCatching { module.onSystemServerStarting(param) }
                 .onFailure {
                     Log.e(
-                        "VectorLifecycle",
+                        TAG,
                         "Error in onSystemServerStarting for ${module.moduleApplicationInfo.packageName}",
                         it,
                     )

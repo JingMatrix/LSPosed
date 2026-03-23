@@ -18,8 +18,8 @@ fun interface OriginalInvoker {
 }
 
 /**
- * The explicit contract that the `core` (legacy) module must fulfill. The modern framework will
- * call these methods at the appropriate lifecycle moments.
+ * The explicit contract that the `legacy` module must fulfill. The modern framework will call these
+ * methods at the appropriate lifecycle moments.
  */
 interface LegacyFrameworkDelegate {
     /** Instructs the legacy bridge to load legacy modules. */

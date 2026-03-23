@@ -10,6 +10,8 @@ import org.matrix.vector.nativebridge.HookBridge
  */
 object VectorDeopter {
 
+    private const val TAG = "VectorDeopter"
+
     @JvmStatic
     fun deoptMethods(where: String, cl: ClassLoader?) {
         val targets = VectorInlinedCallers.get(where)
@@ -32,7 +34,10 @@ object VectorDeopter {
                     HookBridge.deoptimizeMethod(executable)
                 }
                 .onFailure {
-                    // Log resolution or deoptimization failure silently
+                    Utils.Log.v(
+                        TAG,
+                        "Skipping deopt for ${target.className}#${target.methodName}: ${it.message}",
+                    )
                 }
         }
     }
