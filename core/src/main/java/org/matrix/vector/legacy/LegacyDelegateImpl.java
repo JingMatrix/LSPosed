@@ -96,7 +96,16 @@ public class LegacyDelegateImpl implements LegacyFrameworkDelegate {
 
     @Override
     public void setPackageNameForResDir(String packageName, String resDir) {
-        XResources.setPackageNameForResDir(packageName, resDir);
+        // By calling a separate static inner class, we prevent the verifier
+        // from looking at XResources when LegacyDelegateImpl is loaded.
+        ResourceProxy.set(packageName, resDir);
+    }
+
+    // This class is only verified the FIRST time 'set' is called
+    private static class ResourceProxy {
+        static void set(String p, String r) {
+            XResources.setPackageNameForResDir(p, r);
+        }
     }
 
     private void hookNewXSP(XC_LoadPackage.LoadPackageParam lpparam) {

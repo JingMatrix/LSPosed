@@ -17,9 +17,5 @@ object ResourcesHook {
 
     @JvmStatic
     @FastNative
-    external fun rewriteXmlReferencesNative(
-        parserPtr: Long,
-        origRes: Any,
-        repRes: Resources,
-    )
+    external fun rewriteXmlReferencesNative(parserPtr: Long, origRes: Any, repRes: Resources)
 }

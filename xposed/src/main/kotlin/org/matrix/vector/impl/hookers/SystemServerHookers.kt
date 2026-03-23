@@ -41,7 +41,14 @@ object HandleSystemServerProcessHooker : XposedInterface.Hooker {
 
         // Dynamically locate and hook the bootstrap service initializer
         val sysServerClass = Class.forName("com.android.server.SystemServer", false, classLoader)
-        val startMethod = sysServerClass.getDeclaredMethod("startBootstrapServices")
+        val startMethod =
+            sysServerClass.declaredMethods.find { it.name == "startBootstrapServices" }
+                ?: throw NoSuchMethodException(
+                    "com.android.server.SystemServer.startBootstrapServices not found"
+                )
+
+        // Ensure we can hook the private method
+        startMethod.isAccessible = true
 
         VectorHookBuilder(startMethod).intercept(StartBootstrapServicesHooker)
         callback?.onSystemServerLoaded(classLoader)
