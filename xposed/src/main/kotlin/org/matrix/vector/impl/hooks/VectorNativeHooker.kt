@@ -93,7 +93,7 @@ class VectorNativeHooker<T : Executable>(private val method: T) {
                 invokeOriginalSafely(tObj, tArgs)
             }
         }
-        // Start the modern API 101 Interceptor Chain
+
         val rootChain = VectorChain(method, thisObject, actualArgs, modernHooks, 0, terminal)
 
         val result = rootChain.proceed()
