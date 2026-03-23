@@ -3,7 +3,6 @@ package org.matrix.vector
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.content.pm.ResolveInfo
 import org.lsposed.lspd.util.Utils
 import org.matrix.vector.impl.hookers.HandleSystemServerProcessHooker
 import org.matrix.vector.impl.hooks.VectorHookBuilder
@@ -76,15 +75,20 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
                     if (!intent.hasCategory(BuildConfig.ManagerPackageName + ".LAUNCH_MANAGER"))
                         return@intercept result
 
-                    // In standard Android, resolveActivity returns a ResolveInfo.
-                    // We safely extract the nested ActivityInfo.
-                    val resolveInfo = result as? ResolveInfo ?: return@intercept result
-                    val originalActivityInfo = resolveInfo.activityInfo ?: return@intercept result
+                    val originalActivityInfo =
+                        result as? ActivityInfo
+                            ?: run {
+                                Utils.logD(
+                                    "Redirection: result is not ActivityInfo (was ${result?.javaClass?.name})"
+                                )
+                                return@intercept result
+                            }
 
                     // We only intercept if it's currently resolving to the shell/fallback
                     if (originalActivityInfo.packageName != BuildConfig.InjectedPackageName)
                         return@intercept result
 
+                    Utils.logD("creat redirectedInfo")
                     // --- Redirection Logic ---
                     // We create a copy of the ActivityInfo to avoid polluting the system's cache.
                     val redirectedInfo =
@@ -106,9 +110,8 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
                     // Notify the bridge service that we are about to start the manager
                     BridgeService.getService()?.preStartManager()
 
-                    // Replace the original ResolveInfo's ActivityInfo with our parasitic one
-                    resolveInfo.activityInfo = redirectedInfo
-                    resolveInfo
+                    Utils.logD("returning redirectedInfo ${redirectedInfo}")
+                    redirectedInfo
                 }
 
                 Utils.logD("Successfully hooked Activity Supervisor for Manager redirection.")
