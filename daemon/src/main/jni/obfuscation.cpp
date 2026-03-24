@@ -221,6 +221,26 @@ extern "C" JNIEXPORT jobject JNICALL Java_org_lsposed_lspd_service_ObfuscationMa
         return nullptr;
     }
 
+    bool needs_obfuscation = false;
+    for (const auto &sig : signatures) {
+        if (memmem(mem, size, sig.first.c_str(), sig.first.length()) != nullptr) {
+            needs_obfuscation = true;
+            break;
+        }
+    }
+
+    if (!needs_obfuscation) {
+        LOGD("No target signatures found in fd=%d, skipping slicer.", fd);
+        munmap(mem, size);
+
+        // Wrap the duplicated FD into Java objects and return instantly
+        auto java_fd =
+            lsplant::JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, fd);
+        auto java_sm =
+            lsplant::JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
+        return java_sm.release();
+    }
+
     // Process the DEX and obtain a new file descriptor for the output
     int new_fd = obfuscateDexBuffer(mem, size);
 
