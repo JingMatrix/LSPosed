@@ -338,8 +338,10 @@ public class ConfigManager {
         int uid = Binder.getCallingUid();
         Log.d(TAG, "getInstance [TID:" + tid + " UID:" + uid + "]: entered");
 
-        if (instance == null)
+        if (instance == null) {
             instance = new ConfigManager();
+        Log.d(TAG, "new instance created for [TID:" + tid + " UID:" + uid + "]");
+        }
         boolean needCached;
         synchronized (instance.cacheHandler) {
             needCached = instance.lastModuleCacheTime == 0 || instance.lastScopeCacheTime == 0;
@@ -349,7 +351,7 @@ public class ConfigManager {
                 Log.d(TAG, "pm & um are ready, updating cache");
                 // must ensure cache is valid for later usage
                 instance.updateCaches(true);
-                instance.updateManager(false);
+                // instance.updateManager(false);
             }
         }
         Log.d(TAG, "getInstance[TID:" + tid + " UID:" + uid + "]: returned after " + (SystemClock.elapsedRealtime() - enterTime) + "ms");
@@ -1237,7 +1239,7 @@ public class ConfigManager {
         os.closeEntry();
     }
 
-    synchronized SharedMemory getPreloadDex() {
+    SharedMemory getPreloadDex() {
         return ConfigFileManager.getPreloadDex(dexObfuscate);
     }
 
