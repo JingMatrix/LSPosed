@@ -24,9 +24,3 @@
     public static <methods>;
 }
 -keep class org.matrix.vector.impl.di.LegacyFrameworkDelegate { *; }
-
-# Strip debug logs in release builds
--assumenosideeffects class android.util.Log {
-    public static *** v(...);
-    public static *** d(...);
-}
