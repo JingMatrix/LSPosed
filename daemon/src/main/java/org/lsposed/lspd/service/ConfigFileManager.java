@@ -30,6 +30,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SELinux;
 import android.os.SharedMemory;
+import android.os.SystemClock;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
@@ -389,12 +390,17 @@ public class ConfigFileManager {
     @Nullable
     static PreLoadedApk loadModule(String path, boolean obfuscate) {
         if (path == null) return null;
+
+        long startTime = SystemClock.elapsedRealtime();
+        Log.d(TAG, "loadModule: starting for " + path + " (obfuscate=" + obfuscate + ")");
         var file = new PreLoadedApk();
         var preLoadedDexes = new ArrayList<SharedMemory>();
         var moduleClassNames = new ArrayList<String>(1);
         var moduleLibraryNames = new ArrayList<String>(1);
         try (var apkFile = new ZipFile(toGlobalNamespace(path))) {
+            long dexStart = SystemClock.elapsedRealtime();
             readDexes(apkFile, preLoadedDexes, obfuscate);
+            Log.d(TAG, "loadModule: readDexes finished for " + path + " in " + (SystemClock.elapsedRealtime() - dexStart) + "ms");
             readName(apkFile, "META-INF/xposed/java_init.list", moduleClassNames);
             if (moduleClassNames.isEmpty()) {
                 file.legacy = true;

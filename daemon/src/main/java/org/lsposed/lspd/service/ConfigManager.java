@@ -34,6 +34,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteStatement;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -193,8 +194,12 @@ public class ConfigManager {
         synchronized (cacheHandler) {
             requestScopeCacheTime = requestModuleCacheTime = SystemClock.elapsedRealtime();
         }
+        int tid = Process.myTid();
         if (sync) {
+            Log.d(TAG, "updateCaches [TID:" + tid + "]: waiting for cacheModules() lock...");
+            long waitStart = SystemClock.elapsedRealtime();
             cacheModules();
+            Log.d(TAG, "updateCaches [TID:" + tid + "]: cacheModules() lock released after " + (SystemClock.elapsedRealtime() - waitStart) + "ms");
         } else {
             cacheHandler.post(this::cacheModules);
         }
@@ -328,6 +333,11 @@ public class ConfigManager {
     }
 
     static ConfigManager getInstance() {
+        long enterTime = SystemClock.elapsedRealtime();
+        int tid = Process.myTid();
+        int uid = Binder.getCallingUid();
+        Log.d(TAG, "getInstance [TID:" + tid + " UID:" + uid + "]: entered");
+
         if (instance == null)
             instance = new ConfigManager();
         boolean needCached;
@@ -342,6 +352,7 @@ public class ConfigManager {
                 instance.updateManager(false);
             }
         }
+        Log.d(TAG, "getInstance[TID:" + tid + " UID:" + uid + "]: returned after " + (SystemClock.elapsedRealtime() - enterTime) + "ms");
         return instance;
     }
 
@@ -549,6 +560,8 @@ public class ConfigManager {
     }
 
     private synchronized void cacheModules() {
+        long startTime = SystemClock.elapsedRealtime();
+        Log.d(TAG, "cacheModules[TID:" + Process.myTid() + "]: lock acquired, starting execution");
         // skip caching when pm is not yet available
         if (!PackageService.isAlive() || !UserService.isAlive()) return;
         synchronized (cacheHandler) {
@@ -651,6 +664,7 @@ public class ConfigManager {
         }
         cacheScopes();
         toClose.forEach(SharedMemory::close);
+        Log.d(TAG, "cacheModules[TID:" + Process.myTid() + "]: finished execution in " + (SystemClock.elapsedRealtime() - startTime) + "ms");
     }
 
     private synchronized void cacheScopes() {
