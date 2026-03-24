@@ -1,5 +1,6 @@
 package org.matrix.vector.impl.core
 
+import android.os.Build
 import android.os.IBinder
 import dalvik.system.DexFile
 import org.lsposed.lspd.service.ILSPApplicationService
@@ -57,6 +58,12 @@ object VectorStartup {
             VectorHookBuilder(it).intercept(LoadedApkCtorHooker)
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            loadedApkClass.declaredMethods
+                .filter { it.name == "createAppFactory" }
+                .forEach { VectorHookBuilder(it).intercept(LoadedApkCreateAppFactoryHooker) }
+        }
+
         loadedApkClass.declaredMethods
             .filter { it.name == "createOrUpdateClassLoaderLocked" }
             .forEach { VectorHookBuilder(it).intercept(LoadedApkCreateCLHooker) }
@@ -74,7 +81,7 @@ object VectorStartup {
                 val classLoader = activityService.javaClass.classLoader
                 if (classLoader != null) {
                     // Manually trigger the routines that the hooks normally would
-                    HandleSystemServerProcessHooker.initSystemServer(classLoader)
+                    HandleSystemServerProcessHooker.initSystemServer(classLoader, isLate = true)
                     StartBootstrapServicesHooker.dispatchSystemServerLoaded(classLoader)
                 }
             }

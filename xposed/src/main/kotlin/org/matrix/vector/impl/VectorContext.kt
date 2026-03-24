@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.os.ParcelFileDescriptor
 import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.*
 import java.io.FileNotFoundException
 import java.lang.reflect.Constructor
@@ -92,101 +91,5 @@ class VectorContext(
             }
         }
         Log.println(priority, finalTag, fullMsg)
-    }
-}
-
-/** Manages the dispatching of modern lifecycle events to loaded modules. */
-object VectorLifecycleManager {
-
-    private const val TAG = "VectorLifecycle"
-
-    val activeModules: MutableSet<XposedModule> = ConcurrentHashMap.newKeySet()
-
-    fun dispatchPackageLoaded(
-        packageName: String,
-        appInfo: ApplicationInfo,
-        isFirst: Boolean,
-        defaultClassLoader: ClassLoader,
-    ) {
-        val param =
-            object : PackageLoadedParam {
-                override fun getPackageName(): String = packageName
-
-                override fun getApplicationInfo(): ApplicationInfo = appInfo
-
-                override fun isFirstPackage(): Boolean = isFirst
-
-                override fun getDefaultClassLoader(): ClassLoader = defaultClassLoader
-            }
-
-        activeModules.forEach { module ->
-            runCatching { module.onPackageLoaded(param) }
-                .onFailure {
-                    Log.e(
-                        TAG,
-                        "Error in onPackageLoaded for ${module.moduleApplicationInfo.packageName}",
-                        it,
-                    )
-                }
-        }
-    }
-
-    fun dispatchPackageReady(
-        packageName: String,
-        appInfo: ApplicationInfo,
-        isFirst: Boolean,
-        defaultClassLoader: ClassLoader,
-        classLoader: ClassLoader,
-        appComponentFactory: Any, // Abstracted for API compatibility
-    ) {
-        val param =
-            object : PackageReadyParam {
-                override fun getPackageName(): String = packageName
-
-                override fun getApplicationInfo(): ApplicationInfo = appInfo
-
-                override fun isFirstPackage(): Boolean = isFirst
-
-                override fun getDefaultClassLoader(): ClassLoader = defaultClassLoader
-
-                override fun getClassLoader(): ClassLoader = classLoader
-
-                @Suppress("NewApi")
-                override fun getAppComponentFactory(): android.app.AppComponentFactory {
-                    return appComponentFactory as android.app.AppComponentFactory
-                }
-            }
-
-        activeModules.forEach { module ->
-            runCatching {
-                    Log.d(TAG, "dispatchPackageReady $param")
-                    module.onPackageReady(param)
-                }
-                .onFailure {
-                    Log.e(
-                        TAG,
-                        "Error in onPackageReady for ${module.moduleApplicationInfo.packageName}",
-                        it,
-                    )
-                }
-        }
-    }
-
-    fun dispatchSystemServerStarting(classLoader: ClassLoader) {
-        val param =
-            object : SystemServerStartingParam {
-                override fun getClassLoader(): ClassLoader = classLoader
-            }
-
-        activeModules.forEach { module ->
-            runCatching { module.onSystemServerStarting(param) }
-                .onFailure {
-                    Log.e(
-                        TAG,
-                        "Error in onSystemServerStarting for ${module.moduleApplicationInfo.packageName}",
-                        it,
-                    )
-                }
-        }
     }
 }

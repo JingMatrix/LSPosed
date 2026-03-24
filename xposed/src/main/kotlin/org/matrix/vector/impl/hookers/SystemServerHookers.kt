@@ -32,25 +32,28 @@ object HandleSystemServerProcessHooker : XposedInterface.Hooker {
     }
 
     /** Performs system server initialization. */
-    fun initSystemServer(classLoader: ClassLoader) {
+    fun initSystemServer(classLoader: ClassLoader, isLate: Boolean = false) {
         if (systemServerCL != null) return // Ensure this only runs once
         systemServerCL = classLoader
 
         // Deoptimize heavily inlined system server paths
         VectorDeopter.deoptSystemServerMethods(classLoader)
 
-        // Dynamically locate and hook the bootstrap service initializer
-        val sysServerClass = Class.forName("com.android.server.SystemServer", false, classLoader)
-        val startMethod =
-            sysServerClass.declaredMethods.find { it.name == "startBootstrapServices" }
-                ?: throw NoSuchMethodException(
-                    "com.android.server.SystemServer.startBootstrapServices not found"
-                )
+        if (!isLate) {
+            // Dynamically locate and hook the bootstrap service initializer
+            val sysServerClass =
+                Class.forName("com.android.server.SystemServer", false, classLoader)
+            val startMethod =
+                sysServerClass.declaredMethods.find { it.name == "startBootstrapServices" }
+                    ?: throw NoSuchMethodException(
+                        "com.android.server.SystemServer.startBootstrapServices not found"
+                    )
 
-        // Ensure we can hook the private method
-        startMethod.isAccessible = true
+            // Ensure we can hook the private method
+            startMethod.isAccessible = true
+            VectorHookBuilder(startMethod).intercept(StartBootstrapServicesHooker)
+        }
 
-        VectorHookBuilder(startMethod).intercept(StartBootstrapServicesHooker)
         callback?.onSystemServerLoaded(classLoader)
     }
 }
