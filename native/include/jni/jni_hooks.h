@@ -9,9 +9,6 @@
 
 namespace vector::native::jni {
 
-/// Registers the JNI methods for the DexParserBridge.
-void RegisterDexParserBridge(JNIEnv *env);
-
 /// Registers the JNI methods for the HookBridge.
 void RegisterHookBridge(JNIEnv *env);
 

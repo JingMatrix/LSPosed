@@ -31,7 +31,6 @@ This is the most significant module and represents the library's primary service
 -   **`jni_bridge.h`**: Provides a set of helper macros (`VECTOR_NATIVE_METHOD`, `REGISTER_VECTOR_NATIVE_METHODS`, etc.) to standardize and simplify the tedious process of writing JNI boilerplate.
 -   **`HookBridge`**: The engine for ART method hooking. It maintains a thread-safe map of all active hooks. It also includes some stability controls, such as using atomic operations to set the backup method trampoline and throwing a Java exception instead of causing a native crash if a user tries to invoke the original method of a failed hook.
 -   **`ResourcesHook`**: Provides the functionality to intercept and rewrite Android's binary XML resources on the fly. It relies on non-public structures from `libandroidfw.so` and uses the `elf` module to find the necessary function symbols at runtime.
--   **`DexParserBridge`**: Exposes a native DEX parser to the Java layer using a visitor pattern. This allows for analysis of an app's bytecode without the overhead of instantiating the entire DEX structure as Java objects.
 -   **`NativeApiBridge`**: The JNI counterpart to the `core/native_api`. It exposes a method for the Java framework to register the filenames of third-party native modules.
 
 ### `common` & `framework`
