@@ -1,9 +1,9 @@
 package org.matrix.vector.impl.hookers
 
 import android.content.pm.ApplicationInfo
-import android.util.Log
 import io.github.libxposed.api.XposedInterface
 import java.util.concurrent.ConcurrentHashMap
+import org.lsposed.lspd.util.Utils
 import org.matrix.vector.impl.VectorLifecycleManager
 import org.matrix.vector.impl.di.LegacyPackageInfo
 import org.matrix.vector.impl.di.VectorBootstrap
@@ -42,7 +42,7 @@ object LoadedApkCtorHooker : XposedInterface.Hooker {
 
         // Avoid OnePlus custom opt crashing
         if (
-            Log.getStackTraceString(Throwable())
+            Utils.Log.getStackTraceString(Throwable())
                 .contains("android.app.ActivityThread\$ApplicationThread.schedulePreload")
         ) {
             return result
@@ -79,6 +79,9 @@ object LoadedApkCreateCLHooker : XposedInterface.Hooker {
 
             val isFirstPackage =
                 packageName != null && processName != null && packageName == apkPackageName
+            Utils.logD(
+                "LoadedApkCreateCLHooker: $packageName $processName, isFirst: $isFirstPackage"
+            )
             if (!isFirstPackage) {
                 packageName = apkPackageName
                 processName = currentPkgMethod.invoke(null) as? String ?: apkPackageName

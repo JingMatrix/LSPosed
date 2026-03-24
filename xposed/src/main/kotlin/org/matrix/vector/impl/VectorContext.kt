@@ -158,7 +158,10 @@ object VectorLifecycleManager {
             }
 
         activeModules.forEach { module ->
-            runCatching { module.onPackageReady(param) }
+            runCatching {
+                    Log.d(TAG, "dispatchPackageReady $param")
+                    module.onPackageReady(param)
+                }
                 .onFailure {
                     Log.e(
                         TAG,
