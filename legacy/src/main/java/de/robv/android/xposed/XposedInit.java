@@ -240,7 +240,7 @@ public final class XposedInit {
         var count = 0;
         for (var moduleClassName : moduleClassNames) {
             try {
-                Log.i(TAG, "  Loading class " + moduleClassName);
+                Log.v(TAG, "  Loading class " + moduleClassName);
 
                 Class<?> moduleClass = mcl.loadClass(moduleClassName);
 
@@ -281,7 +281,7 @@ public final class XposedInit {
      * in <code>assets/xposed_init</code>.
      */
     private static boolean loadModule(String name, String apk, PreLoadedApk file) {
-        Log.i(TAG, "Loading legacy module " + name + " from " + apk);
+        Log.v(TAG, "Loading legacy module " + name + " from " + apk);
 
         var sb = new StringBuilder();
         var abis = Process.is64Bit() ? Build.SUPPORTED_64_BIT_ABIS : Build.SUPPORTED_32_BIT_ABIS;

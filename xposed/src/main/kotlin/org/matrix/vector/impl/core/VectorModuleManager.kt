@@ -68,7 +68,7 @@ object VectorModuleManager {
             for (className in module.file.moduleClassNames) {
                 runCatching {
                         val moduleClass = moduleClassLoader.loadClass(className)
-                        Log.d(TAG, "Loading class $moduleClass")
+                        Log.v(TAG, "Loading class $moduleClass")
 
                         if (!XposedModule::class.java.isAssignableFrom(moduleClass)) {
                             Log.e(TAG, "Class does not extend XposedModule, skipping.")
