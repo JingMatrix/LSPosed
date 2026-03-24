@@ -4,7 +4,10 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
 import io.github.libxposed.api.XposedInterface
+import java.util.Collections
+import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
+import org.lsposed.lspd.util.Utils
 import org.matrix.vector.impl.VectorLifecycleManager
 import org.matrix.vector.impl.di.LegacyPackageInfo
 import org.matrix.vector.impl.di.VectorBootstrap
@@ -58,6 +61,13 @@ private object PackageContextHelper {
     }
 }
 
+/** Identity-based tracking for LoadedApk instances. */
+private object LoadedApkTracker {
+    // Tracks LoadedApk instances that are currently in their initial bootstrap phase
+    val activeApks: MutableSet<Any> =
+        Collections.synchronizedSet(Collections.newSetFromMap(WeakHashMap()))
+}
+
 /** Tracks and prepares Application instances when their LoadedApk is instantiated. */
 object LoadedApkCtorHooker : XposedInterface.Hooker {
     val trackedApks = ConcurrentHashMap.newKeySet<Any>()
@@ -75,38 +85,40 @@ object LoadedApkCtorHooker : XposedInterface.Hooker {
             }
         }
 
-        // Avoid OnePlus custom opt crashing
+        // OnePlus workaround to avoid custom opt crashing
         val isPreload =
             Throwable().stackTrace.any {
                 it.className == "android.app.ActivityThread\$ApplicationThread" &&
                     it.methodName == "schedulePreload"
             }
-
-        if (isPreload) {
-            return result
+        if (!isPreload) {
+            LoadedApkTracker.activeApks.add(loadedApk)
         }
 
-        trackedApks.add(loadedApk)
         return result
     }
 }
 
-/** Hooking `createAppFactory` is critical to defeating the `<clinit>` evasion exploit. */
+/** Modern API Phase: onPackageLoaded */
 @RequiresApi(Build.VERSION_CODES.P)
 object LoadedApkCreateAppFactoryHooker : XposedInterface.Hooker {
     override fun intercept(chain: XposedInterface.Chain): Any? {
         val loadedApk = chain.thisObject ?: return chain.proceed()
 
+        // Ensure we only dispatch for instances we are tracking
+        if (!LoadedApkTracker.activeApks.contains(loadedApk)) return chain.proceed()
+
         val appInfo = chain.args[0] as ApplicationInfo
         val defaultClassLoader =
             chain.args[1] as? ClassLoader
                 ?: return chain.proceed() // Skip dispatch if there's no ClassLoader
-        val apkPackageName = loadedApk.getFieldValue<String>("mPackageName") ?: appInfo.packageName
-
-        val ctx = PackageContextHelper.resolve(loadedApk, apkPackageName)
 
         // Only dispatch if on API 29+ per libxposed API specification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val apkPackageName =
+                loadedApk.getFieldValue<String>("mPackageName") ?: appInfo.packageName
+            val ctx = PackageContextHelper.resolve(loadedApk, apkPackageName)
+
             VectorLifecycleManager.dispatchPackageLoaded(
                 ctx.packageName,
                 appInfo,
@@ -119,37 +131,26 @@ object LoadedApkCreateAppFactoryHooker : XposedInterface.Hooker {
     }
 }
 
-/**
- * Triggers package ready events immediately after the final Application ClassLoader is created.
- * Also acts as a fallback dispatcher for `onPackageLoaded` for resource-only APKs where
- * `mIncludeCode` is false (meaning `createAppFactory` was never executed).
- */
+/** Modern API Phase: onPackageReady and Legacy Phase: handleLoadPackage */
 object LoadedApkCreateCLHooker : XposedInterface.Hooker {
+    // intercepting createOrUpdateClassLoaderLocked(List<String> addedPaths)
     override fun intercept(chain: XposedInterface.Chain): Any? {
         val loadedApk = chain.thisObject ?: return chain.proceed()
 
-        // Fast path exit: Ignore if addedPaths is not null, or untracked
-        if (
-            chain.args.firstOrNull() != null || !LoadedApkCtorHooker.trackedApks.contains(loadedApk)
-        ) {
-            return chain.proceed()
-        }
-
-        // Proceed with Android's internal ClassLoader creation sequence
+        // Proceed: Modern modules need onPackageReady even for Split APKs (args[0] != null)
+        val isInitialLoad =
+            chain.args.firstOrNull() == null && LoadedApkTracker.activeApks.contains(loadedApk)
         val result = chain.proceed()
 
         try {
             val apkPackageName = loadedApk.getFieldValue<String>("mPackageName") ?: return result
-            val mIncludeCode = loadedApk.getFieldValue<Boolean>("mIncludeCode") ?: true
-            val ctx = PackageContextHelper.resolve(loadedApk, apkPackageName)
-
-            if (!ctx.isFirstPackage && !mIncludeCode) return result
-
             val appInfo =
                 loadedApk.getFieldValue<ApplicationInfo>("mApplicationInfo") ?: return result
             val classLoader = loadedApk.getFieldValue<ClassLoader>("mClassLoader") ?: return result
             val defaultClassLoader =
                 loadedApk.getFieldValue<ClassLoader>("mDefaultClassLoader") ?: classLoader
+
+            val ctx = PackageContextHelper.resolve(loadedApk, apkPackageName)
 
             // Dispatch Modern Lifecycle: onPackageReady
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -164,20 +165,29 @@ object LoadedApkCreateCLHooker : XposedInterface.Hooker {
                 )
             }
 
-            // Dispatch Legacy Lifecycle
-            VectorBootstrap.withLegacy { delegate ->
-                delegate.onPackageLoaded(
-                    LegacyPackageInfo(
-                        ctx.packageName,
-                        ctx.processName,
-                        classLoader,
-                        appInfo,
-                        ctx.isFirstPackage,
-                    )
-                )
+            // Legacy API: Only dispatch once during initial load
+            if (isInitialLoad) {
+                val mIncludeCode = loadedApk.getFieldValue<Boolean>("mIncludeCode") ?: true
+                if (ctx.isFirstPackage || mIncludeCode) {
+                    VectorBootstrap.withLegacy { delegate ->
+                        delegate.onPackageLoaded(
+                            LegacyPackageInfo(
+                                ctx.packageName,
+                                ctx.processName,
+                                classLoader,
+                                appInfo,
+                                ctx.isFirstPackage,
+                            )
+                        )
+                    }
+                }
             }
+        } catch (t: Throwable) {
+            Utils.logE("LoadedApkCreateCLHooker failed in post-proceed phase", t)
         } finally {
-            LoadedApkCtorHooker.trackedApks.remove(loadedApk)
+            // Cleanup: Once the initial load is done, we remove it from activeApks.
+            // Subsequent calls (Split APKs) will now be recognized as non-initial loads.
+            LoadedApkTracker.activeApks.remove(loadedApk)
         }
 
         return result
