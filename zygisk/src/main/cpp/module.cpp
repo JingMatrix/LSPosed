@@ -126,6 +126,8 @@ private:
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbAddress(symbol); },
         .art_symbol_prefix_resolver =
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbPrefixFirstAddress(symbol); },
+        .generated_class_name = "Vector_",
+        .generated_source_name = "Dobby",
     };
 
     // State managed within the class instance for each forked process.
