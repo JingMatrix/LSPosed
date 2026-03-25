@@ -8,6 +8,7 @@ import android.os.SystemProperties
 import android.util.Log
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.lsposed.lspd.service.ILSPSystemServerService
+import org.matrix.vector.daemon.system.getSystemServiceManager
 
 private const val TAG = "VectorSystemServer"
 
@@ -21,7 +22,14 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
   private val BRIDGE_TRANSACTION_CODE =
       ('_'.code shl 24) or ('V'.code shl 16) or ('E'.code shl 8) or 'C'.code
 
+  companion object {
+    @Volatile var requestedRetryCount = 0
+
+    fun systemServerRequested() = requestedRetryCount > 0
+  }
+
   init {
+    requestedRetryCount = -maxRetry
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       val callback =
           object : IServiceCallback.Stub() {
@@ -34,11 +42,10 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
                 runCatching { binder.linkToDeath(this@SystemServerService, 0) }
               }
             }
+
+            override fun asBinder(): IBinder = this
           }
-      runCatching {
-            android.os.ServiceManager.getIServiceManager()
-                .registerForNotifications(proxyServiceName, callback)
-          }
+      runCatching { getSystemServiceManager().registerForNotifications(proxyServiceName, callback) }
           .onFailure { Log.e(TAG, "Failed to register IServiceCallback", it) }
     }
   }
@@ -72,7 +79,7 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
       BRIDGE_TRANSACTION_CODE -> {
         val uid = data.readInt()
         val pid = data.readInt()
-        val processName = data.readString()
+        val processName = data.readString() ?: ""
         val heartBeat = data.readStrongBinder()
 
         val service = requestApplicationService(uid, pid, processName, heartBeat)

@@ -1,10 +1,15 @@
 package org.matrix.vector.daemon.system
 
+import android.content.Intent
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.util.Log
+import org.matrix.vector.daemon.system.userManager
+import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorSystem"
 const val PER_USER_RANGE = 100000
@@ -95,4 +100,67 @@ fun PackageInfo.fetchProcesses(): Set<String> {
   }
 
   return processNames
+}
+
+fun IPackageManager.queryIntentActivitiesCompat(
+    intent: Intent,
+    resolvedType: String?,
+    flags: Int,
+    userId: Int
+): List<ResolveInfo> {
+  return runCatching {
+        val slice =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+              queryIntentActivities(intent, resolvedType, flags.toLong(), userId)
+            } else {
+              queryIntentActivities(intent, resolvedType, flags, userId)
+            }
+        slice?.list ?: emptyList()
+      }
+      .getOrElse {
+        Log.e(TAG, "queryIntentActivitiesCompat failed", it)
+        emptyList()
+      }
+}
+
+fun IPackageManager.clearApplicationProfileDataCompat(packageName: String) {
+  runCatching { clearApplicationProfileData(packageName) }
+}
+
+fun IPackageManager.getInstalledPackagesForAllUsers(
+    flags: Int,
+    filterNoProcess: Boolean
+): List<PackageInfo> {
+  val result = mutableListOf<PackageInfo>()
+  val users =
+      userManager?.getRealUsers()
+          ?: emptyList()
+
+  for (user in users) {
+    val infos =
+        runCatching {
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getInstalledPackages(flags.toLong(), user.id)
+              } else {
+                getInstalledPackages(flags, user.id)
+              }
+            }
+            .getOrNull()
+            ?.list ?: continue
+
+    result.addAll(
+        infos.filter {
+          it.applicationInfo != null && it.applicationInfo!!.uid / PER_USER_RANGE == user.id
+        })
+  }
+
+  if (filterNoProcess) {
+    return result.filter {
+      getPackageInfoWithComponents(
+              it.packageName, MATCH_ALL_FLAGS, it.applicationInfo!!.uid / PER_USER_RANGE)
+          ?.fetchProcesses()
+          ?.isNotEmpty() == true
+    }
+  }
+  return result
 }

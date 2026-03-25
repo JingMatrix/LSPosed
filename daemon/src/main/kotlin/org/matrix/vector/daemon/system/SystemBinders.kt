@@ -5,8 +5,11 @@ import android.content.Context
 import android.content.pm.IPackageManager
 import android.os.IBinder
 import android.os.IPowerManager
+import android.os.IServiceManager
 import android.os.IUserManager
 import android.os.RemoteException
+import com.android.internal.os.BinderInternal
+import hidden.HiddenApiBridge
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -56,4 +59,9 @@ val powerManager: IPowerManager? by
 object SystemContext {
   @Volatile var appThread: android.app.IApplicationThread? = null
   @Volatile var token: IBinder? = null
+}
+
+fun getSystemServiceManager(): IServiceManager {
+  return IServiceManager.Stub.asInterface(
+      HiddenApiBridge.Binder_allowBlocking(BinderInternal.getContextObject()))
 }

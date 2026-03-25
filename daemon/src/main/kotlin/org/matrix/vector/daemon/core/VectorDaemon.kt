@@ -56,6 +56,7 @@ object VectorDaemon {
 
     // 2. Setup Main Looper & System Services
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
+    @Suppress("DEPRECATION")
     Looper.prepareMainLooper()
 
     val systemServerService = SystemServerService(systemServerMaxRetry, proxyServiceName)
@@ -74,7 +75,8 @@ object VectorDaemon {
     applyNotificationWorkaround()
 
     // 4. Inject Vector into system_server
-    SystemServerBridge.sendToBridge(VectorService, isRestart = false, systemServerService)
+    SystemServerBridge.sendToBridge(
+        VectorService.asBinder(), isRestart = false, systemServerService)
 
     if (!ManagerService.isVerboseLog()) {
       LogcatMonitor.stopVerbose() // Needs impl in LogcatMonitor

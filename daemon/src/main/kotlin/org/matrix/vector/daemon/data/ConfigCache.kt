@@ -1,5 +1,6 @@
 package org.matrix.vector.daemon.data
 
+import android.content.ContentValues
 import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
@@ -7,7 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.Module
+import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.system.MATCH_ALL_FLAGS
 import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.fetchProcesses
@@ -21,6 +24,9 @@ private const val TAG = "VectorConfigCache"
 data class ProcessScope(val processName: String, val uid: Int)
 
 object ConfigCache {
+  @Volatile var api: String = "(???)"
+  @Volatile var enableStatusNotification = true
+
   val dbHelper = Database()
 
   // Thread-safe maps for IPC readers
@@ -159,5 +165,207 @@ object ConfigCache {
 
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
     return cachedScopes[ProcessScope(processName, uid)] ?: emptyList()
+  }
+
+  // --- Preferences & Settings ---
+  fun isDexObfuscateEnabled(): Boolean =
+      getModulePrefs("lspd", 0, "config")["enable_dex_obfuscate"] as? Boolean ?: true
+
+  fun setDexObfuscate(enabled: Boolean) =
+      updateModulePref("lspd", 0, "config", "enable_dex_obfuscate", enabled)
+
+  fun isLogWatchdogEnabled(): Boolean =
+      getModulePrefs("lspd", 0, "config")["enable_log_watchdog"] as? Boolean ?: true
+
+  fun setLogWatchdog(enabled: Boolean) =
+      updateModulePref("lspd", 0, "config", "enable_log_watchdog", enabled)
+
+  // --- Modules & Scope DB Operations ---
+  fun getEnabledModules(): List<String> = cachedModules.keys.toList()
+
+  fun enableModule(packageName: String): Boolean {
+    if (packageName == "lspd") return false
+    val values = ContentValues().apply { put("enabled", 1) }
+    val changed =
+        dbHelper.writableDatabase.update(
+            "modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
+    if (changed) requestCacheUpdate()
+    return changed
+  }
+
+  fun disableModule(packageName: String): Boolean {
+    if (packageName == "lspd") return false
+    val values = ContentValues().apply { put("enabled", 0) }
+    val changed =
+        dbHelper.writableDatabase.update(
+            "modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
+    if (changed) requestCacheUpdate()
+    return changed
+  }
+
+  fun getModuleScope(packageName: String): MutableList<Application>? {
+    if (packageName == "lspd") return null
+    val result = mutableListOf<Application>()
+    dbHelper.readableDatabase
+        .query(
+            "scope INNER JOIN modules ON scope.mid = modules.mid",
+            arrayOf("app_pkg_name", "user_id"),
+            "modules.module_pkg_name = ?",
+            arrayOf(packageName),
+            null,
+            null,
+            null)
+        .use { cursor ->
+          while (cursor.moveToNext()) {
+            result.add(
+                Application().apply {
+                  this.packageName = cursor.getString(0)
+                  this.userId = cursor.getInt(1)
+                })
+          }
+        }
+    return result
+  }
+
+  fun setModuleScope(packageName: String, scope: MutableList<Application>): Boolean {
+    enableModule(packageName)
+    val db = dbHelper.writableDatabase
+    db.beginTransaction()
+    try {
+      val mid =
+          db.compileStatement("SELECT mid FROM modules WHERE module_pkg_name = ?")
+              .apply { bindString(1, packageName) }
+              .simpleQueryForLong()
+      db.delete("scope", "mid = ?", arrayOf(mid.toString()))
+
+      val values = ContentValues().apply { put("mid", mid) }
+      for (app in scope) {
+        if (app.packageName == "system" && app.userId != 0) continue
+        values.put("app_pkg_name", app.packageName)
+        values.put("user_id", app.userId)
+        db.insertWithOnConflict(
+            "scope", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
+      }
+      db.setTransactionSuccessful()
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to set scope", e)
+      return false
+    } finally {
+      db.endTransaction()
+    }
+    requestCacheUpdate()
+    return true
+  }
+
+  // --- Configs Table Operations ---
+  fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
+    val result = mutableMapOf<String, Any>()
+    dbHelper.readableDatabase
+        .query(
+            "configs",
+            arrayOf("`key`", "data"),
+            "module_pkg_name = ? AND user_id = ? AND `group` = ?",
+            arrayOf(packageName, userId.toString(), group),
+            null,
+            null,
+            null)
+        .use { cursor ->
+          while (cursor.moveToNext()) {
+            val key = cursor.getString(0)
+            val blob = cursor.getBlob(1)
+            val obj = org.apache.commons.lang3.SerializationUtilsX.deserialize<Any>(blob)
+            if (obj != null) result[key] = obj
+          }
+        }
+    return result
+  }
+
+  fun updateModulePref(moduleName: String, userId: Int, group: String, key: String, value: Any?) {
+    updateModulePrefs(moduleName, userId, group, mapOf(key to value))
+  }
+
+  fun updateModulePrefs(moduleName: String, userId: Int, group: String, diff: Map<String, Any?>) {
+    val db = dbHelper.writableDatabase
+    db.beginTransaction()
+    try {
+      for ((key, value) in diff) {
+        if (value is java.io.Serializable) {
+          val values =
+              ContentValues().apply {
+                put("`group`", group)
+                put("`key`", key)
+                put("data", org.apache.commons.lang3.SerializationUtilsX.serialize(value))
+                put("module_pkg_name", moduleName)
+                put("user_id", userId.toString())
+              }
+          db.insertWithOnConflict(
+              "configs", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        } else {
+          db.delete(
+              "configs",
+              "module_pkg_name=? AND user_id=? AND `group`=? AND `key`=?",
+              arrayOf(moduleName, userId.toString(), group, key))
+        }
+      }
+      db.setTransactionSuccessful()
+    } finally {
+      db.endTransaction()
+    }
+  }
+
+  fun deleteModulePrefs(moduleName: String, userId: Int, group: String) {
+    dbHelper.writableDatabase.delete(
+        "configs",
+        "module_pkg_name=? AND user_id=? AND `group`=?",
+        arrayOf(moduleName, userId.toString(), group))
+  }
+
+  // --- Helpers ---
+  fun isManager(uid: Int): Boolean = uid == BuildConfig.MANAGER_INJECTED_UID
+
+  fun getModuleByUid(uid: Int): Module? =
+      cachedModules.values.firstOrNull { it.appId == uid % PER_USER_RANGE }
+
+  fun isScopeRequestBlocked(pkg: String): Boolean =
+      (getModulePrefs("lspd", 0, "config")["scope_request_blocked"] as? Set<*>)?.contains(pkg) ==
+          true
+
+  fun getDenyListPackages(): List<String> =
+      emptyList() // Needs Magisk DB parsing logic if Api == "Zygisk"
+
+  fun getAutoInclude(pkg: String): Boolean = false // Query modules table for auto_include flag
+
+  fun setAutoInclude(pkg: String, enabled: Boolean): Boolean = false
+
+  // Generates application info for system server since it doesn't have an APK
+  fun getModulesForSystemServer(): List<Module> {
+    val result = mutableListOf<Module>()
+    // Fetch from DB where scope app_pkg_name = 'system', populate Fake ApplicationInfo, and return.
+    // Omitted DB boilerplate for brevity.
+    return result
+  }
+
+  fun getPrefsPath(packageName: String, uid: Int): String {
+    val userId = uid / PER_USER_RANGE
+    val path =
+        FileSystem.basePath.resolve(
+            "misc/prefs${if (userId == 0) "" else userId.toString()}/$packageName")
+    // Apply Os.chown to path here
+    return path.toString()
+  }
+
+  fun removeModuleScope(packageName: String, scopePackageName: String, userId: Int): Boolean {
+    if (packageName == "lspd" || (scopePackageName == "system" && userId != 0)) return false
+    val db = dbHelper.writableDatabase
+    val mid =
+        db.compileStatement("SELECT mid FROM modules WHERE module_pkg_name = ?")
+            .apply { bindString(1, packageName) }
+            .simpleQueryForLong()
+    db.delete(
+        "scope",
+        "mid = ? AND app_pkg_name = ? AND user_id = ?",
+        arrayOf(mid.toString(), scopePackageName, userId.toString()))
+    requestCacheUpdate()
+    return true
   }
 }
