@@ -5,6 +5,7 @@ import android.content.ContextWrapper
 import android.content.pm.ApplicationInfo
 import android.content.res.Resources
 import android.os.Build
+import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.system.packageManager as sysPackageManager
 
 /**
@@ -47,10 +48,7 @@ class FakeContext(private val fakePackageName: String = "android") : ContextWrap
     return fakeTheme!!
   }
 
-  // Resources fetching will be implemented in Phase 2 (FileSystem/Config)
-  override fun getResources(): Resources {
-    throw NotImplementedError("Resources will be provided by FileManager in Phase 2")
-  }
+  override fun getResources(): Resources = FileSystem.resources
 
   // Required for Android 12+
   override fun getAttributionTag(): String? = null

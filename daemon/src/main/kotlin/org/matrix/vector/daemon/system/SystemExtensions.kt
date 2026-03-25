@@ -3,6 +3,7 @@ package org.matrix.vector.daemon.system
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 
 private const val TAG = "VectorSystem"
@@ -75,4 +76,23 @@ fun IPackageManager.getPackageInfoWithComponents(
   }
 
   return baseInfo
+}
+
+/** Extracts all unique process names associated with a package's components. */
+fun PackageInfo.fetchProcesses(): Set<String> {
+  val processNames = mutableSetOf<String>()
+
+  val componentArrays = arrayOf(activities, receivers, providers)
+  for (components in componentArrays) {
+    components?.forEach { processNames.add(it.processName) }
+  }
+
+  services?.forEach { service ->
+    // Ignore isolated processes as they shouldn't be hooked in the same way
+    if ((service.flags and ServiceInfo.FLAG_ISOLATED_PROCESS) == 0) {
+      processNames.add(service.processName)
+    }
+  }
+
+  return processNames
 }
