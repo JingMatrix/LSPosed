@@ -109,6 +109,14 @@ public class Utils {
         Log.d(LOG_TAG, msg, throwable);
     }
 
+    public static void logV(Object msg) {
+        Log.v(LOG_TAG, msg.toString());
+    }
+
+    public static void logV(String msg, Throwable throwable) {
+        Log.v(LOG_TAG, msg, throwable);
+    }
+
     public static void logW(String msg) {
         Log.w(LOG_TAG, msg);
     }
