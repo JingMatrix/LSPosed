@@ -56,8 +56,7 @@ object VectorDaemon {
 
     // 2. Setup Main Looper & System Services
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
-    @Suppress("DEPRECATION")
-    Looper.prepareMainLooper()
+    @Suppress("DEPRECATION") Looper.prepareMainLooper()
 
     val systemServerService = SystemServerService(systemServerMaxRetry, proxyServiceName)
     systemServerService.putBinderForSystemServer()

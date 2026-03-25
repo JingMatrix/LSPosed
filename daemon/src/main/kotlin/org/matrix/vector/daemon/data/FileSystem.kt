@@ -105,7 +105,7 @@ object FileSystem {
    * access strings/drawables without a real application context.
    */
   val resources: Resources by lazy {
-      val am = AssetManager::class.java.getDeclaredConstructor().newInstance()
+    val am = AssetManager::class.java.getDeclaredConstructor().newInstance()
     val addAssetPath =
         AssetManager::class.java.getDeclaredMethod("addAssetPath", String::class.java).apply {
           isAccessible = true

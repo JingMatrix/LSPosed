@@ -18,7 +18,7 @@ private const val TRANSACTION_CODE =
 
 object SystemServerBridge {
 
-    @Suppress("DEPRECATION")
+  @Suppress("DEPRECATION")
   fun sendToBridge(binder: IBinder, isRestart: Boolean, systemServerService: SystemServerService) {
     CoroutineScope(Dispatchers.IO).launch {
       runCatching {

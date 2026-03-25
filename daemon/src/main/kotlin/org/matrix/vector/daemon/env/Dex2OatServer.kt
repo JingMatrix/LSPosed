@@ -136,7 +136,11 @@ object Dex2OatServer {
             val header = ByteArray(5)
             if (fis.read(header) != 5) return
             // Verify ELF Magic: 0x7F 'E' 'L' 'F'
-            if (header[0] != 0x7F.toByte() || header[1] != 'E'.code.toByte() || header[2] != 'L'.code.toByte() || header[3] != 'F'.code.toByte()) return
+            if (header[0] != 0x7F.toByte() ||
+                header[1] != 'E'.code.toByte() ||
+                header[2] != 'L'.code.toByte() ||
+                header[3] != 'F'.code.toByte())
+                return
 
             val is32Bit = header[4] == 1.toByte()
             val is64Bit = header[4] == 2.toByte()

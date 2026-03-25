@@ -2,9 +2,14 @@ package org.matrix.vector.daemon.ipc
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.IIntentSender
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageInfo
+import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.content.pm.VersionedPackage
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -15,6 +20,7 @@ import android.view.IWindowManager
 import io.github.libxposed.service.IXposedService
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.lsposed.lspd.ILSPManagerService
 import org.lsposed.lspd.models.Application
@@ -191,8 +197,63 @@ object ManagerService : ILSPManagerService.Stub() {
   }
 
   override fun uninstallPackage(packageName: String, userId: Int): Boolean {
-    // ... omitted standard PM uninstall wrapper ...
-    return true
+    val latch = CountDownLatch(1)
+    var result = false
+
+    val sender =
+        object : IIntentSender.Stub() {
+          override fun send(
+              code: Int,
+              intent: Intent,
+              resolvedType: String?,
+              whitelistToken: IBinder?,
+              finishedReceiver: android.content.IIntentReceiver?,
+              requiredPermission: String?,
+              options: Bundle?
+          ) {
+            val status =
+                intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+            result = status == PackageInstaller.STATUS_SUCCESS
+            latch.countDown()
+          }
+
+          override fun send(
+              code: Int,
+              intent: Intent,
+              resolvedType: String?,
+              finishedReceiver: android.content.IIntentReceiver?,
+              requiredPermission: String?,
+              options: Bundle?
+          ): Int {
+            send(code, intent, resolvedType, null, finishedReceiver, requiredPermission, options)
+            return 0
+          }
+        }
+
+    // Using reflection to wrap the AIDL stub into an Android IntentSender
+    val intentSender =
+        runCatching {
+              val constructor =
+                  IntentSender::class.java.getDeclaredConstructor(IIntentSender::class.java)
+              constructor.isAccessible = true
+              constructor.newInstance(sender)
+            }
+            .getOrNull() ?: return false
+
+    val pkg = VersionedPackage(packageName, PackageManager.VERSION_CODE_HIGHEST)
+    val flag = if (userId == -1) 0x00000002 else 0 // DELETE_ALL_USERS flag
+
+    runCatching {
+          packageManager
+              ?.packageInstaller
+              ?.uninstall(pkg, "android", flag, intentSender, if (userId == -1) 0 else userId)
+        }
+        .onFailure {
+          return false
+        }
+
+    latch.await()
+    return result
   }
 
   override fun isSepolicyLoaded() =
