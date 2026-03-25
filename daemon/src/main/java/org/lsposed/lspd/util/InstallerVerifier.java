@@ -1,6 +1,6 @@
 package org.lsposed.lspd.util;
 
-import static org.lsposed.lspd.util.SignInfo.CERTIFICATE;
+import static org.matrix.vector.daemon.utils.SignInfo.CERTIFICATE;
 
 import com.android.apksig.ApkVerifier;
 

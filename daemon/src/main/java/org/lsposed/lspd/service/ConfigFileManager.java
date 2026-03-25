@@ -37,7 +37,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import org.lsposed.daemon.BuildConfig;
+import org.matrix.vector.daemon.BuildConfig;
 import org.lsposed.lspd.models.PreLoadedApk;
 import org.lsposed.lspd.util.InstallerVerifier;
 import org.lsposed.lspd.util.Utils;

@@ -12,7 +12,7 @@ import android.system.ErrnoException;
 import android.system.Os;
 import android.util.Log;
 
-import org.lsposed.daemon.BuildConfig;
+import org.matrix.vector.daemon.BuildConfig;
 
 import java.lang.reflect.Field;
 import java.util.Map;

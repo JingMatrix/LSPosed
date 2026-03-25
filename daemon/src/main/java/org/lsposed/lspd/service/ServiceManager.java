@@ -39,7 +39,7 @@ import androidx.annotation.RequiresApi;
 
 import com.android.internal.os.BinderInternal;
 
-import org.lsposed.daemon.BuildConfig;
+import org.matrix.vector.daemon.BuildConfig;
 import org.lsposed.lspd.util.FakeContext;
 
 import java.io.File;
