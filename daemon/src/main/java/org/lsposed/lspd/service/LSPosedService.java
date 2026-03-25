@@ -44,7 +44,7 @@ import android.provider.Telephony;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import org.lsposed.daemon.BuildConfig;
+import org.matrix.vector.daemon.BuildConfig;
 import org.lsposed.lspd.models.Application;
 
 import java.io.IOException;

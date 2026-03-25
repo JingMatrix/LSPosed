@@ -10,18 +10,12 @@ val versionNameProvider: Provider<String> by rootProject.extra
 
 plugins {
     alias(libs.plugins.agp.app)
-    alias(libs.plugins.lsplugin.resopt)
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.ktfmt)
 }
 
 android {
-    buildFeatures {
-        prefab = true
-        buildConfig = true
-    }
-
     defaultConfig {
-        applicationId = "org.lsposed.daemon"
-
         buildConfigField(
             "String",
             "DEFAULT_MANAGER_PACKAGE_NAME",
@@ -40,14 +34,13 @@ android {
         }
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
             proguardFiles("proguard-rules.pro")
         }
     }
 
     externalNativeBuild { cmake { path("src/main/jni/CMakeLists.txt") } }
 
-    namespace = "org.lsposed.daemon"
+    namespace = "org.matrix.vector.daemon"
 }
 
 android.applicationVariants.all {
@@ -67,7 +60,7 @@ android.applicationVariants.all {
                     .named(variantLowered)
                     .get()
                     .signingConfig
-            val outSrc = file("$outSrcDir/org/lsposed/lspd/util/SignInfo.java")
+            val outSrc = file("$outSrcDir/org/matrix/vector/daemon/utils/SignInfo.kt")
             outputs.file(outSrc)
             doLast {
                 outSrc.parentFile.mkdirs()
@@ -79,24 +72,30 @@ android.applicationVariants.all {
                         sign?.keyPassword,
                         sign?.keyAlias,
                     )
+
                 PrintStream(outSrc)
                     .print(
                         """
-                |package org.lsposed.lspd.util;
-                |public final class SignInfo {
-                |    public static final byte[] CERTIFICATE = {${
+                |package org.matrix.vector.daemon.utils
+                |
+                |object SignInfo {
+                |    @JvmField
+                |    val CERTIFICATE = byteArrayOf(${
                     certificateInfo.certificate.encoded.joinToString(",")
-                }};
+                })
                 |}"""
                             .trimMargin()
                     )
             }
         }
-    registerJavaGeneratingTask(signInfoTask, outSrcDir.asFile)
+    // registeoJavaGeneratingTask(signInfoTask, outSrcDir.asFile)
+
+    kotlin.sourceSets.getByName(variantLowered) { kotlin.srcDir(signInfoTask.map { outSrcDir }) }
 }
 
 dependencies {
     implementation(libs.agp.apksig)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(projects.external.apache)
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)

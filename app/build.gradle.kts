@@ -24,7 +24,6 @@ plugins {
     alias(libs.plugins.nav.safeargs)
     alias(libs.plugins.autoresconfig)
     alias(libs.plugins.materialthemebuilder)
-    alias(libs.plugins.lsplugin.resopt)
     alias(libs.plugins.lsplugin.apksign)
 }
 
