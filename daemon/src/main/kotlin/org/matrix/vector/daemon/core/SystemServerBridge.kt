@@ -18,6 +18,7 @@ private const val TRANSACTION_CODE =
 
 object SystemServerBridge {
 
+    @Suppress("DEPRECATION")
   fun sendToBridge(binder: IBinder, isRestart: Boolean, systemServerService: SystemServerService) {
     CoroutineScope(Dispatchers.IO).launch {
       runCatching {
@@ -38,13 +39,13 @@ object SystemServerBridge {
                 object : IBinder.DeathRecipient {
                   override fun binderDied() {
                     Log.w(TAG, "System Server died! Clearing caches and re-injecting...")
-                    bridgeService?.unlinkToDeath(this, 0)
+                    bridgeService.unlinkToDeath(this, 0)
                     systemServerService.putBinderForSystemServer()
                     ManagerService.guard = null // ManagerGuard binderDied
                     sendToBridge(binder, isRestart = true, systemServerService)
                   }
                 }
-            bridgeService?.linkToDeath(deathRecipient, 0)
+            bridgeService.linkToDeath(deathRecipient, 0)
 
             // Try sending the Binder payload (up to 3 times)
             var success = false
@@ -54,7 +55,7 @@ object SystemServerBridge {
               try {
                 data.writeInt(1) // ACTION_SEND_BINDER
                 data.writeStrongBinder(binder)
-                success = bridgeService?.transact(TRANSACTION_CODE, data, reply, 0) == true
+                success = bridgeService.transact(TRANSACTION_CODE, data, reply, 0) == true
                 reply.readException()
                 if (success) break
               } finally {

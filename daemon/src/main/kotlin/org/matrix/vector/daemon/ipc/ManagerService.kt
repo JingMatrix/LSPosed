@@ -3,7 +3,6 @@ package org.matrix.vector.daemon.ipc
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageInfo
 import android.content.pm.ResolveInfo
 import android.os.Build
@@ -34,21 +33,19 @@ private const val TAG = "VectorManagerService"
 
 object ManagerService : ILSPManagerService.Stub() {
 
-  @Volatile var isVerboseLog = false
+  @Volatile var _isVerboseLog = false
   @Volatile private var managerPid = -1
   @Volatile private var pendingManager = false
   @Volatile private var isEnabled = true
 
   var guard: ManagerGuard? = null
-    private set
+    internal set
 
   class ManagerGuard(private val binder: IBinder, val pid: Int, val uid: Int) :
       IBinder.DeathRecipient {
     private val connection =
-        object : ServiceConnection {
-          override fun onServiceConnected(name: ComponentName?, service: IBinder?) {}
-
-          override fun onServiceDisconnected(name: ComponentName?) {}
+        object : android.app.IServiceConnection.Stub() {
+          override fun connected(name: ComponentName?, service: IBinder?, dead: Boolean) {}
         }
 
     init {
@@ -63,15 +60,27 @@ object ManagerService : ILSPManagerService.Stub() {
                         ComponentName.unflattenFromString(
                             "com.miui.securitycore/com.miui.xspace.service.XSpaceService")
                   }
-              activityManager?.bindService(
-                  null,
-                  null,
-                  intent,
-                  intent.type,
-                  connection,
-                  Context.BIND_AUTO_CREATE.toLong(),
-                  "android",
-                  0)
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                activityManager?.bindService(
+                    SystemContext.appThread,
+                    SystemContext.token,
+                    intent,
+                    intent.type,
+                    connection,
+                    Context.BIND_AUTO_CREATE.toLong(),
+                    "android",
+                    0)
+              } else {
+                activityManager?.bindService(
+                    SystemContext.appThread,
+                    SystemContext.token,
+                    intent,
+                    intent.type,
+                    connection,
+                    Context.BIND_AUTO_CREATE,
+                    "android",
+                    0)
+              }
             }
           }
           .onFailure {
@@ -145,10 +154,10 @@ object ManagerService : ILSPManagerService.Stub() {
 
   override fun getModuleScope(packageName: String) = ConfigCache.getModuleScope(packageName)
 
-  override fun isVerboseLog() = isVerboseLog || BuildConfig.DEBUG
+  override fun isVerboseLog() = _isVerboseLog || BuildConfig.DEBUG
 
   override fun setVerboseLog(enabled: Boolean) {
-    isVerboseLog = enabled
+    _isVerboseLog = enabled
     if (enabled) LogcatMonitor.startVerbose() else LogcatMonitor.stopVerbose()
     ConfigCache.updateModulePref("lspd", 0, "config", "enable_verbose_log", enabled)
   }
@@ -206,7 +215,7 @@ object ManagerService : ILSPManagerService.Stub() {
         .getOrDefault(-110)
   }
 
-  override fun systemServerRequested() = SystemServerService.isRequested()
+  override fun systemServerRequested() = SystemServerService.systemServerRequested()
 
   override fun startActivityAsUserWithFeature(intent: Intent, userId: Int): Int {
     if (!intent.getBooleanExtra("lsp_no_switch_to_user", false)) {

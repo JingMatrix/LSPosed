@@ -43,7 +43,7 @@ object ApplicationService : ILSPApplicationService.Stub() {
         // TODO: FileSystem needs getPreloadDex() implemented
         val shm = FileSystem.getPreloadDex(ConfigCache.isDexObfuscateEnabled()) ?: return false
         reply?.writeNoException()
-        shm.writeToParcel(reply, 0)
+        reply?.let { shm.writeToParcel(it, 0) }
         reply?.writeLong(shm.size.toLong())
         return true
       }

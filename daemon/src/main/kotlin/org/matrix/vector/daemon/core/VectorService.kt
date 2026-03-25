@@ -7,8 +7,8 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.lsposed.lspd.ILSPApplicationService
-import org.lsposed.lspd.ILSPosedService
+import org.lsposed.lspd.service.ILSPApplicationService
+import org.lsposed.lspd.service.ILSPosedService
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.ipc.ApplicationService
 import org.matrix.vector.daemon.ipc.ManagerService
@@ -30,7 +30,7 @@ object VectorService : ILSPosedService.Stub() {
 
     SystemContext.appThread = android.app.IApplicationThread.Stub.asInterface(appThread)
     SystemContext.token = activityToken
-    ConfigCache.setApi(api) // Needs impl in ConfigCache
+    ConfigCache.api = api
 
     // Initialize OS Observers using Coroutines for the dispatch blocks
     registerReceivers()

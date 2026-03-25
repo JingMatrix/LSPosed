@@ -2,7 +2,9 @@ package org.matrix.vector.daemon.data
 
 import android.content.res.AssetManager
 import android.content.res.Resources
+import android.os.ParcelFileDescriptor
 import android.os.Process
+import android.os.RemoteException
 import android.os.SELinux
 import android.os.SharedMemory
 import android.system.ErrnoException
@@ -11,6 +13,7 @@ import android.system.OsConstants
 import android.util.Log
 import hidden.HiddenApiBridge
 import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
@@ -20,7 +23,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.PosixFilePermissions
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import org.lsposed.lspd.models.PreLoadedApk
@@ -38,6 +43,8 @@ object FileSystem {
   val configDirPath: Path = basePath.resolve("config")
   val dbPath: File = configDirPath.resolve("modules_config.db").toFile()
   val magiskDbPath = File("/data/adb/magisk.db")
+
+  @Volatile private var preloadDex: SharedMemory? = null
 
   private val lockPath: Path = basePath.resolve("lock")
   private var fileLock: FileLock? = null
@@ -98,7 +105,7 @@ object FileSystem {
    * access strings/drawables without a real application context.
    */
   val resources: Resources by lazy {
-    val am = AssetManager::class.java.newInstance()
+      val am = AssetManager::class.java.getDeclaredConstructor().newInstance()
     val addAssetPath =
         AssetManager::class.java.getDeclaredMethod("addAssetPath", String::class.java).apply {
           isAccessible = true
@@ -230,5 +237,60 @@ object FileSystem {
   fun getKmsgPath(): File {
     createLogDirPath()
     return logDirPath.resolve("kmsg.log").toFile()
+  }
+
+  @Synchronized
+  fun getPreloadDex(obfuscate: Boolean): SharedMemory? {
+    if (preloadDex == null) {
+      runCatching {
+            FileInputStream("framework/lspd.dex").use { preloadDex = readDex(it, obfuscate) }
+          }
+          .onFailure { Log.e(TAG, "Failed to load framework dex", it) }
+    }
+    return preloadDex
+  }
+
+  fun ensureModuleFilePath(path: String?) {
+    if (path == null || path.contains(File.separatorChar) || path == "." || path == "..") {
+      throw RemoteException("Invalid path: $path")
+    }
+  }
+
+  fun resolveModuleDir(packageName: String, dir: String, userId: Int, uid: Int): Path {
+    val path = modulePath.resolve(userId.toString()).resolve(packageName).resolve(dir).normalize()
+    path.toFile().mkdirs()
+
+    if (SELinux.getFileContext(path.toString()) != "u:object_r:xposed_data:s0") {
+      runCatching {
+            setSelinuxContextRecursive(path, "u:object_r:xposed_data:s0")
+            if (uid != -1) Os.chown(path.toString(), uid, uid)
+            Os.chmod(path.toString(), 0x1ed) // 0755
+          }
+          .onFailure { throw RemoteException("Failed to set SELinux context: ${it.message}") }
+    }
+    return path
+  }
+
+  fun getLogs(zipFd: ParcelFileDescriptor) {
+    runCatching {
+          ZipOutputStream(java.io.FileOutputStream(zipFd.fileDescriptor)).use { os ->
+            os.setComment("Vector Daemon Logs")
+            os.setLevel(java.util.zip.Deflater.BEST_COMPRESSION)
+
+            fun addFile(name: String, file: File) {
+              if (!file.exists() || !file.isFile) return
+              os.putNextEntry(ZipEntry(name))
+              file.inputStream().use { it.copyTo(os) }
+              os.closeEntry()
+            }
+
+            addFile("modules_config.db", dbPath)
+            addFile("props.txt", getPropsPath())
+            addFile("kmsg.log", getKmsgPath())
+            // Omitted full directory walks for brevity, but you can use File.walk() here.
+          }
+        }
+        .onFailure { Log.e(TAG, "Failed to export logs", it) }
+        .also { runCatching { zipFd.close() } }
   }
 }

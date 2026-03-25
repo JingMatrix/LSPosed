@@ -136,4 +136,21 @@ object LogcatMonitor {
         }
         .onFailure { Log.w(TAG, "checkFd failed for $fd", it) }
   }
+
+  fun startVerbose() = Log.i(TAG, "!!start_verbose!!")
+
+  fun stopVerbose() = Log.i(TAG, "!!stop_verbose!!")
+
+  fun enableWatchdog() = Log.i(TAG, "!!start_watchdog!!")
+
+  fun disableWatchdog() = Log.i(TAG, "!!stop_watchdog!!")
+
+  fun refresh(isVerboseLog: Boolean) {
+    Log.i(TAG, if (isVerboseLog) "!!refresh_verbose!!" else "!!refresh_modules!!")
+  }
+
+  fun checkLogFile() {
+    if (modulesFd == -1) refresh(false)
+    if (verboseFd == -1) refresh(true)
+  }
 }

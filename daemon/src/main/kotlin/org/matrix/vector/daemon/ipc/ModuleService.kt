@@ -94,7 +94,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
 
   override fun getFrameworkVersion() = ensureModule().let { BuildConfig.VERSION_NAME }
 
-  override fun getFrameworkVersionCode() = ensureModule().let { BuildConfig.VERSION_CODE.toLong() }
+  override fun getFrameworkVersionCode() = ensureModule().let { BuildConfig.VERSION_CODE }
 
   override fun getFrameworkProperties(): Long {
     ensureModule()
@@ -137,6 +137,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
     }
   }
 
+  @Suppress("DEPRECATION")
   override fun updateRemotePreferences(group: String, diff: Bundle) {
     val userId = ensureModule()
     val values = mutableMapOf<String, Any?>()
