@@ -1,6 +1,10 @@
 package org.matrix.vector.daemon.system
 
+import android.app.IActivityManager
+import android.app.IUidObserver
+import android.content.IIntentReceiver
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -8,7 +12,6 @@ import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
-import org.matrix.vector.daemon.system.userManager
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorSystem"
@@ -132,9 +135,7 @@ fun IPackageManager.getInstalledPackagesForAllUsers(
     filterNoProcess: Boolean
 ): List<PackageInfo> {
   val result = mutableListOf<PackageInfo>()
-  val users =
-      userManager?.getRealUsers()
-          ?: emptyList()
+  val users = userManager?.getRealUsers() ?: emptyList()
 
   for (user in users) {
     val infos =
@@ -163,4 +164,73 @@ fun IPackageManager.getInstalledPackagesForAllUsers(
     }
   }
   return result
+}
+
+fun IActivityManager.registerReceiverCompat(
+    receiver: IIntentReceiver,
+    filter: IntentFilter,
+    requiredPermission: String?,
+    userId: Int,
+    flags: Int
+): Intent? {
+  val appThread = SystemContext.appThread ?: return null
+  return runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+          registerReceiverWithFeature(
+              appThread,
+              "android",
+              null,
+              "null",
+              receiver,
+              filter,
+              requiredPermission,
+              userId,
+              flags)
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+          registerReceiverWithFeature(
+              appThread, "android", null, receiver, filter, requiredPermission, userId, flags)
+        } else {
+          registerReceiver(
+              appThread, "android", receiver, filter, requiredPermission, userId, flags)
+        }
+      }
+      .onFailure { Log.e(TAG, "registerReceiver failed", it) }
+      .getOrNull()
+}
+
+fun IActivityManager.registerUidObserverCompat(observer: IUidObserver, which: Int, cutpoint: Int) {
+  runCatching { registerUidObserver(observer, which, cutpoint, "android") }
+      .onFailure { Log.e(TAG, "registerUidObserver failed", it) }
+}
+
+fun IActivityManager.broadcastIntentCompat(intent: Intent) {
+  val appThread = SystemContext.appThread
+  runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+          broadcastIntentWithFeature(
+              appThread,
+              null,
+              intent,
+              null,
+              null,
+              0,
+              null,
+              null,
+              null,
+              null,
+              null,
+              -1,
+              null,
+              true,
+              false,
+              0)
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+          broadcastIntentWithFeature(
+              appThread, null, intent, null, null, 0, null, null, null, -1, null, true, false, 0)
+        } else {
+          broadcastIntent(
+              appThread, intent, null, null, 0, null, null, null, -1, null, true, false, 0)
+        }
+      }
+      .onFailure { Log.e(TAG, "broadcastIntent failed", it) }
 }

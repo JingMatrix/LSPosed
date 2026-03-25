@@ -1,6 +1,7 @@
 package org.matrix.vector.daemon.data
 
 import android.content.ContentValues
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
@@ -367,5 +368,61 @@ object ConfigCache {
         arrayOf(mid.toString(), scopePackageName, userId.toString()))
     requestCacheUpdate()
     return true
+  }
+
+  fun updateModuleApkPath(packageName: String, apkPath: String?, force: Boolean): Boolean {
+    if (apkPath == null || packageName == "lspd") return false
+    val values =
+        ContentValues().apply {
+          put("module_pkg_name", packageName)
+          put("apk_path", apkPath)
+        }
+    val db = dbHelper.writableDatabase
+    var count =
+        db.insertWithOnConflict(
+                "modules", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
+            .toInt()
+    if (count < 0) {
+      val cached = cachedModules[packageName]
+      if (force || cached == null || cached.apkPath != apkPath) {
+        count =
+            db.updateWithOnConflict(
+                "modules",
+                values,
+                "module_pkg_name=?",
+                arrayOf(packageName),
+                android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
+      } else count = 0
+    }
+    if (!force && count > 0) requestCacheUpdate()
+    return count > 0
+  }
+
+  fun removeModule(packageName: String): Boolean {
+    if (packageName == "lspd") return false
+    val res =
+        dbHelper.writableDatabase.delete("modules", "module_pkg_name = ?", arrayOf(packageName)) > 0
+    if (res) requestCacheUpdate()
+    return res
+  }
+
+  fun getModuleApkPath(info: ApplicationInfo): String? {
+    val apks = mutableListOf<String>()
+    info.sourceDir?.let { apks.add(it) }
+    info.splitSourceDirs?.let { apks.addAll(it) }
+
+    return apks.firstOrNull { apk ->
+      runCatching {
+            java.util.zip.ZipFile(apk).use { zip ->
+              zip.getEntry("META-INF/xposed/java_init.list") != null ||
+                  zip.getEntry("assets/xposed_init") != null
+            }
+          }
+          .getOrDefault(false)
+    }
+  }
+
+  fun shouldSkipProcess(scope: ProcessScope): Boolean {
+    return !cachedScopes.containsKey(scope) && !isManager(scope.uid)
   }
 }
