@@ -64,8 +64,10 @@ internal class VectorURLStreamHandler(jarFileName: String) : Handler() {
             check(!isClosed) { "JarURLConnection has been closed" }
             if (!connected) {
                 jarEntry =
-                    jarFile.getEntry(entryName)
-                        ?: throw FileNotFoundException("URL=$url, zipfile=${jarFile.name}")
+                    this@VectorURLStreamHandler.jarFile.getEntry(entryName)
+                        ?: throw FileNotFoundException(
+                            "URL=$url, zipfile=${this@VectorURLStreamHandler.jarFile.name}"
+                        )
                 connected = true
             }
         }

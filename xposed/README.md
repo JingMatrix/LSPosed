@@ -30,9 +30,9 @@ To maintain the separation of concerns, the `xposed` module communicates with th
 
 When `xposed` intercepts an Android lifecycle event (e.g., `LoadedApk.createClassLoader`), it dispatches the event internally via `VectorLifecycleManager` and then delegates the raw parameters to `LegacyFrameworkDelegate` so the `legacy` module can construct and dispatch the legacy `XC_LoadPackage` callbacks.
 
-### 4. In-Memory Module ClassLoading
+### 4. In-Memory ClassLoading & Isolation
 
-Modules are loaded directly from memory to prevent disk I/O bottlenecks and enhance security.
-*   It utilizes `SharedMemory` buffers passed over IPC, mapping them to `ByteBuffer`s.
-*   It extends `ByteBufferDexClassLoader` to evaluate the module's DEX files.
-*   `VectorURLStreamHandler` intercepts resource requests (like `assets/`) to read directly from the original APK path without extracting the APK locally.
+Modules are executed strictly from memory using an isolated ClassLoader, ensuring zero disk footprint and maximum stealth against anti-cheat mechanisms.
+* The module APK is loaded into `SharedMemory` (ashmem) to bypass Java heap limitations. Once the Android Runtime (ART) ingests the DEX buffers, the ashmem is instantly unmapped, preventing memory leaks and leaving no residual file descriptors.
+* The `VectorModuleClassLoader` is attached exclusively to the Xposed Framework's classloader branch, preventing the target app from discovering the module via reflection or `ClassLoader.getParent()` chain-walking.
+* `VectorURLStreamHandler` intercepts standard `jar:` requests, reading assets and resources natively from the module path without triggering Android's global `JarFile` cache, preventing OS-level file locks.

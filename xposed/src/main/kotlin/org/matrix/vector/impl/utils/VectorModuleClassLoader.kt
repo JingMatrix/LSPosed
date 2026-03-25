@@ -6,6 +6,7 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import android.util.Log
+import androidx.annotation.RequiresApi
 import hidden.ByteBufferDexClassLoader
 import java.io.File
 import java.io.IOException
@@ -21,21 +22,33 @@ import java.util.zip.ZipEntry
  * extract module code to the disk, enhancing both security and performance during the module
  * lifecycle.
  */
-class VectorModuleClassLoader
-private constructor(
-    dexBuffers: Array<ByteBuffer>,
-    librarySearchPath: String?,
-    parent: ClassLoader?,
-    private val apkPath: String,
-) :
-    ByteBufferDexClassLoader(
-        dexBuffers,
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) librarySearchPath else null,
-        parent,
-    ) {
+class VectorModuleClassLoader : ByteBufferDexClassLoader {
+
+    private val apkPath: String
     private val nativeLibraryDirs = mutableListOf<File>()
 
-    init {
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private constructor(
+        dexBuffers: Array<ByteBuffer>,
+        librarySearchPath: String?,
+        parent: ClassLoader?,
+        apkPath: String,
+    ) : super(dexBuffers, librarySearchPath, parent) {
+        this.apkPath = apkPath
+        initNativeDirs(librarySearchPath)
+    }
+
+    private constructor(
+        dexBuffers: Array<ByteBuffer>,
+        parent: ClassLoader?,
+        apkPath: String,
+        librarySearchPath: String?,
+    ) : super(dexBuffers, parent) {
+        this.apkPath = apkPath
+        initNativeDirs(librarySearchPath)
+    }
+
+    private fun initNativeDirs(librarySearchPath: String?) {
         val searchPath = librarySearchPath ?: ""
         nativeLibraryDirs.addAll(splitPaths(searchPath))
         nativeLibraryDirs.addAll(SYSTEM_NATIVE_LIBRARY_DIRS)
@@ -150,7 +163,12 @@ private constructor(
                     .filterNotNull()
                     .toTypedArray()
 
-            val cl = VectorModuleClassLoader(dexBuffers, librarySearchPath, parent, apk)
+            val cl =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    VectorModuleClassLoader(dexBuffers, librarySearchPath, parent, apk)
+                } else {
+                    VectorModuleClassLoader(dexBuffers, parent, apk, librarySearchPath)
+                }
 
             dexBuffers.toList().parallelStream().forEach { SharedMemory.unmap(it) }
             dexes.parallelStream().forEach { it.close() }
