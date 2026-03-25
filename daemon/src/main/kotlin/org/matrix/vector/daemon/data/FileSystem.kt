@@ -30,6 +30,8 @@ private const val TAG = "VectorFileSystem"
 
 object FileSystem {
   val basePath: Path = Paths.get("/data/adb/lspd")
+  val logDirPath: Path = basePath.resolve("log")
+  val oldLogDirPath: Path = basePath.resolve("log.old")
   val modulePath: Path = basePath.resolve("modules")
   val daemonApkPath: Path = Paths.get(System.getProperty("java.class.path", ""))
   val managerApkPath: Path = daemonApkPath.parent.resolve("manager.apk")
@@ -192,5 +194,41 @@ object FileSystem {
     preLoadedApk.legacy = isLegacy
 
     return preLoadedApk
+  }
+
+  /** Safely creates the log directory. If a file exists with the same name, it deletes it first. */
+  private fun createLogDirPath() {
+    if (!Files.isDirectory(logDirPath, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+      logDirPath.toFile().deleteRecursively()
+    }
+    Files.createDirectories(logDirPath)
+  }
+
+  /**
+   * Rotates the log directory by clearing file attributes (chattr 0), deleting the old backup, and
+   * renaming the current log directory to the backup.
+   */
+  fun moveLogDir() {
+    runCatching {
+          if (Files.exists(logDirPath)) {
+            if (chattr0(logDirPath)) {
+              // Kotlin's deleteRecursively replaces the verbose Java SimpleFileVisitor
+              oldLogDirPath.toFile().deleteRecursively()
+              Files.move(logDirPath, oldLogDirPath)
+            }
+          }
+          Files.createDirectories(logDirPath)
+        }
+        .onFailure { Log.e(TAG, "Failed to move log directory", it) }
+  }
+
+  fun getPropsPath(): File {
+    createLogDirPath()
+    return logDirPath.resolve("props.txt").toFile()
+  }
+
+  fun getKmsgPath(): File {
+    createLogDirPath()
+    return logDirPath.resolve("kmsg.log").toFile()
   }
 }
