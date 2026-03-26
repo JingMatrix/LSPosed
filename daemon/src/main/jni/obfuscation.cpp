@@ -205,18 +205,19 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
     LOGD("obfuscateDex: fd=%d, size=%zu", fd, size);
 
     // CRITICAL: We MUST use MAP_SHARED here, not MAP_PRIVATE.
-    // 1. Android's SharedMemory is backed by purely virtual IPC buffers (ashmem/memfd).
-    //    If we use MAP_PRIVATE, the kernel attempts to create a Copy-On-Write snapshot.
-    //    Because the Java side just populated this virtual buffer and immediately passed
-    //    it to JNI, mapping it MAP_PRIVATE often results in mapping unpopulated zero-pages,
-    //    which causes Slicer to read a corrupted/empty header and abort.
-    // 2. Using MAP_SHARED gives us direct pointers to the exact physical memory pages
-    //    populated by Java.
-    // 3. ZERO-COPY ARCHITECTURE: Because Slicer's IR holds direct pointers to this mapped
-    //    memory, mutating strings in-place (via const_cast) instantly updates the IR
-    //    without allocating new memory. Since the Java caller discards the original
-    //    SharedMemory buffer anyway, this in-place mutation is completely safe and highly
-    //    efficient.
+    // 1. Android's SharedMemory is backed by ashmem or memfd. Mapping these as
+    //    MAP_PRIVATE creates a Copy-On-Write (COW) layer. In many Android kernel
+    //    configurations, this COW layer does not correctly fault-in the initial
+    //    contents from the shared source, resulting in the JNI side seeing
+    //    unpopulated zero-pages. This causes slicer to fail immediately.
+    // 2. Using MAP_SHARED ensures we have direct access to the same physical
+    //    pages populated by the Java layer.
+    // 3. ZERO-COPY MUTATION: Slicer's Intermediate Representation (IR) points
+    //    directly into this mapped memory for string data. By mutating the
+    //    buffer in-place, we update the IR's state without any additional
+    //    heap allocations. This is safe here because the Daemon owns the
+    //    lifecycle of this temporary buffer and the Java caller will discard
+    //    the un-obfuscated original anyway.
     void *mem = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mem == MAP_FAILED) {
         LOGE("Failed to map input dex");

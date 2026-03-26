@@ -12,7 +12,7 @@ The daemon relies on a dual-IPC architecture and extensive use of Android Binder
 1. **Bootstrapping & Bridge (`core/`)**: The daemon starts early in the boot process. It forces its primary Binder (`VectorService`) into `system_server` by hijacking transactions on the Android `activity` service.
 2. **Privileged IPC Provider (`ipc/`)**: Android's sandbox prevents target processes from reading the framework APK, accessing SQLite databases, or resolving hidden ART symbols. The daemon exploits its root/system-level permissions to act as an asset server. It provides three critical components to hooked processes over Binder IPC:
     * **Framework Loader DEX**: Dispatched via `SharedMemory` to avoid disk-based detection and bypass SELinux `exec` restrictions.
-    * **Obfuscation Maps**: Dictionaries provided over IPC when API protection is enabled. Because the daemon dynamically obfuscates both the loader module and the framework loader to protect the Xposed API from unexpected invocation, these maps allow the injected code to correctly resolve the randomized class names at runtime.
+    * **Obfuscation Maps**: Dictionaries provided over IPC when API protection is enabled, allowing the injected code to correctly resolve the randomized class names at runtime.
     * **Dynamic Module Scopes**: Fast, lock-free lookups of which modules should be loaded into a specific UID/ProcessName.
 3. **State Management (`data/`)**: To ensure IPC calls resolve in microseconds without race conditions, the daemon uses an **Immutable State Container** (`DaemonState`). Module topology and scopes are built into a frozen snapshot in the background, which is atomically swapped into memory. High-volume module preference updates are isolated in a separate `PreferenceStore` to prevent state pollution.
 4. **Native Environment (`env/` & JNI)**: Background threads (C++ and Kotlin Coroutines) handle low-level system subversion, including `dex2oat` compilation hijacking and logcat monitoring.
@@ -43,11 +43,10 @@ To prevent Android's ART from inlining hooked methods (which makes them unhookab
 * **FD Passing**: When the wrapper executes, to read the original compiler or the `liboat_hook.so`, it opens a UNIX domain socket to the daemon. The daemon (running as root) opens the files and passes the File Descriptors (FDs) back to the wrapper via `SCM_RIGHTS`.
 * **Execution**: The wrapper uses `memfd_create` and `sendfile` to load the hook, bypassing execute restrictions, and uses `LD_PRELOAD` to inject the hook into the real `dex2oat` process while appending `--inline-max-code-units=0`.
 
-### 3. Dex Obfuscation & Zero-Copy Memory
-The framework DEX is passed to target apps via Android's `SharedMemory` API. 
-The primary purpose of obfuscation maps is to protect the Xposed API from unexpected invocation. If this configuration is enabled, the daemon dynamically obfuscates *both* the loader module and the framework loader. 
+### 3. API Protection & DEX Obfuscation
+To prevent unauthorized apps from detecting the framework or invoking the Xposed API, the daemon randomizes framework and loader class names on each boot. JNI maps the input `SharedMemory` via `MAP_SHARED` to gain direct, zero-copy access to the physical pages populated by Java. Using the [DexBuilder](https://github.com/JingMatrix/DexBuilder) library, the daemon mutates the DEX string pool in-place; this is highly efficient as the library's Intermediate Representation points directly to the mapped buffer, avoiding unnecessary heap allocations during the randomization process.
 
-To achieve this efficiently, `ObfuscationManager.kt` passes the memory buffer to JNI (`obfuscation.cpp`), which uses `slicer` to mutate Dalvik string pools in-place using `MAP_SHARED`. This ensures zero-copy manipulation; the Java side immediately sees the obfuscated DEX without reallocating buffers.
+Once mutation is complete, the finalized DEX is written into a new `SharedMemory` region and the original plaintext handle is closed. Because signatures are now randomized, the daemon provides **Obfuscation Maps** via Door 1 and Door 2. These dictionaries allow the injected code to correctly "re-link" and resolve the framework's internal classes at runtime despite their randomized names.
 
 ### 4. Lifecycle & State Tracking
 The daemon must precisely know which apps are installed and which processes are running.
