@@ -90,7 +90,7 @@ object ApplicationService : ILSPApplicationService.Stub() {
   override fun getModulesList(): List<Module> {
     val info = ensureRegistered()
     if (info.key.uid == Process.SYSTEM_UID && info.processName == "system") {
-      return ConfigCache.getModulesForSystemServer() // Needs implementation in ConfigCache
+      return ConfigCache.getModulesForSystemServer()
     }
     if (ManagerService.isRunningManager(getCallingPid(), info.key.uid)) {
       return emptyList()

@@ -21,7 +21,6 @@ import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.activityManager
 
 private const val TAG = "VectorModuleService"
-private const val SEND_BINDER = "send_binder"
 
 class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
 
@@ -35,7 +34,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
 
     fun uidStarts(uid: Int) {
       if (uidSet.add(uid)) {
-        val module = ConfigCache.getModuleByUid(uid) // Needs impl in ConfigCache
+        val module = ConfigCache.getModuleByUid(uid)
         if (module?.file?.legacy == false) {
           val service = serviceMap.getOrPut(module) { ModuleService(module) }
           service.sendBinder(uid)
