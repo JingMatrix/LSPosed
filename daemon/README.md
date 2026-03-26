@@ -11,8 +11,8 @@ The daemon relies on a dual-IPC architecture and extensive use of Android Binder
 
 1. **Bootstrapping & Bridge (`core/`)**: The daemon starts early in the boot process. It forces its primary Binder (`VectorService`) into `system_server` by hijacking transactions on the Android `activity` service.
 2. **Privileged IPC Provider (`ipc/`)**: Android's sandbox prevents target processes from reading the framework APK, accessing SQLite databases, or resolving hidden ART symbols. The daemon exploits its root/system-level permissions to act as an asset server. It provides three critical components to hooked processes over Binder IPC:
-    * **Loader DEX**: Dispatched via `SharedMemory` to avoid disk-based detection and bypass SELinux `exec` restrictions.
-    * **Obfuscation Maps**: Pre-calculated maps that allow the injected framework to identify and hook internal ART structures regardless of the daemon's own obfuscation.
+    * **Framework Loader DEX**: Dispatched via `SharedMemory` to avoid disk-based detection and bypass SELinux `exec` restrictions.
+    * **Obfuscation Maps**: Dictionaries provided over IPC when API protection is enabled. Because the daemon dynamically obfuscates both the loader module and the framework loader to protect the Xposed API from unexpected invocation, these maps allow the injected code to correctly resolve the randomized class names at runtime.
     * **Dynamic Module Scopes**: Fast, lock-free lookups of which modules should be loaded into a specific UID/ProcessName.
 3. **State Management (`data/`)**: To ensure IPC calls resolve in microseconds without race conditions, the daemon uses an **Immutable State Container** (`DaemonState`). Module topology and scopes are built into a frozen snapshot in the background, which is atomically swapped into memory. High-volume module preference updates are isolated in a separate `PreferenceStore` to prevent state pollution.
 4. **Native Environment (`env/` & JNI)**: Background threads (C++ and Kotlin Coroutines) handle low-level system subversion, including `dex2oat` compilation hijacking and logcat monitoring.
@@ -45,7 +45,9 @@ To prevent Android's ART from inlining hooked methods (which makes them unhookab
 
 ### 3. Dex Obfuscation & Zero-Copy Memory
 The framework DEX is passed to target apps via Android's `SharedMemory` API. 
-To protect the Xposed API from reflections, `ObfuscationManager.kt` passes this memory buffer to JNI (`obfuscation.cpp`), which uses `slicer` to mutate Dalvik string pools in-place using `MAP_SHARED`. This ensures zero-copy manipulation; the Java side immediately sees the obfuscated DEX without reallocating buffers.
+The primary purpose of obfuscation maps is to protect the Xposed API from unexpected invocation. If this configuration is enabled, the daemon dynamically obfuscates *both* the loader module and the framework loader. 
+
+To achieve this efficiently, `ObfuscationManager.kt` passes the memory buffer to JNI (`obfuscation.cpp`), which uses `slicer` to mutate Dalvik string pools in-place using `MAP_SHARED`. This ensures zero-copy manipulation; the Java side immediately sees the obfuscated DEX without reallocating buffers.
 
 ### 4. Lifecycle & State Tracking
 The daemon must precisely know which apps are installed and which processes are running.
