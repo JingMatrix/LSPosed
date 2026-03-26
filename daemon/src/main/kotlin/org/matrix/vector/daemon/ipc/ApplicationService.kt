@@ -12,6 +12,7 @@ import org.lsposed.lspd.service.ILSPApplicationService
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.data.ProcessScope
+import org.matrix.vector.daemon.utils.ObfuscationManager
 
 private const val TAG = "VectorAppService"
 private const val DEX_TRANSACTION_CODE =
@@ -48,7 +49,7 @@ object ApplicationService : ILSPApplicationService.Stub() {
       }
       OBFUSCATION_MAP_TRANSACTION_CODE -> {
         val obfuscation = ConfigCache.isDexObfuscateEnabled()
-        val signatures = org.matrix.vector.daemon.utils.ObfuscationManager.getSignatures()
+        val signatures = ObfuscationManager.getSignatures()
         reply?.writeNoException()
         reply?.writeInt(signatures.size * 2)
         for ((key, value) in signatures) {
