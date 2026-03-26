@@ -4,12 +4,14 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import org.matrix.vector.daemon.utils.FakeContext
 
 private const val TAG = "VectorDatabase"
 private const val DB_VERSION = 4
 
-class Database(context: Context? = null) :
+class Database(context: Context? = FakeContext()) :
     SQLiteOpenHelper(context, FileSystem.dbPath.absolutePath, null, DB_VERSION) {
+
   override fun onConfigure(db: SQLiteDatabase) {
     super.onConfigure(db)
     db.setForeignKeyConstraintsEnabled(true)

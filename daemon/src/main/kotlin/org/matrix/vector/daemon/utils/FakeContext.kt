@@ -4,7 +4,11 @@ import android.content.ContentResolver
 import android.content.ContextWrapper
 import android.content.pm.ApplicationInfo
 import android.content.res.Resources
+import android.database.DatabaseErrorHandler
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabase.CursorFactory
 import android.os.Build
+import java.io.File
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.system.packageManager as sysPackageManager
 
@@ -52,4 +56,25 @@ class FakeContext(private val fakePackageName: String = "android") : ContextWrap
 
   // Required for Android 12+
   override fun getAttributionTag(): String? = null
+
+  override fun getDatabasePath(name: String): File {
+    return java.io.File(name) // We pass absolute paths, so just return it directly
+  }
+
+  override fun openOrCreateDatabase(
+      name: String,
+      mode: Int,
+      factory: CursorFactory?
+  ): SQLiteDatabase {
+    return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory)
+  }
+
+  override fun openOrCreateDatabase(
+      name: String,
+      mode: Int,
+      factory: CursorFactory,
+      errorHandler: DatabaseErrorHandler?
+  ): SQLiteDatabase {
+    return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name).path, factory, errorHandler)
+  }
 }

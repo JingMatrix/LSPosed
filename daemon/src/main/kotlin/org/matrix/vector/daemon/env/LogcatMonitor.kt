@@ -154,7 +154,6 @@ object LogcatMonitor {
     if (verboseFd == -1) refresh(true)
   }
 
-  @JvmStatic
   @Suppress("unused") // Called via JNI
   fun refreshFd(isVerboseLog: Boolean): Int {
     return runCatching {
