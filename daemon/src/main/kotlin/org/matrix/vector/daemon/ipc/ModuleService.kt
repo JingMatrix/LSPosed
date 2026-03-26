@@ -16,6 +16,7 @@ import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.system.NotificationManager
 import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.activityManager
 
@@ -113,7 +114,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
     val userId = ensureModule()
     if (!ConfigCache.isScopeRequestBlocked(loadedModule.packageName)) {
       packages.forEach { pkg ->
-        // Handled in Phase 5: NotificationManager.requestModuleScope()
+        NotificationManager.requestModuleScope(loadedModule.packageName, userId, pkg, callback)
       }
     } else {
       callback.onScopeRequestFailed("Scope request blocked by user configuration")

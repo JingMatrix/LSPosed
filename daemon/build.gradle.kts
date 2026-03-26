@@ -96,6 +96,7 @@ android.applicationVariants.all {
 dependencies {
     implementation(libs.agp.apksig)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(projects.external.apache)
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)

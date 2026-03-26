@@ -11,7 +11,7 @@ import org.lsposed.lspd.models.Module
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
-import org.matrix.vector.daemon.data.ProcessScope
+import org.matrix.vector.daemon.utils.InstallerVerifier
 import org.matrix.vector.daemon.utils.ObfuscationManager
 
 private const val TAG = "VectorAppService"
@@ -22,19 +22,20 @@ private const val OBFUSCATION_MAP_TRANSACTION_CODE =
 
 object ApplicationService : ILSPApplicationService.Stub() {
 
-  // Tracks active processes linked to their heartbeat binders
-  private val processes = ConcurrentHashMap<ProcessScope, ProcessInfo>()
+  data class ProcessKey(val uid: Int, val pid: Int)
 
-  private class ProcessInfo(val scope: ProcessScope, val heartBeat: IBinder) :
+  private val processes = ConcurrentHashMap<ProcessKey, ProcessInfo>()
+
+  private class ProcessInfo(val key: ProcessKey, val processName: String, val heartBeat: IBinder) :
       IBinder.DeathRecipient {
     init {
       heartBeat.linkToDeath(this, 0)
-      processes[scope] = this
+      processes[key] = this
     }
 
     override fun binderDied() {
       heartBeat.unlinkToDeath(this, 0)
-      processes.remove(scope)
+      processes.remove(key)
     }
   }
 
@@ -64,67 +65,69 @@ object ApplicationService : ILSPApplicationService.Stub() {
 
   fun registerHeartBeat(uid: Int, pid: Int, processName: String, heartBeat: IBinder): Boolean {
     return runCatching {
-          ProcessInfo(ProcessScope(processName, uid), heartBeat)
+          ProcessInfo(ProcessKey(uid, pid), processName, heartBeat)
           true
         }
         .getOrDefault(false)
   }
 
-  fun hasRegister(uid: Int, pid: Int): Boolean {
-    // We only check UID here as the map key is ProcessScope, but PID is implied by the active
-    // heartbeat.
-    return processes.keys.any { it.uid == uid }
-  }
+  fun hasRegister(uid: Int, pid: Int): Boolean = processes.containsKey(ProcessKey(uid, pid))
 
-  private fun ensureRegistered(): ProcessScope {
-    val uid = getCallingUid()
-    val scope = processes.keys.firstOrNull { it.uid == uid }
-    if (scope == null) {
-      Log.w(TAG, "Unauthorized IPC call from uid=$uid")
+  private fun ensureRegistered(): ProcessInfo {
+    val key = ProcessKey(getCallingUid(), getCallingPid())
+    val info = processes[key]
+    if (info == null) {
+      Log.w(TAG, "Unauthorized IPC call from uid=${key.uid} pid=${key.pid}")
       throw RemoteException("Not registered")
     }
-    return scope
+    return info
   }
 
   override fun getModulesList(): List<Module> {
-    val scope = ensureRegistered()
-    if (scope.uid == Process.SYSTEM_UID && scope.processName == "system") {
+    val info = ensureRegistered()
+    if (info.key.uid == Process.SYSTEM_UID && info.processName == "system") {
       return ConfigCache.getModulesForSystemServer() // Needs implementation in ConfigCache
     }
-    if (ManagerService.isRunningManager(getCallingPid(), scope.uid)) {
+    if (ManagerService.isRunningManager(getCallingPid(), info.key.uid)) {
       return emptyList()
     }
-    return ConfigCache.getModulesForProcess(scope.processName, scope.uid).filter { !it.file.legacy }
+    return ConfigCache.getModulesForProcess(info.processName, info.key.uid).filter {
+      !it.file.legacy
+    }
   }
 
   override fun getLegacyModulesList(): List<Module> {
-    val scope = ensureRegistered()
-    return ConfigCache.getModulesForProcess(scope.processName, scope.uid).filter { it.file.legacy }
+    val info = ensureRegistered()
+    return ConfigCache.getModulesForProcess(info.processName, info.key.uid).filter {
+      it.file.legacy
+    }
   }
 
   override fun isLogMuted(): Boolean = !ManagerService.isVerboseLog
 
   override fun getPrefsPath(packageName: String): String {
-    val scope = ensureRegistered()
-    return ConfigCache.getPrefsPath(packageName, scope.uid) // Needs implementation in ConfigCache
+    val info = ensureRegistered()
+    return ConfigCache.getPrefsPath(packageName, info.key.uid)
   }
 
   override fun requestInjectedManagerBinder(
       binderList: MutableList<IBinder>
   ): ParcelFileDescriptor? {
-    val scope = ensureRegistered()
-    val pid = getCallingPid()
+    val info = ensureRegistered()
+    val pid = info.key.pid
+    val uid = info.key.uid
 
-    if (ManagerService.postStartManager(pid, scope.uid) || ConfigCache.isManager(scope.uid)) {
-      val heartBeat = processes[scope]?.heartBeat ?: throw RemoteException("No heartbeat")
-      binderList.add(ManagerService.obtainManagerBinder(heartBeat, pid, scope.uid))
+    if (ManagerService.postStartManager(pid, uid) || ConfigCache.isManager(uid)) {
+      binderList.add(ManagerService.obtainManagerBinder(info.heartBeat, pid, uid))
     }
 
     return runCatching {
+          // Verify the APK signature before serving it
+          InstallerVerifier.verifyInstallerSignature(FileSystem.managerApkPath.toString())
           ParcelFileDescriptor.open(
               FileSystem.managerApkPath.toFile(), ParcelFileDescriptor.MODE_READ_ONLY)
         }
-        .onFailure { Log.e(TAG, "Failed to open manager APK", it) }
+        .onFailure { Log.e(TAG, "Failed to open or verify manager APK", it) }
         .getOrNull()
   }
 }

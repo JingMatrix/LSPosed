@@ -29,6 +29,8 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
   }
 
   init {
+    Log.d(TAG, "SystemServerService::SystemServerService with proxy $proxyServiceName")
+
     requestedRetryCount = -maxRetry
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       val callback =
