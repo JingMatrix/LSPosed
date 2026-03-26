@@ -18,20 +18,13 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
   private var originService: IBinder? = null
   private var requestedRetryCount = -maxRetry
 
-  // Hardcoded transaction code from BridgeService
-  private val BRIDGE_TRANSACTION_CODE =
-      ('_'.code shl 24) or ('V'.code shl 16) or ('E'.code shl 8) or 'C'.code
-
   companion object {
-    @Volatile var requestedRetryCount = 0
-
-    fun systemServerRequested() = requestedRetryCount > 0
+    var systemServerRequested = false
   }
 
   init {
-    Log.d(TAG, "SystemServerService::SystemServerService with proxy $proxyServiceName")
+    Log.d(TAG, "registering via proxy $proxyServiceName")
 
-    requestedRetryCount = -maxRetry
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       val callback =
           object : IServiceCallback.Stub() {
@@ -63,8 +56,8 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
       processName: String,
       heartBeat: IBinder?
   ): ILSPApplicationService? {
-    requestedRetryCount = 1
     if (uid != 1000 || heartBeat == null || processName != "system") return null
+    systemServerRequested = true
 
     // Return the ApplicationService singleton if successfully registered
     return if (ApplicationService.registerHeartBeat(uid, pid, processName, heartBeat)) {
@@ -92,8 +85,13 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
         }
         return false
       }
-      // Route DEX and OBFUSCATION transactions to ApplicationService
-      else -> return ApplicationService.onTransact(code, data, reply, flags)
+      DEX_TRANSACTION_CODE,
+      OBFUSCATION_MAP_TRANSACTION_CODE -> {
+        return ApplicationService.onTransact(code, data, reply, flags)
+      }
+      else -> {
+        return super.onTransact(code, data, reply, flags)
+      }
     }
   }
 
