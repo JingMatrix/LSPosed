@@ -15,9 +15,11 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.SELinux
 import android.os.SystemProperties
 import android.util.Log
 import android.view.IWindowManager
+import hidden.HiddenApiBridge
 import io.github.libxposed.service.IXposedService
 import java.io.File
 import java.io.FileOutputStream
@@ -191,8 +193,45 @@ object ManagerService : ILSPManagerService.Stub() {
   fun postStartManager(pid: Int, uid: Int): Boolean =
       isEnabled && uid == BuildConfig.MANAGER_INJECTED_UID && pid == managerPid
 
+  /** Fixes permissions for the WebView cache. */
+  private fun fixWebViewPermissions(file: File, targetUid: Int) {
+    if (!file.exists()) return
+
+    // Set the SELinux label that allows apps to read/write shared xposed data
+    SELinux.setFileContext(file.absolutePath, "u:object_r:xposed_file:s0")
+
+    // Change ownership to the target UID (e.g., 2000)
+    runCatching { android.system.Os.chown(file.absolutePath, targetUid, targetUid) }
+        .onFailure { Log.e(TAG, "Failed to chown ${file.path}", it) }
+
+    // Recurse into directories
+    if (file.isDirectory) {
+      file.listFiles()?.forEach { fixWebViewPermissions(it, targetUid) }
+    }
+  }
+
+  private fun ensureWebViewPermission() {
+    val targetUid = BuildConfig.MANAGER_INJECTED_UID
+    runCatching {
+          val pkgInfo =
+              packageManager?.getPackageInfoCompat(BuildConfig.MANAGER_INJECTED_PKG_NAME, 0, 0)
+                  ?: return@runCatching
+
+          val dataDir =
+              HiddenApiBridge.ApplicationInfo_credentialProtectedDataDir(pkgInfo.applicationInfo)
+          val cacheDir = File(dataDir, "cache")
+
+          if (!cacheDir.exists()) cacheDir.mkdirs()
+          fixWebViewPermissions(cacheDir, targetUid)
+        }
+        .onFailure { Log.w(TAG, "WebView permission fix failed", it) }
+  }
+
   fun obtainManagerBinder(heartbeat: IBinder, pid: Int, uid: Int): IBinder {
     ManagerGuard(heartbeat, pid, uid)
+    if (uid == BuildConfig.MANAGER_INJECTED_UID) {
+      ensureWebViewPermission()
+    }
     return this
   }
 
