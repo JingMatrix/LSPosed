@@ -2,7 +2,11 @@ package org.matrix.vector.daemon.data
 
 import android.content.ContentValues
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageParser
+import android.system.Os
 import android.util.Log
+import hidden.HiddenApiBridge
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +16,7 @@ import kotlinx.coroutines.launch
 import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
+import org.matrix.vector.daemon.ipc.InjectedModuleService
 import org.matrix.vector.daemon.system.MATCH_ALL_FLAGS
 import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.fetchProcesses
@@ -85,7 +90,6 @@ object ConfigCache {
             val apkPath = cursor.getString(1)
             if (pkgName == "lspd") continue
 
-            // TODO: Fetch real obfuscate pref from configs table later
             val isObfuscateEnabled = true
             val preLoadedApk = FileSystem.loadModule(apkPath, isObfuscateEnabled)
 
@@ -338,12 +342,70 @@ object ConfigCache {
 
   fun setAutoInclude(pkg: String, enabled: Boolean): Boolean = false
 
-  // Generates application info for system server since it doesn't have an APK
   fun getModulesForSystemServer(): List<Module> {
-    val result = mutableListOf<Module>()
-    // Fetch from DB where scope app_pkg_name = 'system', populate Fake ApplicationInfo, and return.
-    // Omitted DB boilerplate for brevity.
-    return result
+    val modules = mutableListOf<Module>()
+
+    // system_server must have specific SELinux execmem capabilities to hook properly
+    if (!android.os.SELinux.checkSELinuxAccess(
+        "u:r:system_server:s0", "u:r:system_server:s0", "process", "execmem")) {
+      Log.e(TAG, "Skipping system_server injection: sepolicy execmem denied")
+      return modules
+    }
+
+    dbHelper.readableDatabase
+        .query(
+            "scope INNER JOIN modules ON scope.mid = modules.mid",
+            arrayOf("module_pkg_name", "apk_path"),
+            "app_pkg_name=? AND enabled=1",
+            arrayOf("system"),
+            null,
+            null,
+            null)
+        .use { cursor ->
+          while (cursor.moveToNext()) {
+            val pkgName = cursor.getString(0)
+            val apkPath = cursor.getString(1)
+
+            // Reuse memory cache if available
+            val cached = cachedModules[pkgName]
+            if (cached != null) {
+              modules.add(cached)
+              continue
+            }
+
+            val statPath = FileSystem.toGlobalNamespace("/data/user_de/0/$pkgName").absolutePath
+
+            val module =
+                Module().apply {
+                  packageName = pkgName
+                  this.apkPath = apkPath
+                  appId = runCatching { Os.stat(statPath).st_uid }.getOrDefault(-1)
+                  service = InjectedModuleService(pkgName)
+                }
+
+            // Parse the APK locally to simulate ApplicationInfo without ActivityManager running
+            runCatching {
+                  @Suppress("DEPRECATION")
+                  val pkg = PackageParser().parsePackage(File(apkPath), 0, false)
+                  module.applicationInfo =
+                      pkg.applicationInfo.apply {
+                        sourceDir = apkPath
+                        dataDir = statPath
+                        deviceProtectedDataDir = statPath
+                        HiddenApiBridge.ApplicationInfo_credentialProtectedDataDir(this, statPath)
+                        processName = pkgName
+                      }
+                }
+                .onFailure { Log.w(TAG, "Failed to parse $apkPath", it) }
+
+            FileSystem.loadModule(apkPath, isDexObfuscateEnabled())?.let {
+              module.file = it
+              cachedModules.putIfAbsent(pkgName, module)
+              modules.add(module)
+            }
+          }
+        }
+    return modules
   }
 
   fun getPrefsPath(packageName: String, uid: Int): String {

@@ -40,7 +40,6 @@ object ApplicationService : ILSPApplicationService.Stub() {
   override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
     when (code) {
       DEX_TRANSACTION_CODE -> {
-        // TODO: FileSystem needs getPreloadDex() implemented
         val shm = FileSystem.getPreloadDex(ConfigCache.isDexObfuscateEnabled()) ?: return false
         reply?.writeNoException()
         reply?.let { shm.writeToParcel(it, 0) }
