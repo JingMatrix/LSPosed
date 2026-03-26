@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.IUserManager
 import android.util.Log
 import org.matrix.vector.daemon.utils.getRealUsers
 
@@ -233,4 +234,8 @@ fun IActivityManager.broadcastIntentCompat(intent: Intent) {
         }
       }
       .onFailure { Log.e(TAG, "broadcastIntent failed", it) }
+}
+
+fun IUserManager.getUserName(userId: Int): String {
+  return runCatching { getUserInfo(userId)?.name }.getOrNull() ?: userId.toString()
 }

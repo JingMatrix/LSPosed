@@ -13,6 +13,7 @@ import android.util.Log
 import io.github.libxposed.service.IXposedScopeCallback
 import java.util.UUID
 import org.matrix.vector.daemon.BuildConfig
+import org.matrix.vector.daemon.R
 import org.matrix.vector.daemon.utils.FakeContext
 
 private const val TAG = "VectorNotifManager"
@@ -37,22 +38,20 @@ object NotificationManager {
         listOf(
             NotificationChannel(
                     STATUS_CHANNEL_ID,
-                    "Vector Status",
+                    context.getString(R.string.status_channel_name),
                     android.app.NotificationManager.IMPORTANCE_MIN)
                 .apply { setShowBadge(false) },
             NotificationChannel(
                     UPDATED_CHANNEL_ID,
-                    "Module Updated",
+                    context.getString(R.string.module_updated_channel_name),
                     android.app.NotificationManager.IMPORTANCE_HIGH)
                 .apply { setShowBadge(false) },
             NotificationChannel(
                     SCOPE_CHANNEL_ID,
-                    "Scope Request",
+                    context.getString(R.string.scope_channel_name),
                     android.app.NotificationManager.IMPORTANCE_HIGH)
                 .apply { setShowBadge(false) })
-
     runCatching {
-          // ParceledListSlice is required for system_server IPC
           nm?.createNotificationChannelsForPackage(
               "android", 1000, android.content.pm.ParceledListSlice(list))
         }
@@ -68,8 +67,8 @@ object NotificationManager {
 
     val notif =
         Notification.Builder(context, STATUS_CHANNEL_ID)
-            .setContentTitle("Vector is active")
-            .setContentText("The daemon is running.")
+            .setContentTitle(context.getString(R.string.vector_running_notification_title))
+            .setContentText(context.getString(R.string.vector_running_notification_content))
             .setSmallIcon(android.R.drawable.ic_dialog_info) // Fallback icon
             .setContentIntent(pi)
             .setVisibility(Notification.VISIBILITY_SECRET)
@@ -100,29 +99,60 @@ object NotificationManager {
       callback: IXposedScopeCallback
   ) {
     val context = FakeContext()
-    val intent =
-        Intent(moduleScopeAction).apply {
-          setPackage("android")
-          data =
-              Uri.Builder()
-                  .scheme("module")
-                  .encodedAuthority("$modulePkg:$moduleUserId")
-                  .encodedPath(scopePkg)
-                  .appendQueryParameter("action", "approve")
-                  .build()
-          putExtras(Bundle().apply { putBinder("callback", callback.asBinder()) })
-        }
-    val pi =
-        PendingIntent.getBroadcast(
-            context, 4, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    val userName = userManager?.getUserName(moduleUserId) ?: moduleUserId.toString()
+
+    fun createActionIntent(actionParams: String, requestCode: Int): PendingIntent {
+      val intent =
+          Intent(moduleScopeAction).apply {
+            setPackage("android")
+            data =
+                Uri.Builder()
+                    .scheme("module")
+                    .encodedAuthority("$modulePkg:$moduleUserId")
+                    .encodedPath(scopePkg)
+                    .appendQueryParameter("action", actionParams)
+                    .build()
+            putExtras(Bundle().apply { putBinder("callback", callback.asBinder()) })
+          }
+      return PendingIntent.getBroadcast(
+          context,
+          requestCode,
+          intent,
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
 
     val notif =
         Notification.Builder(context, SCOPE_CHANNEL_ID)
-            .setContentTitle("Scope Request")
-            .setContentText("Module $modulePkg requested injection into $scopePkg.")
+            .setContentTitle(context.getString(R.string.xposed_module_request_scope_title))
+            .setContentText(
+                context.getString(
+                    R.string.xposed_module_request_scope_content, modulePkg, userName, scopePkg))
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .addAction(Notification.Action.Builder(null, "Approve", pi).build())
+            .addAction(
+                Notification.Action.Builder(
+                        null,
+                        context.getString(R.string.scope_approve),
+                        createActionIntent("approve", 4))
+                    .build())
+            .addAction(
+                Notification.Action.Builder(
+                        null, context.getString(R.string.scope_deny), createActionIntent("deny", 5))
+                    .build())
+            .addAction(
+                Notification.Action.Builder(
+                        null,
+                        context.getString(R.string.never_ask_again),
+                        createActionIntent("block", 6))
+                    .build())
             .setAutoCancel(true)
+            .setStyle(
+                Notification.BigTextStyle()
+                    .bigText(
+                        context.getString(
+                            R.string.xposed_module_request_scope_content,
+                            modulePkg,
+                            userName,
+                            scopePkg)))
             .build()
             .apply { extras.putString("android.substName", BuildConfig.FRAMEWORK_NAME) }
 
@@ -132,13 +162,63 @@ object NotificationManager {
     }
   }
 
-  fun cancelNotification(channel: String, modulePkg: String, moduleUserId: Int) {
+  fun notifyModuleUpdated(
+      modulePackageName: String,
+      moduleUserId: Int,
+      enabled: Boolean,
+      systemModule: Boolean
+  ) {
+    val context = FakeContext()
+    val userName = userManager?.getUserName(moduleUserId) ?: moduleUserId.toString()
+
+    val title =
+        context.getString(
+            if (enabled) {
+              if (systemModule) R.string.xposed_module_updated_notification_title_system
+              else R.string.xposed_module_updated_notification_title
+            } else R.string.module_is_not_activated_yet)
+
+    val content =
+        context.getString(
+            if (enabled) {
+              if (systemModule) R.string.xposed_module_updated_notification_content_system
+              else R.string.xposed_module_updated_notification_content
+            } else {
+              if (moduleUserId == 0) R.string.module_is_not_activated_yet_main_user_detailed
+              else R.string.module_is_not_activated_yet_multi_user_detailed
+            },
+            modulePackageName,
+            userName)
+
+    val intent =
+        Intent(openManagerAction).apply {
+          setPackage("android")
+          data =
+              Uri.Builder()
+                  .scheme("module")
+                  .encodedAuthority("$modulePackageName:$moduleUserId")
+                  .build()
+        }
+    val pi =
+        PendingIntent.getBroadcast(
+            context, 3, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    val notif =
+        Notification.Builder(context, UPDATED_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pi)
+            .setVisibility(Notification.VISIBILITY_SECRET)
+            .setAutoCancel(true)
+            .setStyle(Notification.BigTextStyle().bigText(content))
+            .build()
+            .apply { extras.putString("android.substName", BuildConfig.FRAMEWORK_NAME) }
+
+    createChannels()
     runCatching {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        nm?.cancelNotificationWithTag("android", "android", modulePkg, modulePkg.hashCode(), 0)
-      } else {
-        nm?.cancelNotificationWithTag("android", modulePkg, modulePkg.hashCode(), 0)
-      }
+      nm?.enqueueNotificationWithTag(
+          "android", opPkg, modulePackageName, modulePackageName.hashCode(), notif, 0)
     }
   }
 }
