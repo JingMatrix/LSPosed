@@ -1,10 +1,12 @@
 package org.matrix.vector.daemon.core
 
+import android.app.IApplicationThread
 import android.content.IIntentReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -21,6 +23,7 @@ import org.matrix.vector.daemon.ipc.ApplicationService
 import org.matrix.vector.daemon.ipc.ManagerService
 import org.matrix.vector.daemon.ipc.ModuleService
 import org.matrix.vector.daemon.system.*
+import org.matrix.vector.daemon.system.NotificationManager
 
 private const val TAG = "VectorService"
 
@@ -30,13 +33,13 @@ object VectorService : ILSPosedService.Stub() {
   private var bootCompleted = false
 
   override fun dispatchSystemServerContext(
-      appThread: IBinder,
-      activityToken: IBinder,
+      appThread: IBinder?,
+      activityToken: IBinder?,
       api: String
   ) {
     Log.d(TAG, "Received System Server Context (API: $api)")
 
-    SystemContext.appThread = android.app.IApplicationThread.Stub.asInterface(appThread)
+    appThread?.let { SystemContext.appThread = IApplicationThread.Stub.asInterface(it) }
     SystemContext.token = activityToken
     ConfigCache.api = api
 
@@ -77,6 +80,41 @@ object VectorService : ILSPosedService.Stub() {
 
   override fun setManagerEnabled(enabled: Boolean) = true // Omitted specific toggle logic
 
+  private fun createReceiver() =
+      object : IIntentReceiver.Stub() {
+        override fun performReceive(
+            intent: Intent,
+            resultCode: Int,
+            data: String?,
+            extras: Bundle?,
+            ordered: Boolean,
+            sticky: Boolean,
+            sendingUser: Int
+        ) {
+          ioScope.launch {
+            if (intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+              dispatchBootCompleted()
+            } else {
+              dispatchPackageChanged(intent)
+            }
+          }
+
+          // Critical for ordered broadcasts to avoid freezing the system queue
+          if (!ordered && intent.action != Intent.ACTION_LOCKED_BOOT_COMPLETED) return
+          runCatching {
+                val appThread = SystemContext.appThread
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                  activityManager?.finishReceiver(
+                      appThread?.asBinder(), resultCode, data, extras, false, intent.flags)
+                } else {
+                  activityManager?.finishReceiver(
+                      this, resultCode, data, extras, false, intent.flags)
+                }
+              }
+              .onFailure { Log.e(TAG, "finishReceiver failed", it) }
+        }
+      }
+
   private fun registerReceivers() {
     val packageFilter =
         IntentFilter().apply {
@@ -86,23 +124,15 @@ object VectorService : ILSPosedService.Stub() {
           addDataScheme("package")
         }
     val uidFilter = IntentFilter(Intent.ACTION_UID_REMOVED)
-
-    val receiver =
-        object : IIntentReceiver.Stub() {
-          override fun performReceive(
-              intent: Intent,
-              resultCode: Int,
-              data: String?,
-              extras: Bundle?,
-              ordered: Boolean,
-              sticky: Boolean,
-              sendingUser: Int
-          ) {
-            ioScope.launch { dispatchPackageChanged(intent) }
-          }
+    val bootFilter =
+        IntentFilter(Intent.ACTION_LOCKED_BOOT_COMPLETED).apply {
+          priority = IntentFilter.SYSTEM_HIGH_PRIORITY
         }
-    activityManager?.registerReceiverCompat(receiver, packageFilter, null, -1, 0)
-    activityManager?.registerReceiverCompat(receiver, uidFilter, null, -1, 0)
+
+    // Use a receiver instance for each registration to prevent AMS conflicts
+    activityManager?.registerReceiverCompat(createReceiver(), packageFilter, null, -1, 0)
+    activityManager?.registerReceiverCompat(createReceiver(), uidFilter, null, -1, 0)
+    activityManager?.registerReceiverCompat(createReceiver(), bootFilter, null, 0, 0)
 
     // UID Observer
     val uidObserver =
@@ -118,8 +148,12 @@ object VectorService : ILSPosedService.Stub() {
           override fun onUidGone(uid: Int, disabled: Boolean) = ModuleService.uidGone(uid)
         }
 
-    // UID_OBSERVER_ACTIVE | UID_OBSERVER_GONE | UID_OBSERVER_IDLE | UID_OBSERVER_CACHED
-    val which = 1 or 2 or 4 or 8
+    val which =
+        HiddenApiBridge.ActivityManager_UID_OBSERVER_ACTIVE() or
+            HiddenApiBridge.ActivityManager_UID_OBSERVER_GONE() or
+            HiddenApiBridge.ActivityManager_UID_OBSERVER_IDLE() or
+            HiddenApiBridge.ActivityManager_UID_OBSERVER_CACHED()
+
     activityManager?.registerUidObserverCompat(
         uidObserver, which, HiddenApiBridge.ActivityManager_PROCESS_STATE_UNKNOWN())
     Log.d(TAG, "Registered all OS Receivers and UID Observers")
@@ -128,7 +162,7 @@ object VectorService : ILSPosedService.Stub() {
   private fun dispatchBootCompleted() {
     bootCompleted = true
     if (ConfigCache.enableStatusNotification) {
-      // NotificationManager.notifyStatusNotification() // Needs impl in Phase 6
+      NotificationManager.notifyStatusNotification()
     }
   }
 
