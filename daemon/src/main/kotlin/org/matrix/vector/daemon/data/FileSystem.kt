@@ -2,6 +2,7 @@ package org.matrix.vector.daemon.data
 
 import android.content.res.AssetManager
 import android.content.res.Resources
+import android.os.Binder
 import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.os.RemoteException
@@ -29,6 +30,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import org.lsposed.lspd.models.PreLoadedApk
+import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.utils.ObfuscationManager
 
 private const val TAG = "VectorFileSystem"
@@ -185,7 +187,6 @@ object FileSystem {
 
     // 3. Apply obfuscation to class names if required
     if (obfuscate) {
-      // TODO
       val signatures = ObfuscationManager.getSignatures()
       for (i in moduleClassNames.indices) {
         val s = moduleClassNames[i]
@@ -271,23 +272,100 @@ object FileSystem {
     return path
   }
 
+  fun toGlobalNamespace(path: String): File {
+    return if (path.startsWith("/")) File("/proc/1/root", path) else File("/proc/1/root/$path")
+  }
+
   fun getLogs(zipFd: ParcelFileDescriptor) {
     runCatching {
           ZipOutputStream(java.io.FileOutputStream(zipFd.fileDescriptor)).use { os ->
-            os.setComment("Vector Daemon Logs")
+            val comment =
+                "Vector ${BuildConfig.BUILD_TYPE} ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+            os.setComment(comment)
             os.setLevel(java.util.zip.Deflater.BEST_COMPRESSION)
 
             fun addFile(name: String, file: File) {
               if (!file.exists() || !file.isFile) return
-              os.putNextEntry(ZipEntry(name))
-              file.inputStream().use { it.copyTo(os) }
-              os.closeEntry()
+              runCatching {
+                os.putNextEntry(ZipEntry(name))
+                file.inputStream().use { it.copyTo(os) }
+                os.closeEntry()
+              }
             }
 
+            fun addDir(basePath: String, dir: File) {
+              if (!dir.exists() || !dir.isDirectory) return
+              // Kotlin's walkTopDown elegantly replaces Files.walkFileTree
+              dir.walkTopDown()
+                  .filter { it.isFile }
+                  .forEach { file ->
+                    val relativePath = dir.toPath().relativize(file.toPath()).toString()
+                    val entryName =
+                        if (basePath.isEmpty()) relativePath else "$basePath/$relativePath"
+                    addFile(entryName, file)
+                  }
+            }
+
+            fun addProcOutput(name: String, vararg cmd: String) {
+              runCatching {
+                val proc = ProcessBuilder(*cmd).start()
+                os.putNextEntry(ZipEntry(name))
+                proc.inputStream.use { it.copyTo(os) }
+                os.closeEntry()
+              }
+            }
+
+            // 1. Gather daemon logs and system crash traces
+            addDir("log", logDirPath.toFile())
+            addDir("log.old", oldLogDirPath.toFile())
+            addDir("tombstones", File("/data/tombstones"))
+            addDir("anr", File("/data/anr"))
+            addDir(
+                "crash1", File("/data/data/${BuildConfig.MANAGER_INJECTED_PKG_NAME}/cache/crash"))
+            addDir(
+                "crash2",
+                File("/data/data/${BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME}/cache/crash"))
+
+            // 2. Gather system logs directly via shell
+            addProcOutput("full.log", "logcat", "-b", "all", "-d")
+            addProcOutput("dmesg.log", "dmesg")
+
+            // 3. Gather Magisk module states safely
+            val magiskDataDir = File("/data/adb/modules")
+            if (magiskDataDir.exists() && magiskDataDir.isDirectory) {
+              magiskDataDir.listFiles()?.forEach { moduleDir ->
+                val modName = moduleDir.name
+                listOf("module.prop", "remove", "disable", "update", "sepolicy.rule").forEach {
+                  addFile("modules/$modName/$it", File(moduleDir, it))
+                }
+              }
+            }
+
+            // 4. Gather memory/mount info for daemon and caller
+            val proc = File("/proc")
+            arrayOf("self", Binder.getCallingPid().toString()).forEach { pid ->
+              val pidPath = File(proc, pid)
+              listOf("maps", "mountinfo", "status").forEach {
+                addFile("proc/$pid/$it", File(pidPath, it))
+              }
+            }
+
+            // 5. Gather Database and Scopes
             addFile("modules_config.db", dbPath)
-            addFile("props.txt", getPropsPath())
-            addFile("kmsg.log", getKmsgPath())
-            // Omitted full directory walks for brevity, but you can use File.walk() here.
+            runCatching {
+              os.putNextEntry(ZipEntry("scopes.txt"))
+              ConfigCache.cachedScopes.forEach { (scope, modules) ->
+                os.write("${scope.processName}/${scope.uid}\n".toByteArray())
+                modules.forEach { mod ->
+                  os.write("\t${mod.packageName}\n".toByteArray())
+                  mod.file?.moduleClassNames?.forEach { cn -> os.write("\t\t$cn\n".toByteArray()) }
+                  mod.file?.moduleLibraryNames?.forEach { ln ->
+                    os.write("\t\t$ln\n".toByteArray())
+                  }
+                }
+              }
+              os.closeEntry()
+            }
           }
         }
         .onFailure { Log.e(TAG, "Failed to export logs", it) }
