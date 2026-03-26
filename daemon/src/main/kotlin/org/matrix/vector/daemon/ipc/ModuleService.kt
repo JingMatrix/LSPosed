@@ -21,7 +21,6 @@ import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.activityManager
 
 private const val TAG = "VectorModuleService"
-private const val AUTHORITY_SUFFIX = ".lsposed"
 private const val SEND_BINDER = "send_binder"
 
 class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
