@@ -13,8 +13,8 @@ The daemon relies on a dual-IPC architecture and extensive use of Android Binder
 2. **Privileged IPC Provider (`ipc/`)**: Android's sandbox prevents target processes from reading the framework APK, accessing SQLite databases, or resolving hidden ART symbols. The daemon exploits its root/system-level permissions to act as an asset server. It provides three critical components to hooked processes over Binder IPC:
     * **Loader DEX**: Dispatched via `SharedMemory` to avoid disk-based detection and bypass SELinux `exec` restrictions.
     * **Obfuscation Maps**: Pre-calculated maps that allow the injected framework to identify and hook internal ART structures regardless of the daemon's own obfuscation.
-    * **Dynamic Module Scopes**: Fast, in-memory lookups of which modules should be loaded into a specific UID/ProcessName.
-3. **State Management (`data/`)**: To ensure IPC calls resolve in microseconds, the daemon caches SQLite database records (modules, scopes, preferences) in memory. This cache is lazily loaded only after Android's `PackageManager` becomes available.
+    * **Dynamic Module Scopes**: Fast, lock-free lookups of which modules should be loaded into a specific UID/ProcessName.
+3. **State Management (`data/`)**: To ensure IPC calls resolve in microseconds without race conditions, the daemon uses an **Immutable State Container** (`DaemonState`). Module topology and scopes are built into a frozen snapshot in the background, which is atomically swapped into memory. High-volume module preference updates are isolated in a separate `PreferenceStore` to prevent state pollution.
 4. **Native Environment (`env/` & JNI)**: Background threads (C++ and Kotlin Coroutines) handle low-level system subversion, including `dex2oat` compilation hijacking and logcat monitoring.
 
 ## Directory Layout
@@ -24,7 +24,7 @@ src/main/
 ├── kotlin/org/matrix/vector/daemon/
 │   ├── core/       # Entry point (Main), looper setup, and OS broadcast receivers
 │   ├── ipc/        # AIDL implementations (Manager, Module, App, SystemServer endpoints)
-│   ├── data/       # SQLite DB, in-memory ConcurrentHashMap cache, File & ZIP parsing
+│   ├── data/       # SQLite DB, Immutable State (DaemonState, ConfigCache), PreferenceStore, File & ZIP parsing
 │   ├── system/     # System binder wrappers, UID observers, Notification UI
 │   ├── env/        # Socket servers and monitors communicating with JNI (dex2oat, logcat)
 │   └── utils/      # OEM-specific workarounds, FakeContext, JNI bindings
@@ -35,8 +35,7 @@ src/main/
 
 ### 1. IPC Routing (The Two Doors)
 * **Door 1 (`SystemServerService`)**: A native-to-native entry point used exclusively for the **System-Level Initialization** of `system_server`. By proxying the hardware `serial` service (via `IServiceCallback`), the daemon provides a rendezvous point accessible to the system before the Activity Manager is even initialized. It handles raw UID/PID/Heartbeat packets to authorize the base system framework hook.
-* **Door 2 (`VectorService`)**: The **Application-Level Entrance** used by user-space apps. Since user apps are forbidden by SELinux from accessing hardware services like `serial`, they use the "Activity Bridge" to reach the daemon. This door utilizes an action-based protocol (`kActionGetBinder`) allowing the daemon to perform **Scope Filtering**—matching the calling process against the `ConfigCache` before granting access to the framework.
-
+* **Door 2 (`VectorService`)**: The **Application-Level Entrance** used by user-space apps. Since user apps are forbidden by SELinux from accessing hardware services like `serial`, they use the "Activity Bridge" to reach the daemon. This door utilizes an action-based protocol allowing the daemon to perform **Scope Filtering**—matching the calling process against the current `DaemonState` before granting access to the framework.
 
 ### 2. AOT Compilation Hijacking (`dex2oat`)
 To prevent Android's ART from inlining hooked methods (which makes them unhookable), Vector hijacks the Ahead-of-Time (AOT) compiler.
@@ -46,18 +45,18 @@ To prevent Android's ART from inlining hooked methods (which makes them unhookab
 
 ### 3. Dex Obfuscation & Zero-Copy Memory
 The framework DEX is passed to target apps via Android's `SharedMemory` API. 
-To protect Xposed API from reflections, `ObfuscationManager.kt` passes this memory buffer to JNI (`obfuscation.cpp`), which uses `slicer` to mutate Dalvik string pools in-place using `MAP_SHARED`. This ensures zero-copy manipulation; the Java side immediately sees the obfuscated DEX without reallocating buffers.
+To protect the Xposed API from reflections, `ObfuscationManager.kt` passes this memory buffer to JNI (`obfuscation.cpp`), which uses `slicer` to mutate Dalvik string pools in-place using `MAP_SHARED`. This ensures zero-copy manipulation; the Java side immediately sees the obfuscated DEX without reallocating buffers.
 
 ### 4. Lifecycle & State Tracking
 The daemon must precisely know which apps are installed and which processes are running.
 * **Broadcasts**: `VectorService` registers a hidden `IIntentReceiver` to listen for `ACTION_PACKAGE_ADDED`, `REMOVED`, and `ACTION_LOCKED_BOOT_COMPLETED`.
-* **UID Observers**: `IUidObserver` tracks `onUidActive` and `onUidGone`. When a process becomes active, the daemon uses a forged `ContentProvider` call to proactively push the `IXposedService` binder into the target process, bypassing standard `bindService` limitations.
+* **UID Observers**: `IUidObserver` tracks `onUidActive` and `onUidGone`. When a process becomes active, the daemon uses a forged `ContentProvider` call (`send_binder`) to proactively push the `IXposedService` binder into the target process, bypassing standard `bindService` limitations.
 
 ## Development & Maintenance Guidelines
 
 When modifying the daemon, strictly adhere to the following principles:
 
-1. **Never Block IPC Threads**: AIDL `onTransact` methods are called synchronously by the Android framework and target apps. Blocking these threads (e.g., by executing raw SQL queries or heavy I/O directly) will cause Application Not Responding (ANR) crashes system-wide. Always read from the in-memory `ConfigCache`.
+1. **Never Block IPC Threads**: AIDL `onTransact` methods are called synchronously by the Android framework and target apps. Blocking these threads (e.g., by executing raw SQL queries or heavy I/O directly) will cause Application Not Responding (ANR) crashes system-wide. Always read from the lock-free, immutable `DaemonState` snapshot exposed by `ConfigCache.state`.
 2. **Resource Determinism**: The daemon runs indefinitely. Leaking a single `Cursor`, `ParcelFileDescriptor`, or `SharedMemory` instance will eventually exhaust system limits and crash the OS. Always use Kotlin's `.use { }` blocks or explicit C++ RAII wrappers for native resources.
 3. **Isolate OEM Quirks**: Android OS behavior varies wildly between manufacturers (e.g., Lenovo hiding cloned apps in user IDs 900-909, MIUI killing background dual-apps). Place all OEM-specific logic in `utils/Workarounds.kt` to prevent core logic pollution.
 4. **Context Forgery (`FakeContext`)**: The daemon does not have a real Android `Context`. To interact with system APIs that require one (like building Notifications or querying packages), use `FakeContext`. Be aware that standard `Context` methods may crash if not explicitly mocked.

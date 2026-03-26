@@ -1,6 +1,5 @@
 package org.matrix.vector.daemon.data
 
-import android.content.ContentValues
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageParser
 import android.system.Os
@@ -8,11 +7,9 @@ import android.util.Log
 import hidden.HiddenApiBridge
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,26 +25,16 @@ import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorConfigCache"
 
-data class ProcessScope(val processName: String, val uid: Int)
-
 object ConfigCache {
-  @Volatile var api: String = "(???)"
-  @Volatile var enableStatusNotification = true
 
-  @Volatile private var managerUid = -1
-  @Volatile private var isCacheReady = false
-  @Volatile private var miscPath: Path? = null
+  // --- IMMUTABLE STATE ---
+  @Volatile
+  var state = DaemonState()
+    private set
 
-  val dbHelper = Database()
+  val dbHelper = Database() // Kept public for PreferenceStore and ModuleDatabase
 
-  // Thread-safe maps for IPC readers
-  val cachedModules = ConcurrentHashMap<String, Module>()
-  val cachedScopes = ConcurrentHashMap<ProcessScope, MutableList<Module>>()
-
-  // Coroutine Scope for background DB tasks
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-  // A conflated channel automatically drops older pending events if a new one arrives.
   private val cacheUpdateChannel = Channel<Unit>(Channel.CONFLATED)
 
   init {
@@ -56,49 +43,69 @@ object ConfigCache {
         performCacheUpdate()
       }
     }
-
     initializeConfig()
   }
 
+  // --- STATE PROXIES (For backwards compatibility) ---
+  var api: String
+    get() = state.api
+    set(value) {
+      state = state.copy(api = value)
+    }
+
+  var enableStatusNotification: Boolean
+    get() = state.enableStatusNotification
+    set(value) {
+      state = state.copy(enableStatusNotification = value)
+    }
+
+  val cachedModules: Map<String, Module>
+    get() = state.modules
+
+  val cachedScopes: Map<ProcessScope, List<Module>>
+    get() = state.scopes
+
   private fun initializeConfig() {
-    val config = getModulePrefs("lspd", 0, "config")
+    val config = PreferenceStore.getModulePrefs("lspd", 0, "config")
 
     ManagerService.isVerboseLog = config["enable_verbose_log"] as? Boolean ?: true
-    enableStatusNotification = config["enable_status_notification"] as? Boolean ?: true
+    val enableStatusNotif = config["enable_status_notification"] as? Boolean ?: true
 
-    // Clean up legacy setting
     if (config["enable_auto_add_shortcut"] != null) {
-      updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
+      PreferenceStore.updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
     }
 
-    // Initialize miscPath
     val pathStr = config["misc_path"] as? String
-    if (pathStr == null) {
-      val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
-      updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
-      miscPath = newPath
-    } else {
-      miscPath = Paths.get(pathStr)
-    }
+    val miscPath =
+        if (pathStr == null) {
+          val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
+          PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
+          newPath
+        } else {
+          Paths.get(pathStr)
+        }
 
     runCatching {
           val perms =
               PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
-          java.nio.file.Files.createDirectories(miscPath!!, perms)
-          FileSystem.setSelinuxContextRecursive(miscPath!!, "u:object_r:xposed_data:s0")
+          Files.createDirectories(miscPath, perms)
+          FileSystem.setSelinuxContextRecursive(miscPath, "u:object_r:xposed_data:s0")
         }
         .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
+
+    // Swap state with initialization data
+    state = state.copy(enableStatusNotification = enableStatusNotif, miscPath = miscPath)
   }
 
   private fun ensureCacheReady() {
-    // Lazy Execution (Wait for PackageManager)
-    if (!isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
+    val currentState = state
+    if (!currentState.isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
       synchronized(this) {
-        if (!isCacheReady) {
+        if (!state.isCacheReady) {
           Log.i(TAG, "System services are ready. Mapping modules and scopes.")
           updateManager(false)
           forceCacheUpdateSync()
-          isCacheReady = true
+          state = state.copy(isCacheReady = true)
         }
       }
     }
@@ -106,45 +113,42 @@ object ConfigCache {
 
   fun updateManager(uninstalled: Boolean) {
     if (uninstalled) {
-      managerUid = -1
+      state = state.copy(managerUid = -1)
       return
     }
     if (packageManager?.asBinder()?.isBinderAlive == true) {
       runCatching {
             val info =
                 packageManager?.getPackageInfoCompat(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0)
-            managerUid = info?.applicationInfo?.uid ?: -1
-            if (managerUid == -1) Log.i(TAG, "Manager is not installed")
+            val uid = info?.applicationInfo?.uid ?: -1
+            if (uid == -1) Log.i(TAG, "Manager is not installed")
+            state = state.copy(managerUid = uid)
           }
-          .onFailure { managerUid = -1 }
+          .onFailure { state = state.copy(managerUid = -1) }
     }
   }
 
   fun isManager(uid: Int): Boolean {
     ensureCacheReady()
-    return uid == managerUid || uid == BuildConfig.MANAGER_INJECTED_UID
+    return uid == state.managerUid || uid == BuildConfig.MANAGER_INJECTED_UID
   }
 
-  /**
-   * Triggers an asynchronous cache update. Multiple rapid calls are naturally coalesced by the
-   * Conflated Channel.
-   */
   fun requestCacheUpdate() {
     cacheUpdateChannel.trySend(Unit)
   }
 
-  /** Blocks and forces an immediate cache update (Used during system_server boot). */
   fun forceCacheUpdateSync() {
     performCacheUpdate()
   }
 
+  /** Builds a completely new Immutable State and atomically swaps it. */
   private fun performCacheUpdate() {
-    if (packageManager == null) return // Wait for PM to be ready
+    if (packageManager == null) return
 
     Log.d(TAG, "Executing Cache Update...")
     val db = dbHelper.readableDatabase
+    val oldState = state
 
-    // Fetch enabled modules
     val newModules = mutableMapOf<String, Module>()
     val obsoleteModules = mutableSetOf<String>()
     val obsoletePaths = mutableMapOf<String, String>()
@@ -163,9 +167,8 @@ object ConfigCache {
             var apkPath = cursor.getString(1)
             if (pkgName == "lspd") continue
 
-            val oldModule = cachedModules[pkgName]
+            val oldModule = oldState.modules[pkgName]
 
-            // Find the PackageInfo across all users to get UID and ApplicationInfo
             var pkgInfo: android.content.pm.PackageInfo? = null
             val users = userManager?.getRealUsers() ?: emptyList()
             for (user in users) {
@@ -181,7 +184,6 @@ object ConfigCache {
 
             val appInfo = pkgInfo.applicationInfo
 
-            // Optimization: Check if the APK has changed, skip parsing if identical
             if (oldModule != null &&
                 appInfo?.sourceDir != null &&
                 apkPath != null &&
@@ -190,17 +192,11 @@ object ConfigCache {
                 apkPath == oldModule.apkPath &&
                 File(appInfo.sourceDir).parent == File(apkPath).parent) {
 
-              if (oldModule.appId != -1) {
-                Log.d(TAG, "$pkgName did not change, skip caching it")
-              } else {
-                // System server edge case: update app info
-                oldModule.applicationInfo = appInfo
-              }
+              if (oldModule.appId == -1) oldModule.applicationInfo = appInfo
               newModules[pkgName] = oldModule
               continue
             }
 
-            // Update APK path if it shifted during an update
             val realApkPath = getModuleApkPath(appInfo!!)
             if (realApkPath == null) {
               Log.w(TAG, "Failed to find path of $pkgName")
@@ -211,18 +207,18 @@ object ConfigCache {
               obsoletePaths[pkgName] = realApkPath
             }
 
-            // Load the actual DEX and construct the Module
-            val preLoadedApk = FileSystem.loadModule(apkPath, isDexObfuscateEnabled())
-
+            val preLoadedApk =
+                FileSystem.loadModule(apkPath, PreferenceStore.isDexObfuscateEnabled())
             if (preLoadedApk != null) {
-              val module = Module()
-              module.packageName = pkgName
-              module.apkPath = apkPath
-              module.appId = appInfo.uid
-              module.applicationInfo = appInfo
-              module.service = oldModule?.service ?: InjectedModuleService(pkgName)
-              module.file = preLoadedApk
-
+              val module =
+                  Module().apply {
+                    packageName = pkgName
+                    this.apkPath = apkPath
+                    appId = appInfo.uid
+                    applicationInfo = appInfo
+                    service = oldModule?.service ?: InjectedModuleService(pkgName)
+                    file = preLoadedApk
+                  }
               newModules[pkgName] = module
             } else {
               Log.w(TAG, "Failed to parse DEX/ZIP for $pkgName, skipping.")
@@ -231,14 +227,12 @@ object ConfigCache {
           }
         }
 
-    // Clean up obsolete data to keep the database perfectly synced with Android
     if (packageManager?.asBinder()?.isBinderAlive == true) {
-      obsoleteModules.forEach { removeModule(it) }
-      obsoletePaths.forEach { (pkg, path) -> updateModuleApkPath(pkg, path, true) }
+      obsoleteModules.forEach { ModuleDatabase.removeModule(it) }
+      obsoletePaths.forEach { (pkg, path) -> ModuleDatabase.updateModuleApkPath(pkg, path, true) }
     }
 
-    // Fetch scopes and map heavy PM logic
-    val newScopes = ConcurrentHashMap<ProcessScope, MutableList<Module>>()
+    val newScopes = mutableMapOf<ProcessScope, MutableList<Module>>()
     db.query(
             "scope INNER JOIN modules ON scope.mid = modules.mid",
             arrayOf("app_pkg_name", "module_pkg_name", "user_id"),
@@ -253,13 +247,9 @@ object ConfigCache {
             val modPkg = cursor.getString(1)
             val userId = cursor.getInt(2)
 
-            // system_server it fetches its own modules
             if (appPkg == "system") continue
 
-            // Ensure the module is actually valid and loaded
             val module = newModules[modPkg] ?: continue
-
-            // Fetch associated processes
             val pkgInfo =
                 packageManager?.getPackageInfoWithComponents(appPkg, MATCH_ALL_FLAGS, userId)
             if (pkgInfo?.applicationInfo == null) continue
@@ -273,12 +263,11 @@ object ConfigCache {
               val processScope = ProcessScope(processName, appUid)
               newScopes.getOrPut(processScope) { mutableListOf() }.add(module)
 
-              // Always allow the module to inject itself across all users
               if (modPkg == appPkg) {
                 val appId = appUid % PER_USER_RANGE
                 userManager?.getRealUsers()?.forEach { user ->
                   val moduleUid = user.id * PER_USER_RANGE + appId
-                  if (moduleUid != appUid) { // Skip duplicate
+                  if (moduleUid != appUid) {
                     val moduleSelf = ProcessScope(processName, moduleUid)
                     newScopes.getOrPut(moduleSelf) { mutableListOf() }.add(module)
                   }
@@ -288,203 +277,29 @@ object ConfigCache {
           }
         }
 
-    // Atomically swap the memory cache
-    cachedModules.clear()
-    cachedModules.putAll(newModules)
+    // --- ATOMIC STATE SWAP ---
+    state = oldState.copy(modules = newModules, scopes = newScopes)
 
-    cachedScopes.clear()
-    cachedScopes.putAll(newScopes)
-
-    Log.d(TAG, "cached modules")
-    cachedModules.forEach { (pkg, mod) -> Log.d(TAG, "$pkg ${mod.apkPath}") }
-    Log.d(TAG, "cached scope")
-    cachedScopes.forEach { (ps, modules) ->
-      Log.d(TAG, "${ps.processName}/${ps.uid}")
-      modules.forEach { mod -> Log.d(TAG, "\t${mod.packageName}") }
-    }
+    Log.d(TAG, "Cache Update Complete. Map Swap successful.")
   }
 
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
     ensureCacheReady()
-    return cachedScopes[ProcessScope(processName, uid)] ?: emptyList()
-  }
-
-  // --- Preferences & Settings ---
-  fun isDexObfuscateEnabled(): Boolean =
-      getModulePrefs("lspd", 0, "config")["enable_dex_obfuscate"] as? Boolean ?: true
-
-  fun setDexObfuscate(enabled: Boolean) =
-      updateModulePref("lspd", 0, "config", "enable_dex_obfuscate", enabled)
-
-  fun isLogWatchdogEnabled(): Boolean =
-      getModulePrefs("lspd", 0, "config")["enable_log_watchdog"] as? Boolean ?: true
-
-  fun setLogWatchdog(enabled: Boolean) =
-      updateModulePref("lspd", 0, "config", "enable_log_watchdog", enabled)
-
-  // --- Modules & Scope DB Operations ---
-  fun getEnabledModules(): List<String> = cachedModules.keys.toList()
-
-  fun enableModule(packageName: String): Boolean {
-    if (packageName == "lspd") return false
-    val values = ContentValues().apply { put("enabled", 1) }
-    val changed =
-        dbHelper.writableDatabase.update(
-            "modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
-    if (changed) requestCacheUpdate()
-    return changed
-  }
-
-  fun disableModule(packageName: String): Boolean {
-    if (packageName == "lspd") return false
-    val values = ContentValues().apply { put("enabled", 0) }
-    val changed =
-        dbHelper.writableDatabase.update(
-            "modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
-    if (changed) requestCacheUpdate()
-    return changed
-  }
-
-  fun getModuleScope(packageName: String): MutableList<Application>? {
-    if (packageName == "lspd") return null
-    val result = mutableListOf<Application>()
-    dbHelper.readableDatabase
-        .query(
-            "scope INNER JOIN modules ON scope.mid = modules.mid",
-            arrayOf("app_pkg_name", "user_id"),
-            "modules.module_pkg_name = ?",
-            arrayOf(packageName),
-            null,
-            null,
-            null)
-        .use { cursor ->
-          while (cursor.moveToNext()) {
-            result.add(
-                Application().apply {
-                  this.packageName = cursor.getString(0)
-                  this.userId = cursor.getInt(1)
-                })
-          }
-        }
-    return result
-  }
-
-  fun setModuleScope(packageName: String, scope: MutableList<Application>): Boolean {
-    enableModule(packageName)
-    val db = dbHelper.writableDatabase
-    db.beginTransaction()
-    try {
-      val mid =
-          db.compileStatement("SELECT mid FROM modules WHERE module_pkg_name = ?")
-              .apply { bindString(1, packageName) }
-              .simpleQueryForLong()
-      db.delete("scope", "mid = ?", arrayOf(mid.toString()))
-
-      val values = ContentValues().apply { put("mid", mid) }
-      for (app in scope) {
-        if (app.packageName == "system" && app.userId != 0) continue
-        values.put("app_pkg_name", app.packageName)
-        values.put("user_id", app.userId)
-        db.insertWithOnConflict(
-            "scope", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
-      }
-      db.setTransactionSuccessful()
-    } catch (e: Exception) {
-      Log.e(TAG, "Failed to set scope", e)
-      return false
-    } finally {
-      db.endTransaction()
-    }
-    requestCacheUpdate()
-    return true
-  }
-
-  // --- Configs Table Operations ---
-  fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
-    val result = mutableMapOf<String, Any>()
-    dbHelper.readableDatabase
-        .query(
-            "configs",
-            arrayOf("`key`", "data"),
-            "module_pkg_name = ? AND user_id = ? AND `group` = ?",
-            arrayOf(packageName, userId.toString(), group),
-            null,
-            null,
-            null)
-        .use { cursor ->
-          while (cursor.moveToNext()) {
-            val key = cursor.getString(0)
-            val blob = cursor.getBlob(1)
-            val obj = org.apache.commons.lang3.SerializationUtilsX.deserialize<Any>(blob)
-            if (obj != null) result[key] = obj
-          }
-        }
-    return result
-  }
-
-  fun updateModulePref(moduleName: String, userId: Int, group: String, key: String, value: Any?) {
-    updateModulePrefs(moduleName, userId, group, mapOf(key to value))
-  }
-
-  fun updateModulePrefs(moduleName: String, userId: Int, group: String, diff: Map<String, Any?>) {
-    val db = dbHelper.writableDatabase
-    db.beginTransaction()
-    try {
-      for ((key, value) in diff) {
-        if (value is java.io.Serializable) {
-          val values =
-              ContentValues().apply {
-                put("`group`", group)
-                put("`key`", key)
-                put("data", org.apache.commons.lang3.SerializationUtilsX.serialize(value))
-                put("module_pkg_name", moduleName)
-                put("user_id", userId.toString())
-              }
-          db.insertWithOnConflict(
-              "configs", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
-        } else {
-          db.delete(
-              "configs",
-              "module_pkg_name=? AND user_id=? AND `group`=? AND `key`=?",
-              arrayOf(moduleName, userId.toString(), group, key))
-        }
-      }
-      db.setTransactionSuccessful()
-    } finally {
-      db.endTransaction()
-    }
-  }
-
-  fun deleteModulePrefs(moduleName: String, userId: Int, group: String) {
-    dbHelper.writableDatabase.delete(
-        "configs",
-        "module_pkg_name=? AND user_id=? AND `group`=?",
-        arrayOf(moduleName, userId.toString(), group))
+    return state.scopes[ProcessScope(processName, uid)] ?: emptyList()
   }
 
   fun getModuleByUid(uid: Int): Module? =
-      cachedModules.values.firstOrNull { it.appId == uid % PER_USER_RANGE }
-
-  fun isScopeRequestBlocked(pkg: String): Boolean =
-      (getModulePrefs("lspd", 0, "config")["scope_request_blocked"] as? Set<*>)?.contains(pkg) ==
-          true
-
-  fun getDenyListPackages(): List<String> =
-      emptyList() // Needs Magisk DB parsing logic if Api == "Zygisk"
-
-  fun getAutoInclude(pkg: String): Boolean = false // Query modules table for auto_include flag
-
-  fun setAutoInclude(pkg: String, enabled: Boolean): Boolean = false
+      state.modules.values.firstOrNull { it.appId == uid % PER_USER_RANGE }
 
   fun getModulesForSystemServer(): List<Module> {
     val modules = mutableListOf<Module>()
-
-    // system_server must have specific SELinux execmem capabilities to hook properly
     if (!android.os.SELinux.checkSELinuxAccess(
         "u:r:system_server:s0", "u:r:system_server:s0", "process", "execmem")) {
       Log.e(TAG, "Skipping system_server injection: sepolicy execmem denied")
       return modules
     }
+
+    val currentState = state
 
     dbHelper.readableDatabase
         .query(
@@ -500,15 +315,13 @@ object ConfigCache {
             val pkgName = cursor.getString(0)
             val apkPath = cursor.getString(1)
 
-            // Reuse memory cache if available
-            val cached = cachedModules[pkgName]
+            val cached = currentState.modules[pkgName]
             if (cached != null) {
               modules.add(cached)
               continue
             }
 
             val statPath = FileSystem.toGlobalNamespace("/data/user_de/0/$pkgName").absolutePath
-
             val module =
                 Module().apply {
                   packageName = pkgName
@@ -517,7 +330,6 @@ object ConfigCache {
                   service = InjectedModuleService(pkgName)
                 }
 
-            // Parse the APK locally to simulate ApplicationInfo without ActivityManager running
             runCatching {
                   @Suppress("DEPRECATION")
                   val pkg = PackageParser().parsePackage(File(apkPath), 0, false)
@@ -532,10 +344,10 @@ object ConfigCache {
                 }
                 .onFailure { Log.w(TAG, "Failed to parse $apkPath", it) }
 
-            FileSystem.loadModule(apkPath, isDexObfuscateEnabled())?.let {
+            FileSystem.loadModule(apkPath, PreferenceStore.isDexObfuscateEnabled())?.let {
               module.file = it
-              cachedModules.putIfAbsent(pkgName, module)
               modules.add(module)
+              // We intentionally don't mutate state.modules here. Cache update will catch it.
             }
           }
         }
@@ -544,17 +356,15 @@ object ConfigCache {
 
   fun getPrefsPath(packageName: String, uid: Int): String {
     ensureCacheReady()
-
-    // Strictly enforce that miscPath exists.
+    val currentState = state
     val basePath =
-        miscPath
-            ?: throw IllegalStateException("Fatal: miscPath was not initialized from the database!")
+        currentState.miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
 
     val userId = uid / PER_USER_RANGE
     val userSuffix = if (userId == 0) "" else userId.toString()
     val path = basePath.resolve("prefs$userSuffix").resolve(packageName)
 
-    val module = cachedModules[packageName]
+    val module = currentState.modules[packageName]
     if (module != null && module.appId == uid % PER_USER_RANGE) {
       runCatching {
             val perms =
@@ -565,57 +375,6 @@ object ConfigCache {
           .onFailure { Log.e(TAG, "Failed to prepare prefs path", it) }
     }
     return path.toString()
-  }
-
-  fun removeModuleScope(packageName: String, scopePackageName: String, userId: Int): Boolean {
-    if (packageName == "lspd" || (scopePackageName == "system" && userId != 0)) return false
-    val db = dbHelper.writableDatabase
-    val mid =
-        db.compileStatement("SELECT mid FROM modules WHERE module_pkg_name = ?")
-            .apply { bindString(1, packageName) }
-            .simpleQueryForLong()
-    db.delete(
-        "scope",
-        "mid = ? AND app_pkg_name = ? AND user_id = ?",
-        arrayOf(mid.toString(), scopePackageName, userId.toString()))
-    requestCacheUpdate()
-    return true
-  }
-
-  fun updateModuleApkPath(packageName: String, apkPath: String?, force: Boolean): Boolean {
-    if (apkPath == null || packageName == "lspd") return false
-    val values =
-        ContentValues().apply {
-          put("module_pkg_name", packageName)
-          put("apk_path", apkPath)
-        }
-    val db = dbHelper.writableDatabase
-    var count =
-        db.insertWithOnConflict(
-                "modules", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
-            .toInt()
-    if (count < 0) {
-      val cached = cachedModules[packageName]
-      if (force || cached == null || cached.apkPath != apkPath) {
-        count =
-            db.updateWithOnConflict(
-                "modules",
-                values,
-                "module_pkg_name=?",
-                arrayOf(packageName),
-                android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE)
-      } else count = 0
-    }
-    if (!force && count > 0) requestCacheUpdate()
-    return count > 0
-  }
-
-  fun removeModule(packageName: String): Boolean {
-    if (packageName == "lspd") return false
-    val res =
-        dbHelper.writableDatabase.delete("modules", "module_pkg_name = ?", arrayOf(packageName)) > 0
-    if (res) requestCacheUpdate()
-    return res
   }
 
   fun getModuleApkPath(info: ApplicationInfo): String? {
@@ -636,6 +395,53 @@ object ConfigCache {
 
   fun shouldSkipProcess(scope: ProcessScope): Boolean {
     ensureCacheReady()
-    return !cachedScopes.containsKey(scope) && !isManager(scope.uid)
+    return !state.scopes.containsKey(scope) && !isManager(scope.uid)
   }
+
+  fun getEnabledModules(): List<String> = state.modules.keys.toList()
+
+  fun getDenyListPackages(): List<String> = emptyList()
+
+  fun getModulePrefs(pkg: String, userId: Int, group: String) =
+      PreferenceStore.getModulePrefs(pkg, userId, group)
+
+  fun updateModulePref(pkg: String, userId: Int, group: String, key: String, value: Any?) =
+      PreferenceStore.updateModulePref(pkg, userId, group, key, value)
+
+  fun updateModulePrefs(pkg: String, userId: Int, group: String, diff: Map<String, Any?>) =
+      PreferenceStore.updateModulePrefs(pkg, userId, group, diff)
+
+  fun deleteModulePrefs(pkg: String, userId: Int, group: String) =
+      PreferenceStore.deleteModulePrefs(pkg, userId, group)
+
+  fun isDexObfuscateEnabled() = PreferenceStore.isDexObfuscateEnabled()
+
+  fun setDexObfuscate(enabled: Boolean) = PreferenceStore.setDexObfuscate(enabled)
+
+  fun isLogWatchdogEnabled() = PreferenceStore.isLogWatchdogEnabled()
+
+  fun setLogWatchdog(enabled: Boolean) = PreferenceStore.setLogWatchdog(enabled)
+
+  fun isScopeRequestBlocked(pkg: String) = PreferenceStore.isScopeRequestBlocked(pkg)
+
+  fun enableModule(pkg: String) = ModuleDatabase.enableModule(pkg)
+
+  fun disableModule(pkg: String) = ModuleDatabase.disableModule(pkg)
+
+  fun getModuleScope(pkg: String) = ModuleDatabase.getModuleScope(pkg)
+
+  fun setModuleScope(pkg: String, scope: MutableList<Application>) =
+      ModuleDatabase.setModuleScope(pkg, scope)
+
+  fun removeModuleScope(pkg: String, scopePkg: String, userId: Int) =
+      ModuleDatabase.removeModuleScope(pkg, scopePkg, userId)
+
+  fun updateModuleApkPath(pkg: String, apkPath: String?, force: Boolean) =
+      ModuleDatabase.updateModuleApkPath(pkg, apkPath, force)
+
+  fun removeModule(pkg: String) = ModuleDatabase.removeModule(pkg)
+
+  fun getAutoInclude(pkg: String) = ModuleDatabase.getAutoInclude(pkg)
+
+  fun setAutoInclude(pkg: String, enabled: Boolean) = ModuleDatabase.setAutoInclude(pkg, enabled)
 }
