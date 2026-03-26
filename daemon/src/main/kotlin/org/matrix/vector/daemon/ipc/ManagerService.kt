@@ -341,7 +341,7 @@ object ManagerService : ILSPManagerService.Stub() {
         .getOrDefault(-110)
   }
 
-  override fun systemServerRequested() = SystemServerService.systemServerRequested()
+  override fun systemServerRequested() = SystemServerService.systemServerRequested
 
   override fun startActivityAsUserWithFeature(intent: Intent, userId: Int): Int {
     if (!intent.getBooleanExtra("lsp_no_switch_to_user", false)) {

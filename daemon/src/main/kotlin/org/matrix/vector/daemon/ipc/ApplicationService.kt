@@ -15,9 +15,13 @@ import org.matrix.vector.daemon.utils.InstallerVerifier
 import org.matrix.vector.daemon.utils.ObfuscationManager
 
 private const val TAG = "VectorAppService"
-private const val DEX_TRANSACTION_CODE =
+
+// Hardcoded transaction code from BridgeService
+const val BRIDGE_TRANSACTION_CODE =
+    ('_'.code shl 24) or ('V'.code shl 16) or ('E'.code shl 8) or 'C'.code
+const val DEX_TRANSACTION_CODE =
     ('_'.code shl 24) or ('D'.code shl 16) or ('E'.code shl 8) or 'X'.code
-private const val OBFUSCATION_MAP_TRANSACTION_CODE =
+const val OBFUSCATION_MAP_TRANSACTION_CODE =
     ('_'.code shl 24) or ('O'.code shl 16) or ('B'.code shl 8) or 'F'.code
 
 object ApplicationService : ILSPApplicationService.Stub() {
