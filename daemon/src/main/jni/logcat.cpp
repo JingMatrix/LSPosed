@@ -5,6 +5,7 @@
 #include <sys/system_properties.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <functional>
@@ -217,23 +218,32 @@ void Logcat::ProcessBuffer(struct log_msg *buf) {
     if (android_log_processLogBuffer(&buf->entry, &entry) < 0) return;
 
     entry.tagLen--;
-
     std::string_view tag(entry.tag, entry.tagLen);
     bool shortcut = false;
-    if (tag == "LSPosed-Bridge"sv || tag == "XSharedPreferences"sv || tag == "LSPosedContext")
+
+    if (tag == "VectorLegacyBridge"sv || tag == "XSharedPreferences"sv || tag == "VectorContext"sv)
         [[unlikely]] {
         modules_print_count_ += PrintLogLine(entry, modules_file_.get());
         shortcut = true;
     }
+
+    constexpr std::array<std::string_view, 8> exact_tags = {
+        "APatchD"sv, "Dobby"sv,  "KernelSU"sv, "LSPlant"sv,
+        "LSPlt"sv,   "Magisk"sv, "SELinux"sv,  "TEESimulator"sv};
+    constexpr std::array<std::string_view, 4> prefix_tags = {"dex2oat"sv, "Vector"sv, "LSPosed"sv,
+                                                             "zygisk"sv};
+
+    bool match_exact =
+        std::any_of(exact_tags.begin(), exact_tags.end(), [&](auto t) { return tag == t; });
+    bool match_prefix = std::any_of(prefix_tags.begin(), prefix_tags.end(),
+                                    [&](auto t) { return tag.starts_with(t); });
+
     if (verbose_ && (shortcut || buf->id() == log_id::LOG_ID_CRASH || entry.pid == my_pid_ ||
-                     tag == "APatchD"sv || tag == "Dobby"sv || tag.starts_with("dex2oat"sv) ||
-                     tag == "KernelSU"sv || tag == "LSPlant"sv || tag == "LSPlt"sv ||
-                     tag.starts_with("LSPosed"sv) || tag == "Magisk"sv || tag == "SELinux"sv ||
-                     tag == "TEESimulator"sv || tag.starts_with("Vector"sv) ||
-                     tag.starts_with("zygisk"sv))) [[unlikely]] {
+                     match_exact || match_prefix)) [[unlikely]] {
         verbose_print_count_ += PrintLogLine(entry, verbose_file_.get());
     }
-    if (entry.pid == my_pid_ && tag == "LSPosedLogcat"sv) [[unlikely]] {
+
+    if (entry.pid == my_pid_ && tag == "VectorLogcat"sv) [[unlikely]] {
         std::string_view msg(entry.message, entry.messageLen);
         if (msg == "!!start_verbose!!"sv) {
             verbose_ = true;
@@ -354,14 +364,12 @@ void Logcat::Run() {
             if (modules_print_count_ >= kMaxLogSize) [[unlikely]]
                 RefreshFd(false);
         }
-
         OnCrash(errno);
     }
 }
 
 extern "C" JNIEXPORT void JNICALL
-// NOLINTNEXTLINE
-Java_org_lsposed_lspd_service_LogcatService_runLogcat(JNIEnv *env, jobject thiz) {
+Java_org_matrix_vector_daemon_env_LogcatMonitor_runLogcat(JNIEnv *env, jobject thiz) {
     jclass clazz = env->GetObjectClass(thiz);
     jmethodID method = env->GetMethodID(clazz, "refreshFd", "(Z)I");
     Logcat logcat(env, thiz, method);

@@ -24,6 +24,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.PosixFilePermissions
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -48,6 +51,7 @@ object FileSystem {
 
   @Volatile private var preloadDex: SharedMemory? = null
 
+  private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
   private val lockPath: Path = basePath.resolve("lock")
   private var fileLock: FileLock? = null
   private var lockChannel: FileChannel? = null
@@ -370,5 +374,19 @@ object FileSystem {
         }
         .onFailure { Log.e(TAG, "Failed to export logs", it) }
         .also { runCatching { zipFd.close() } }
+  }
+
+  private fun getNewLogFileName(prefix: String): String {
+    return "${prefix}_${formatter.format(Instant.now())}.log"
+  }
+
+  fun getNewVerboseLogPath(): File {
+    createLogDirPath()
+    return logDirPath.resolve(getNewLogFileName("verbose")).toFile()
+  }
+
+  fun getNewModulesLogPath(): File {
+    createLogDirPath()
+    return logDirPath.resolve(getNewLogFileName("modules")).toFile()
   }
 }

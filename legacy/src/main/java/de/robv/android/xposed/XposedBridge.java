@@ -42,7 +42,7 @@ public final class XposedBridge {
     /**
      * @hide
      */
-    public static final String TAG = "LSPosed-Bridge";
+    public static final String TAG = "VectorLegacyBridge";
 
     /**
      * @deprecated Use {@link #getXposedVersion()} instead.
