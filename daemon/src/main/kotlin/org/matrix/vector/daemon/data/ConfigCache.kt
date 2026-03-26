@@ -281,6 +281,14 @@ object ConfigCache {
     state = oldState.copy(modules = newModules, scopes = newScopes)
 
     Log.d(TAG, "Cache Update Complete. Map Swap successful.")
+    // Log.d(TAG, "cached modules:")
+    // newModules.forEach { (pkg, mod) -> Log.d(TAG, "$pkg ${mod.apkPath}") }
+
+    // Log.d(TAG, "cached scopes:")
+    // newScopes.forEach { (ps, modules) ->
+    //   Log.d(TAG, "${ps.processName}/${ps.uid}")
+    //   modules.forEach { mod -> Log.d(TAG, "\t${mod.packageName}") }
+    // }
   }
 
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
@@ -333,16 +341,22 @@ object ConfigCache {
             runCatching {
                   @Suppress("DEPRECATION")
                   val pkg = PackageParser().parsePackage(File(apkPath), 0, false)
-                  module.applicationInfo =
-                      pkg.applicationInfo.apply {
-                        sourceDir = apkPath
-                        dataDir = statPath
-                        deviceProtectedDataDir = statPath
-                        HiddenApiBridge.ApplicationInfo_credentialProtectedDataDir(this, statPath)
-                        processName = pkgName
-                      }
+                  module.applicationInfo = pkg.applicationInfo
                 }
-                .onFailure { Log.w(TAG, "Failed to parse $apkPath", it) }
+                .onFailure {
+                  Log.w(TAG, "PackageParser failed for $apkPath, using fallback ApplicationInfo")
+                  module.applicationInfo = ApplicationInfo().apply { packageName = pkgName }
+                }
+
+            // Always apply the critical paths manually, even on fallback
+            module.applicationInfo?.apply {
+              sourceDir = apkPath
+              dataDir = statPath
+              deviceProtectedDataDir = statPath
+              HiddenApiBridge.ApplicationInfo_credentialProtectedDataDir(this, statPath)
+              processName = pkgName
+              uid = module.appId
+            }
 
             FileSystem.loadModule(apkPath, PreferenceStore.isDexObfuscateEnabled())?.let {
               module.file = it

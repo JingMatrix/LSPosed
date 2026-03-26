@@ -268,7 +268,7 @@ object ManagerService : ILSPManagerService.Stub() {
 
   override fun setVerboseLog(enabled: Boolean) {
     _isVerboseLog = enabled
-    if (enabled) LogcatMonitor.startVerbose() else LogcatMonitor.stopVerbose()
+    if (isVerboseLog()) LogcatMonitor.startVerbose() else LogcatMonitor.stopVerbose()
     ConfigCache.updateModulePref("lspd", 0, "config", "enable_verbose_log", enabled)
   }
 
