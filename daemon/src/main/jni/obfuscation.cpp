@@ -145,7 +145,8 @@ static jobject stringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, s
     return hashMapGlobal;
 }
 
-extern "C" JNIEXPORT jobject JNICALL Java_org_lsposed_lspd_service_ObfuscationManager_getSignatures(
+extern "C" JNIEXPORT jobject JNICALL
+Java_org_matrix_vector_daemon_utils_ObfuscationManager_getSignatures(
     JNIEnv *env, [[maybe_unused]] jclass clazz) {
     ensureInitialized(env);
 
@@ -191,8 +192,10 @@ static int obfuscateDexBuffer(const void *dex_data, size_t size) {
     return allocator.GetFd();
 }
 
-extern "C" JNIEXPORT jobject JNICALL Java_org_lsposed_lspd_service_ObfuscationManager_obfuscateDex(
-    JNIEnv *env, [[maybe_unused]] jclass clazz, jobject memory) {
+extern "C" JNIEXPORT jobject JNICALL
+Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
+                                                                    [[maybe_unused]] jclass clazz,
+                                                                    jobject memory) {
     ensureInitialized(env);
 
     int fd = ASharedMemory_dupFromJava(env, memory);
