@@ -156,8 +156,8 @@ public class LSPNotificationManager {
         var context = new FakeContext();
         int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         var notification = new Notification.Builder(context, STATUS_CHANNEL_ID)
-                .setContentTitle(context.getString(R.string.lsposed_running_notification_title))
-                .setContentText(context.getString(R.string.lsposed_running_notification_content))
+                .setContentTitle(context.getString(R.string.vector_running_notification_title))
+                .setContentText(context.getString(R.string.vector_running_notification_content))
                 .setSmallIcon(getNotificationIcon())
                 .setContentIntent(PendingIntent.getBroadcast(context, 1, intent, flags))
                 .setVisibility(Notification.VISIBILITY_SECRET)
@@ -294,7 +294,7 @@ public class LSPNotificationManager {
                                 .build(),
                         new Notification.Action.Builder(
                                 Icon.createWithResource(context, R.drawable.ic_baseline_block_24),
-                                context.getString(R.string.nerver_ask_again),
+                                context.getString(R.string.never_ask_again),
                                 getModuleScopeIntent(modulePackageName, moduleUserId, scopePackageName, "block", callback))
                                 .build()
                 ).build();
