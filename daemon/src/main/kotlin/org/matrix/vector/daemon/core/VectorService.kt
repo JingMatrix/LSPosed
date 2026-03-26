@@ -1,6 +1,7 @@
 package org.matrix.vector.daemon.core
 
 import android.app.IApplicationThread
+import android.content.Context
 import android.content.IIntentReceiver
 import android.content.Intent
 import android.content.IntentFilter
@@ -132,7 +133,9 @@ object VectorService : ILSPosedService.Stub() {
           priority = IntentFilter.SYSTEM_HIGH_PRIORITY
         }
 
-    val openManagerFilter =
+    val openManagerNoDataFilter = IntentFilter(NotificationManager.openManagerAction)
+
+    val openManagerDataFilter =
         IntentFilter(NotificationManager.openManagerAction).apply {
           addDataScheme("module")
           addDataScheme("android_secret_code")
@@ -140,22 +143,36 @@ object VectorService : ILSPosedService.Stub() {
 
     val scopeFilter =
         IntentFilter(NotificationManager.moduleScopeAction).apply { addDataScheme("module") }
-
-    // For the secret dialer code (*#*#5776733#*#*)
     val secretCodeFilter =
         IntentFilter("android.provider.Telephony.SECRET_CODE").apply {
           addDataScheme("android_secret_code")
           addDataAuthority("5776733", null)
         }
 
-    // Use a receiver instance for each registration to prevent AMS conflicts
-    activityManager?.registerReceiverCompat(createReceiver(), packageFilter, null, -1, 0)
-    activityManager?.registerReceiverCompat(createReceiver(), uidFilter, null, -1, 0)
-    activityManager?.registerReceiverCompat(createReceiver(), bootFilter, null, 0, 0)
-    activityManager?.registerReceiverCompat(createReceiver(), openManagerFilter, null, 0, 0)
-    activityManager?.registerReceiverCompat(createReceiver(), scopeFilter, null, 0, 0)
+    // Define strict Android 14+ flags and the system-only BRICK permission
+    val notExported = Context.RECEIVER_NOT_EXPORTED
+    val exported = Context.RECEIVER_EXPORTED
+    val brickPerm = "android.permission.BRICK"
+
     activityManager?.registerReceiverCompat(
-        createReceiver(), secretCodeFilter, "android.permission.CONTROL_INCALL_EXPERIENCE", 0, 0)
+        createReceiver(), packageFilter, brickPerm, -1, notExported)
+    activityManager?.registerReceiverCompat(createReceiver(), uidFilter, brickPerm, -1, notExported)
+    activityManager?.registerReceiverCompat(createReceiver(), bootFilter, brickPerm, 0, notExported)
+
+    activityManager?.registerReceiverCompat(
+        createReceiver(), openManagerNoDataFilter, brickPerm, 0, notExported)
+    activityManager?.registerReceiverCompat(
+        createReceiver(), openManagerDataFilter, brickPerm, 0, notExported)
+    activityManager?.registerReceiverCompat(
+        createReceiver(), scopeFilter, brickPerm, 0, notExported)
+
+    // Only the secret dialer code needs to be exported so the phone app can trigger it
+    activityManager?.registerReceiverCompat(
+        createReceiver(),
+        secretCodeFilter,
+        "android.permission.CONTROL_INCALL_EXPERIENCE",
+        0,
+        exported)
 
     // UID Observer
     val uidObserver =
@@ -236,6 +253,13 @@ object VectorService : ILSPosedService.Stub() {
       }
     }
 
+    val removed =
+        action == Intent.ACTION_PACKAGE_FULLY_REMOVED || action == Intent.ACTION_UID_REMOVED
+    if (moduleName == BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME && userId == 0) {
+      Log.d(TAG, "Manager updated")
+      ConfigCache.updateManager(removed)
+    }
+
     // Broadcast back to Manager
     if (moduleName != null) {
       val notifyIntent =
@@ -253,6 +277,7 @@ object VectorService : ILSPosedService.Stub() {
     }
   }
 
+  @Suppress("UNCHECKED_CAST")
   private fun dispatchModuleScope(intent: Intent) {
     val data = intent.data ?: return
     val extras = intent.extras ?: return

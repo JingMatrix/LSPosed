@@ -201,7 +201,10 @@ object Dex2OatServer {
   }
 
   private fun runSocketLoop() {
+    Log.i(TAG, "Dex2oat wrapper daemon start")
     val sockPath = getSockPath()
+    Log.d(TAG, "wrapper path: $sockPath")
+
     val xposedFile = "u:object_r:xposed_file:s0"
     val dex2oatExec = "u:object_r:dex2oat_exec:s0"
 

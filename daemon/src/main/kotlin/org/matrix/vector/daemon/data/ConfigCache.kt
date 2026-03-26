@@ -7,6 +7,11 @@ import android.system.Os
 import android.util.Log
 import hidden.HiddenApiBridge
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermissions
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,12 +22,8 @@ import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.ipc.InjectedModuleService
-import org.matrix.vector.daemon.system.MATCH_ALL_FLAGS
-import org.matrix.vector.daemon.system.PER_USER_RANGE
-import org.matrix.vector.daemon.system.fetchProcesses
-import org.matrix.vector.daemon.system.getPackageInfoWithComponents
-import org.matrix.vector.daemon.system.packageManager
-import org.matrix.vector.daemon.system.userManager
+import org.matrix.vector.daemon.ipc.ManagerService
+import org.matrix.vector.daemon.system.*
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorConfigCache"
@@ -32,6 +33,10 @@ data class ProcessScope(val processName: String, val uid: Int)
 object ConfigCache {
   @Volatile var api: String = "(???)"
   @Volatile var enableStatusNotification = true
+
+  @Volatile private var managerUid = -1
+  @Volatile private var isCacheReady = false
+  @Volatile private var miscPath: Path? = null
 
   val dbHelper = Database()
 
@@ -43,16 +48,81 @@ object ConfigCache {
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
   // A conflated channel automatically drops older pending events if a new one arrives.
-  // This perfectly replaces the manual `lastModuleCacheTime` timestamp logic!
   private val cacheUpdateChannel = Channel<Unit>(Channel.CONFLATED)
 
   init {
-    // Start the background consumer
     scope.launch {
       for (request in cacheUpdateChannel) {
         performCacheUpdate()
       }
     }
+
+    initializeConfig()
+  }
+
+  private fun initializeConfig() {
+    val config = getModulePrefs("lspd", 0, "config")
+
+    ManagerService.isVerboseLog = config["enable_verbose_log"] as? Boolean ?: true
+    enableStatusNotification = config["enable_status_notification"] as? Boolean ?: true
+
+    // Clean up legacy setting
+    if (config["enable_auto_add_shortcut"] != null) {
+      updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
+    }
+
+    // Initialize miscPath
+    val pathStr = config["misc_path"] as? String
+    if (pathStr == null) {
+      val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
+      updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
+      miscPath = newPath
+    } else {
+      miscPath = Paths.get(pathStr)
+    }
+
+    runCatching {
+          val perms =
+              PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
+          java.nio.file.Files.createDirectories(miscPath!!, perms)
+          FileSystem.setSelinuxContextRecursive(miscPath!!, "u:object_r:xposed_data:s0")
+        }
+        .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
+  }
+
+  private fun ensureCacheReady() {
+    // Lazy Execution (Wait for PackageManager)
+    if (!isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
+      synchronized(this) {
+        if (!isCacheReady) {
+          Log.i(TAG, "System services are ready. Mapping modules and scopes.")
+          updateManager(false)
+          forceCacheUpdateSync()
+          isCacheReady = true
+        }
+      }
+    }
+  }
+
+  fun updateManager(uninstalled: Boolean) {
+    if (uninstalled) {
+      managerUid = -1
+      return
+    }
+    if (packageManager?.asBinder()?.isBinderAlive == true) {
+      runCatching {
+            val info =
+                packageManager?.getPackageInfoCompat(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0)
+            managerUid = info?.applicationInfo?.uid ?: -1
+            if (managerUid == -1) Log.i(TAG, "Manager is not installed")
+          }
+          .onFailure { managerUid = -1 }
+    }
+  }
+
+  fun isManager(uid: Int): Boolean {
+    ensureCacheReady()
+    return uid == managerUid || uid == BuildConfig.MANAGER_INJECTED_UID
   }
 
   /**
@@ -74,8 +144,11 @@ object ConfigCache {
     Log.d(TAG, "Executing Cache Update...")
     val db = dbHelper.readableDatabase
 
-    // 1. Fetch enabled modules
+    // Fetch enabled modules
     val newModules = mutableMapOf<String, Module>()
+    val obsoleteModules = mutableSetOf<String>()
+    val obsoletePaths = mutableMapOf<String, String>()
+
     db.query(
             "modules",
             arrayOf("module_pkg_name", "apk_path"),
@@ -87,27 +160,84 @@ object ConfigCache {
         .use { cursor ->
           while (cursor.moveToNext()) {
             val pkgName = cursor.getString(0)
-            val apkPath = cursor.getString(1)
+            var apkPath = cursor.getString(1)
             if (pkgName == "lspd") continue
 
-            val isObfuscateEnabled = true
-            val preLoadedApk = FileSystem.loadModule(apkPath, isObfuscateEnabled)
+            val oldModule = cachedModules[pkgName]
+
+            // Find the PackageInfo across all users to get UID and ApplicationInfo
+            var pkgInfo: android.content.pm.PackageInfo? = null
+            val users = userManager?.getRealUsers() ?: emptyList()
+            for (user in users) {
+              pkgInfo = packageManager?.getPackageInfoCompat(pkgName, MATCH_ALL_FLAGS, user.id)
+              if (pkgInfo?.applicationInfo != null) break
+            }
+
+            if (pkgInfo?.applicationInfo == null) {
+              Log.w(TAG, "Failed to find package info of $pkgName")
+              obsoleteModules.add(pkgName)
+              continue
+            }
+
+            val appInfo = pkgInfo.applicationInfo
+
+            // Optimization: Check if the APK has changed, skip parsing if identical
+            if (oldModule != null &&
+                appInfo?.sourceDir != null &&
+                apkPath != null &&
+                oldModule.apkPath != null &&
+                FileSystem.toGlobalNamespace(apkPath).exists() &&
+                apkPath == oldModule.apkPath &&
+                File(appInfo.sourceDir).parent == File(apkPath).parent) {
+
+              if (oldModule.appId != -1) {
+                Log.d(TAG, "$pkgName did not change, skip caching it")
+              } else {
+                // System server edge case: update app info
+                oldModule.applicationInfo = appInfo
+              }
+              newModules[pkgName] = oldModule
+              continue
+            }
+
+            // Update APK path if it shifted during an update
+            val realApkPath = getModuleApkPath(appInfo!!)
+            if (realApkPath == null) {
+              Log.w(TAG, "Failed to find path of $pkgName")
+              obsoleteModules.add(pkgName)
+              continue
+            } else {
+              apkPath = realApkPath
+              obsoletePaths[pkgName] = realApkPath
+            }
+
+            // Load the actual DEX and construct the Module
+            val preLoadedApk = FileSystem.loadModule(apkPath, isDexObfuscateEnabled())
 
             if (preLoadedApk != null) {
               val module = Module()
               module.packageName = pkgName
               module.apkPath = apkPath
+              module.appId = appInfo.uid
+              module.applicationInfo = appInfo
+              module.service = oldModule?.service ?: InjectedModuleService(pkgName)
               module.file = preLoadedApk
-              // Note: module.appId, module.applicationInfo, and module.service
-              // will be populated in Phase 4 when we implement InjectedModuleService
+
               newModules[pkgName] = module
             } else {
               Log.w(TAG, "Failed to parse DEX/ZIP for $pkgName, skipping.")
+              obsoleteModules.add(pkgName)
             }
           }
         }
 
-    // 2. Fetch scopes and map heavy PM logic
+    // Clean up obsolete data to keep the database perfectly synced with Android
+    if (packageManager?.asBinder()?.isBinderAlive == true) {
+      obsoleteModules.forEach { removeModule(it) }
+      obsoletePaths.forEach { (pkg, path) -> updateModuleApkPath(pkg, path, true) }
+    }
+
+    // Fetch scopes and map heavy PM logic
     val newScopes = ConcurrentHashMap<ProcessScope, MutableList<Module>>()
     db.query(
             "scope INNER JOIN modules ON scope.mid = modules.mid",
@@ -129,7 +259,7 @@ object ConfigCache {
             // Ensure the module is actually valid and loaded
             val module = newModules[modPkg] ?: continue
 
-            // Heavy logic: Fetch associated processes
+            // Fetch associated processes
             val pkgInfo =
                 packageManager?.getPackageInfoWithComponents(appPkg, MATCH_ALL_FLAGS, userId)
             if (pkgInfo?.applicationInfo == null) continue
@@ -158,17 +288,24 @@ object ConfigCache {
           }
         }
 
-    // 3. Atomically swap the memory cache
+    // Atomically swap the memory cache
     cachedModules.clear()
     cachedModules.putAll(newModules)
 
     cachedScopes.clear()
     cachedScopes.putAll(newScopes)
 
-    Log.d(TAG, "Cache Update Complete. Modules: ${cachedModules.size}")
+    Log.d(TAG, "cached modules")
+    cachedModules.forEach { (pkg, mod) -> Log.d(TAG, "$pkg ${mod.apkPath}") }
+    Log.d(TAG, "cached scope")
+    cachedScopes.forEach { (ps, modules) ->
+      Log.d(TAG, "${ps.processName}/${ps.uid}")
+      modules.forEach { mod -> Log.d(TAG, "\t${mod.packageName}") }
+    }
   }
 
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
+    ensureCacheReady()
     return cachedScopes[ProcessScope(processName, uid)] ?: emptyList()
   }
 
@@ -325,9 +462,6 @@ object ConfigCache {
         arrayOf(moduleName, userId.toString(), group))
   }
 
-  // --- Helpers ---
-  fun isManager(uid: Int): Boolean = uid == BuildConfig.MANAGER_INJECTED_UID
-
   fun getModuleByUid(uid: Int): Module? =
       cachedModules.values.firstOrNull { it.appId == uid % PER_USER_RANGE }
 
@@ -409,11 +543,27 @@ object ConfigCache {
   }
 
   fun getPrefsPath(packageName: String, uid: Int): String {
+    ensureCacheReady()
+
+    // Strictly enforce that miscPath exists.
+    val basePath =
+        miscPath
+            ?: throw IllegalStateException("Fatal: miscPath was not initialized from the database!")
+
     val userId = uid / PER_USER_RANGE
-    val path =
-        FileSystem.basePath.resolve(
-            "misc/prefs${if (userId == 0) "" else userId.toString()}/$packageName")
-    // Apply Os.chown to path here
+    val userSuffix = if (userId == 0) "" else userId.toString()
+    val path = basePath.resolve("prefs$userSuffix").resolve(packageName)
+
+    val module = cachedModules[packageName]
+    if (module != null && module.appId == uid % PER_USER_RANGE) {
+      runCatching {
+            val perms =
+                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
+            Files.createDirectories(path, perms)
+            Files.walk(path).forEach { p -> Os.chown(p.toString(), uid, uid) }
+          }
+          .onFailure { Log.e(TAG, "Failed to prepare prefs path", it) }
+    }
     return path.toString()
   }
 
@@ -485,6 +635,7 @@ object ConfigCache {
   }
 
   fun shouldSkipProcess(scope: ProcessScope): Boolean {
+    ensureCacheReady()
     return !cachedScopes.containsKey(scope) && !isManager(scope.uid)
   }
 }

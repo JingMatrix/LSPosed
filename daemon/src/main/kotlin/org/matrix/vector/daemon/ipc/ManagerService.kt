@@ -204,7 +204,7 @@ object ManagerService : ILSPManagerService.Stub() {
 
   override fun getXposedVersionName() = BuildConfig.VERSION_NAME
 
-  override fun getApi() = "Zygisk" // To be removed
+  override fun getApi() = ConfigCache.api
 
   override fun getInstalledPackagesFromAllUsers(
       flags: Int,
