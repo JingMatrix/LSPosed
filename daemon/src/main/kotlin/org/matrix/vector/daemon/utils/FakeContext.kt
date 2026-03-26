@@ -8,6 +8,7 @@ import android.database.DatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabase.CursorFactory
 import android.os.Build
+import hidden.HiddenApiBridge
 import java.io.File
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.system.packageManager as sysPackageManager
@@ -27,6 +28,14 @@ class FakeContext(private val fakePackageName: String = "android") : ContextWrap
   override fun getPackageName(): String = fakePackageName
 
   override fun getOpPackageName(): String = "android"
+
+  fun getUserId(): Int {
+    return 0
+  }
+
+  fun getUser(): android.os.UserHandle {
+    return HiddenApiBridge.UserHandle(0)
+  }
 
   override fun getApplicationInfo(): ApplicationInfo {
     if (systemAppInfo == null) {

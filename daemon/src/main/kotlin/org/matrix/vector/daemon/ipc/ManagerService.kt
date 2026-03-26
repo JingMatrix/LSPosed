@@ -10,6 +10,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.content.pm.VersionedPackage
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -32,7 +33,6 @@ import org.matrix.vector.daemon.env.Dex2OatServer
 import org.matrix.vector.daemon.env.LogcatMonitor
 import org.matrix.vector.daemon.system.*
 import org.matrix.vector.daemon.utils.getRealUsers
-import org.matrix.vector.daemon.utils.performDexOptMode
 import rikka.parcelablelist.ParcelableListSlice
 
 private const val TAG = "VectorManagerService"
@@ -43,6 +43,8 @@ object ManagerService : ILSPManagerService.Stub() {
   @Volatile private var managerPid = -1
   @Volatile private var pendingManager = false
   @Volatile private var isEnabled = true
+
+  private var managerIntent: Intent? = null
 
   var guard: ManagerGuard? = null
     internal set
@@ -121,6 +123,69 @@ object ManagerService : ILSPManagerService.Stub() {
     pendingManager = false
     managerPid = pid
     return true
+  }
+
+  private fun getManagerIntent(): Intent? {
+    if (managerIntent != null) return managerIntent
+    runCatching {
+          var intent =
+              Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_INFO)
+                setPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME)
+              }
+          var ris = packageManager?.queryIntentActivitiesCompat(intent, intent.type, 0, 0)
+
+          if (ris.isNullOrEmpty()) {
+            intent.removeCategory(Intent.CATEGORY_INFO)
+            intent.addCategory(Intent.CATEGORY_LAUNCHER)
+            ris = packageManager?.queryIntentActivitiesCompat(intent, intent.type, 0, 0)
+          }
+
+          if (ris.isNullOrEmpty()) {
+            val pkgInfo =
+                packageManager?.getPackageInfoCompat(
+                    BuildConfig.MANAGER_INJECTED_PKG_NAME, PackageManager.GET_ACTIVITIES, 0)
+            val activity = pkgInfo?.activities?.firstOrNull { it.processName == it.packageName }
+            if (activity != null) {
+              intent =
+                  Intent(Intent.ACTION_MAIN).apply {
+                    component = ComponentName(activity.packageName, activity.name)
+                  }
+            } else return null
+          } else {
+            val activity = ris.first().activityInfo
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            intent.component = ComponentName(activity.packageName, activity.name)
+          }
+
+          intent.categories?.clear()
+          intent.addCategory("org.lsposed.manager.LAUNCH_MANAGER")
+          intent.setPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME)
+          managerIntent = Intent(intent)
+        }
+        .onFailure { Log.e(TAG, "Failed to build manager intent", it) }
+    return managerIntent
+  }
+
+  fun openManager(withData: Uri?) {
+    val intent = getManagerIntent() ?: return
+    val launchIntent = Intent(intent).apply { data = withData }
+    runCatching {
+          activityManager?.startActivityAsUserWithFeature(
+              SystemContext.appThread,
+              "android",
+              null,
+              launchIntent,
+              launchIntent.type,
+              null,
+              null,
+              0,
+              0,
+              null,
+              null,
+              0)
+        }
+        .onFailure { Log.e(TAG, "Failed to open manager", it) }
   }
 
   fun postStartManager(pid: Int, uid: Int): Boolean =

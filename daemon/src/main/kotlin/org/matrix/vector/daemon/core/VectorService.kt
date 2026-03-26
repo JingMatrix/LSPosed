@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import hidden.HiddenApiBridge
+import io.github.libxposed.service.IXposedScopeCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,7 +24,6 @@ import org.matrix.vector.daemon.ipc.ApplicationService
 import org.matrix.vector.daemon.ipc.ManagerService
 import org.matrix.vector.daemon.ipc.ModuleService
 import org.matrix.vector.daemon.system.*
-import org.matrix.vector.daemon.system.NotificationManager
 
 private const val TAG = "VectorService"
 
@@ -92,10 +92,11 @@ object VectorService : ILSPosedService.Stub() {
             sendingUser: Int
         ) {
           ioScope.launch {
-            if (intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
-              dispatchBootCompleted()
-            } else {
-              dispatchPackageChanged(intent)
+            when (intent.action) {
+              Intent.ACTION_LOCKED_BOOT_COMPLETED -> dispatchBootCompleted()
+              NotificationManager.openManagerAction -> ManagerService.openManager(intent.data)
+              NotificationManager.moduleScopeAction -> dispatchModuleScope(intent)
+              else -> dispatchPackageChanged(intent)
             }
           }
 
@@ -123,16 +124,38 @@ object VectorService : ILSPosedService.Stub() {
           addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
           addDataScheme("package")
         }
+
     val uidFilter = IntentFilter(Intent.ACTION_UID_REMOVED)
+
     val bootFilter =
         IntentFilter(Intent.ACTION_LOCKED_BOOT_COMPLETED).apply {
           priority = IntentFilter.SYSTEM_HIGH_PRIORITY
+        }
+
+    val openManagerFilter =
+        IntentFilter(NotificationManager.openManagerAction).apply {
+          addDataScheme("module")
+          addDataScheme("android_secret_code")
+        }
+
+    val scopeFilter =
+        IntentFilter(NotificationManager.moduleScopeAction).apply { addDataScheme("module") }
+
+    // For the secret dialer code (*#*#5776733#*#*)
+    val secretCodeFilter =
+        IntentFilter("android.provider.Telephony.SECRET_CODE").apply {
+          addDataScheme("android_secret_code")
+          addDataAuthority("5776733", null)
         }
 
     // Use a receiver instance for each registration to prevent AMS conflicts
     activityManager?.registerReceiverCompat(createReceiver(), packageFilter, null, -1, 0)
     activityManager?.registerReceiverCompat(createReceiver(), uidFilter, null, -1, 0)
     activityManager?.registerReceiverCompat(createReceiver(), bootFilter, null, 0, 0)
+    activityManager?.registerReceiverCompat(createReceiver(), openManagerFilter, null, 0, 0)
+    activityManager?.registerReceiverCompat(createReceiver(), scopeFilter, null, 0, 0)
+    activityManager?.registerReceiverCompat(
+        createReceiver(), secretCodeFilter, "android.permission.CONTROL_INCALL_EXPERIENCE", 0, 0)
 
     // UID Observer
     val uidObserver =
@@ -228,5 +251,58 @@ object VectorService : ILSPosedService.Stub() {
           }
       activityManager?.broadcastIntentCompat(notifyIntent)
     }
+  }
+
+  private fun dispatchModuleScope(intent: Intent) {
+    val data = intent.data ?: return
+    val extras = intent.extras ?: return
+    val callbackBinder = extras.getBinder("callback") ?: return
+    if (!callbackBinder.isBinderAlive) return
+
+    val authority = data.encodedAuthority ?: return
+    val parts = authority.split(":", limit = 2)
+    if (parts.size != 2) return
+    val packageName = parts[0]
+    val userId = parts[1].toIntOrNull() ?: return
+
+    val scopePackageName = data.path?.substring(1) ?: return // remove leading '/'
+    val action = data.getQueryParameter("action") ?: return
+
+    val iCallback = IXposedScopeCallback.Stub.asInterface(callbackBinder)
+    runCatching {
+          val appInfo = packageManager?.getPackageInfoCompat(scopePackageName, 0, userId)
+          if (appInfo == null) {
+            iCallback.onScopeRequestFailed("Package not found")
+            return
+          }
+          when (action) {
+            "approve" -> {
+              val scopes = ConfigCache.getModuleScope(packageName) ?: mutableListOf()
+              if (scopes.none { it.packageName == scopePackageName && it.userId == userId }) {
+                scopes.add(
+                    org.lsposed.lspd.models.Application().apply {
+                      this.packageName = scopePackageName
+                      this.userId = userId
+                    })
+                ConfigCache.setModuleScope(packageName, scopes)
+              }
+              iCallback.onScopeRequestApproved(listOf(scopePackageName))
+            }
+            "deny" -> iCallback.onScopeRequestFailed("Request denied by user")
+            "delete" -> iCallback.onScopeRequestFailed("Request timeout")
+            "block" -> {
+              val blocked =
+                  ConfigCache.getModulePrefs("lspd", 0, "config")["scope_request_blocked"]
+                      as? Set<String> ?: emptySet()
+              ConfigCache.updateModulePref(
+                  "lspd", 0, "config", "scope_request_blocked", blocked + packageName)
+              iCallback.onScopeRequestFailed("Request blocked by configuration")
+            }
+          }
+        }
+        .onFailure { runCatching { iCallback.onScopeRequestFailed(it.message) } }
+
+    NotificationManager.cancelNotification(
+        NotificationManager.SCOPE_CHANNEL_ID, packageName, userId)
   }
 }
