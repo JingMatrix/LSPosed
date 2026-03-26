@@ -153,4 +153,35 @@ object LogcatMonitor {
     if (modulesFd == -1) refresh(false)
     if (verboseFd == -1) refresh(true)
   }
+
+  @JvmStatic
+  @Suppress("unused") // Called via JNI
+  fun refreshFd(isVerboseLog: Boolean): Int {
+    return runCatching {
+          val logFile =
+              if (isVerboseLog) {
+                checkFd(verboseFd)
+                val f = FileSystem.getNewVerboseLogPath()
+                verboseLogs.add(f)
+                f
+              } else {
+                checkFd(modulesFd)
+                val f = FileSystem.getNewModulesLogPath()
+                moduleLogs.add(f)
+                f
+              }
+
+          Log.i(TAG, "New log file: $logFile")
+          FileSystem.chattr0(logFile.toPath().parent)
+          val fd = ParcelFileDescriptor.open(logFile, FD_MODE).detachFd()
+
+          if (isVerboseLog) verboseFd = fd else modulesFd = fd
+          fd
+        }
+        .onFailure {
+          if (isVerboseLog) verboseFd = -1 else modulesFd = -1
+          Log.w(TAG, "refreshFd failed", it)
+        }
+        .getOrDefault(-1)
+  }
 }
