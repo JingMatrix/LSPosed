@@ -8,11 +8,13 @@ import android.content.IntentFilter
 import android.content.pm.IPackageManager
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ParceledListSlice
 import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IUserManager
 import android.util.Log
+import java.lang.reflect.Method
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorSystem"
@@ -131,6 +133,37 @@ fun IPackageManager.clearApplicationProfileDataCompat(packageName: String) {
   runCatching { clearApplicationProfileData(packageName) }
 }
 
+/** Cached method reference to avoid repeated reflection lookups in loops. */
+private val getInstalledPackagesMethod: Method? by lazy {
+  val isLongFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+  android.content.pm.IPackageManager::class
+      .java
+      .declaredMethods
+      .find {
+        it.name == "getInstalledPackages" &&
+            it.parameterTypes.size == 2 &&
+            it.parameterTypes[0] ==
+                (if (isLongFlags) Long::class.javaPrimitiveType else Int::class.javaPrimitiveType)
+      }
+      ?.apply { isAccessible = true }
+}
+
+/**
+ * Reflectively calls getInstalledPackages and casts to ParceledListSlice. This works on Android 17+
+ * because PackageInfoList extends ParceledListSlice.
+ */
+private fun IPackageManager.getInstalledPackagesReflect(
+    flags: Any,
+    userId: Int
+): List<PackageInfo> {
+  val method = getInstalledPackagesMethod ?: return emptyList()
+  return runCatching {
+        val result = method.invoke(this, flags, userId)
+        @Suppress("UNCHECKED_CAST") (result as? ParceledListSlice<PackageInfo>)?.list
+      }
+      .getOrNull() ?: emptyList()
+}
+
 fun IPackageManager.getInstalledPackagesForAllUsers(
     flags: Int,
     filterNoProcess: Boolean
@@ -139,16 +172,12 @@ fun IPackageManager.getInstalledPackagesForAllUsers(
   val users = userManager?.getRealUsers() ?: emptyList()
 
   for (user in users) {
-    val infos =
-        runCatching {
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                getInstalledPackages(flags.toLong(), user.id)
-              } else {
-                getInstalledPackages(flags, user.id)
-              }
-            }
-            .getOrNull()
-            ?.list ?: continue
+    // We pass flags as Any so the reflective invoke handles Long or Int correctly
+    val flagParam: Any =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) flags.toLong() else flags
+
+    val infos = getInstalledPackagesReflect(flagParam, user.id)
+    if (infos.isEmpty()) continue
 
     result.addAll(
         infos.filter {
