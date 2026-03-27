@@ -13,20 +13,22 @@ import org.matrix.vector.daemon.system.packageManager
 private const val TAG = "VectorWorkarounds"
 private val isLenovo = Build.MANUFACTURER.equals("lenovo", ignoreCase = true)
 
-/** Retrieves all users, applying Lenovo's app cloning workaround (hides users 900-909). */
 fun IUserManager.getRealUsers(): List<UserInfo> {
   val users =
       runCatching { getUsers(true, true, true) }
-          .getOrElse {
-            getUsers(true) // Fallback for older Android versions
-          }
-          ?.toMutableList() ?: mutableListOf()
+          .recoverCatching { t -> if (t is NoSuchMethodError) getUsers(true) else throw t }
+          .onFailure { Log.e(TAG, "All user retrieval attempts failed", it) }
+          .getOrDefault(emptyList())
+          .toMutableList()
 
   if (isLenovo) {
     val existingIds = users.map { it.id }.toSet()
     for (i in 900..909) {
       if (i !in existingIds) {
-        runCatching { getUserInfo(i) }.getOrNull()?.let { users.add(it) }
+        runCatching { getUserInfo(i) }
+            .onFailure { Log.e(TAG, "Failed to apply Lenovo's app cloning workaround", it) }
+            .getOrNull()
+            ?.let { users.add(it) }
       }
     }
   }
@@ -70,6 +72,7 @@ fun performDexOptMode(packageName: String): Boolean {
           val exitCode = process.waitFor()
           exitCode == 0 && output.contains("Success")
         }
+        .onFailure { Log.e(TAG, "Failed to exectute dexopt via cmd", it) }
         .getOrDefault(false)
   } else {
     return runCatching {
@@ -81,6 +84,7 @@ fun performDexOptMode(packageName: String): Boolean {
               true,
               null) == true
         }
+        .onFailure { Log.e(TAG, "Failed to invoke IPackageManager.performDexOptMode", it) }
         .getOrDefault(false)
   }
 }
