@@ -11,10 +11,28 @@ object ModuleDatabase {
 
   fun enableModule(packageName: String): Boolean {
     if (packageName == "lspd") return false
-    val values = ContentValues().apply { put("enabled", 1) }
-    val changed =
-        ConfigCache.dbHelper.writableDatabase.update(
-            "modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
+    val db = ConfigCache.dbHelper.writableDatabase
+    var changed = false
+
+    // First, check if it exists. If not, we need to "discover" it.
+    val exists =
+        db.compileStatement("SELECT COUNT(*) FROM modules WHERE module_pkg_name = ?")
+            .apply { bindString(1, packageName) }
+            .simpleQueryForLong() > 0
+    if (!exists) {
+      val values =
+          ContentValues().apply {
+            put("module_pkg_name", packageName)
+            put("apk_path", "") // defer to cache updating
+            put("enabled", 1)
+          }
+      db.insert("modules", null, values)
+      changed = true
+    } else {
+      val values = ContentValues().apply { put("enabled", 1) }
+      changed = db.update("modules", values, "module_pkg_name = ?", arrayOf(packageName)) > 0
+    }
+
     if (changed) ConfigCache.requestCacheUpdate()
     return changed
   }
