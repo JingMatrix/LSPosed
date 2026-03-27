@@ -155,7 +155,7 @@ object LogcatMonitor {
   }
 
   @Suppress("unused") // Called via JNI
-  fun refreshFd(isVerboseLog: Boolean): Int {
+  private fun refreshFd(isVerboseLog: Boolean): Int {
     return runCatching {
           val logFile =
               if (isVerboseLog) {
