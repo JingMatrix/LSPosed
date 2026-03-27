@@ -55,6 +55,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,11 +74,49 @@ public class PackageService {
     static final int INSTALL_REASON_UNKNOWN = 0;
     static final int MATCH_ANY_USER = 0x00400000; // PackageManager.MATCH_ANY_USER
 
-    static final int MATCH_ALL_FLAGS = PackageManager.MATCH_DISABLED_COMPONENTS | PackageManager.MATCH_DIRECT_BOOT_AWARE | PackageManager.MATCH_DIRECT_BOOT_UNAWARE | PackageManager.MATCH_UNINSTALLED_PACKAGES | MATCH_ANY_USER;
+    static final int MATCH_ALL_FLAGS = PackageManager.MATCH_DISABLED_COMPONENTS | PackageManager.MATCH_DIRECT_BOOT_AWARE
+            | PackageManager.MATCH_DIRECT_BOOT_UNAWARE | PackageManager.MATCH_UNINSTALLED_PACKAGES | MATCH_ANY_USER;
     public static final int PER_USER_RANGE = 100000;
 
     private static IPackageManager pm = null;
     private static IBinder binder = null;
+    private static final Method getInstalledPackagesMethod;
+
+    static {
+        Method method = null;
+        try {
+            boolean isLongFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+            Class<?> flagsType = isLongFlags ? long.class : int.class;
+
+            for (Method m : IPackageManager.class.getDeclaredMethods()) {
+                if (m.getName().equals("getInstalledPackages") &&
+                        m.getParameterTypes().length == 2 &&
+                        m.getParameterTypes()[0] == flagsType) {
+                    m.setAccessible(true);
+                    method = m;
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            Log.e("PackageManagerUtils", "Failed to find getInstalledPackages method", e);
+        }
+        getInstalledPackagesMethod = method;
+    }
+
+    private static List<PackageInfo> getInstalledPackagesReflect(IPackageManager pm, Object flags, int userId) {
+        if (getInstalledPackagesMethod == null || pm == null)
+            return Collections.emptyList();
+        try {
+            Object result = getInstalledPackagesMethod.invoke(pm, flags, userId);
+            if (result instanceof ParceledListSlice) {
+                // noinspection unchecked
+                return ((ParceledListSlice<PackageInfo>) result).getList();
+            }
+        } catch (Exception e) {
+            Log.w("PackageManagerUtils", "Reflection call failed", e);
+        }
+        return Collections.emptyList();
+    }
 
     static boolean isAlive() {
         var pm = getPackageManager();
@@ -141,21 +180,20 @@ public class PackageService {
     }
 
     // Only for manager
-    public static ParcelableListSlice<PackageInfo> getInstalledPackagesFromAllUsers(int flags, boolean filterNoProcess) throws RemoteException {
+    public static ParcelableListSlice<PackageInfo> getInstalledPackagesFromAllUsers(int flags, boolean filterNoProcess)
+            throws RemoteException {
         List<PackageInfo> res = new ArrayList<>();
         IPackageManager pm = getPackageManager();
-        if (pm == null) return ParcelableListSlice.emptyList();
+        if (pm == null)
+            return ParcelableListSlice.emptyList();
+        // Prepare flags once outside the loop
+        Object flagsObj = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ? (long) flags : flags;
         for (var user : UserService.getUsers()) {
-            // in case pkginfo of other users in primary user
-            ParceledListSlice<PackageInfo> infos;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                infos = pm.getInstalledPackages((long) flags, user.id);
-            } else {
-                infos = pm.getInstalledPackages(flags, user.id);
-            }
-            res.addAll(infos
-                    .getList().parallelStream()
-                    .filter(info -> info.applicationInfo != null && info.applicationInfo.uid / PER_USER_RANGE == user.id)
+            // Use the reflective helper instead of direct AIDL calls
+            List<PackageInfo> infos = getInstalledPackagesReflect(pm, flagsObj, user.id);
+            res.addAll(infos.parallelStream()
+                    .filter(info -> info.applicationInfo != null
+                            && info.applicationInfo.uid / PER_USER_RANGE == user.id)
                     .filter(info -> {
                         try {
                             return isPackageAvailable(info.packageName, user.id, true);
