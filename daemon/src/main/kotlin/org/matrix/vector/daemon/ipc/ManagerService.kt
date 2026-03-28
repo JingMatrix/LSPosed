@@ -456,8 +456,14 @@ object ManagerService : ILSPManagerService.Stub() {
   override fun enableStatusNotification() = PreferenceStore.isStatusNotificationEnabled()
 
   override fun setEnableStatusNotification(enable: Boolean) {
+    val isEnabled = enableStatusNotification()
     PreferenceStore.setStatusNotification(enable)
-    // NotificationManager.notifyStatusNotification() handled via observers later
+    if (isEnabled && !enable) {
+      NotificationManager.cancelStatusNotification()
+    }
+    if (!isEnabled && enable) {
+      NotificationManager.notifyStatusNotification()
+    }
   }
 
   override fun performDexOptMode(packageName: String) =

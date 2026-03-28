@@ -201,7 +201,7 @@ object VectorService : ILSPosedService.Stub() {
   private fun dispatchBootCompleted() {
     bootCompleted = true
     if (PreferenceStore.isStatusNotificationEnabled()) {
-      NotificationManager.cancelStatusNotification()
+      NotificationManager.notifyStatusNotification()
     }
   }
 
