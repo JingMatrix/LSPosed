@@ -88,7 +88,7 @@ object ApplicationService : ILSPApplicationService.Stub() {
     return info
   }
 
-  override fun getModulesList(): List<Module> {
+  private fun getAllModules(): List<Module> {
     val info = ensureRegistered()
     if (info.key.uid == Process.SYSTEM_UID && info.processName == "system") {
       return ConfigCache.getModulesForSystemServer()
@@ -96,17 +96,12 @@ object ApplicationService : ILSPApplicationService.Stub() {
     if (ManagerService.isRunningManager(getCallingPid(), info.key.uid)) {
       return emptyList()
     }
-    return ConfigCache.getModulesForProcess(info.processName, info.key.uid).filter {
-      !it.file.legacy
-    }
+    return ConfigCache.getModulesForProcess(info.processName, info.key.uid)
   }
 
-  override fun getLegacyModulesList(): List<Module> {
-    val info = ensureRegistered()
-    return ConfigCache.getModulesForProcess(info.processName, info.key.uid).filter {
-      it.file.legacy
-    }
-  }
+  override fun getModulesList() = getAllModules().filter { !it.file.legacy }
+
+  override fun getLegacyModulesList() = getAllModules().filter { it.file.legacy }
 
   override fun isLogMuted(): Boolean = !ManagerService.isVerboseLog
 
