@@ -221,7 +221,7 @@ object ManagerService : ILSPManagerService.Stub() {
       filterNoProcess: Boolean
   ): ParcelableListSlice<PackageInfo> {
     return ParcelableListSlice(
-        packageManager?.getInstalledPackagesForAllUsers(flags, filterNoProcess) ?: emptyList())
+        packageManager?.getInstalledPackagesFromAllUsers(flags, filterNoProcess) ?: emptyList())
   }
 
   override fun enabledModules() = ConfigCache.state.modules.keys.toTypedArray()

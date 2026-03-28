@@ -14,7 +14,9 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IUserManager
 import android.util.Log
+import java.io.File
 import java.lang.reflect.Method
+import java.util.stream.Collectors
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorSystem"
@@ -27,6 +29,23 @@ const val MATCH_ALL_FLAGS =
         PackageManager.MATCH_UNINSTALLED_PACKAGES or
         MATCH_ANY_USER
 
+/**
+ * Internal helper that throws exceptions instead of swallowing them. This is crucial for detecting
+ * TransactionTooLargeException (Binder limits).
+ */
+@Throws(Exception::class)
+private fun IPackageManager.getPackageInfoCompatThrows(
+    packageName: String,
+    flags: Int,
+    userId: Int
+): PackageInfo? {
+  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    getPackageInfo(packageName, flags.toLong(), userId)
+  } else {
+    getPackageInfo(packageName, flags, userId)
+  }
+}
+
 /** Safely fetches PackageInfo, handling API level differences. */
 fun IPackageManager.getPackageInfoCompat(
     packageName: String,
@@ -34,20 +53,29 @@ fun IPackageManager.getPackageInfoCompat(
     userId: Int
 ): PackageInfo? {
   return try {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      getPackageInfo(packageName, flags.toLong(), userId)
-    } else {
-      getPackageInfo(packageName, flags, userId)
-    }
+    getPackageInfoCompatThrows(packageName, flags, userId)
   } catch (e: Exception) {
     null
   }
 }
 
 /**
- * Fetches PackageInfo alongside its components (Activities, Services, Receivers, Providers).
- * Includes a fallback mechanism to prevent TransactionTooLargeException on massive apps.
+ * Checks if the package is truly available for the given user. Apps can be "installed" but
+ * disabled/hidden by profile owners.
  */
+fun IPackageManager.isPackageAvailable(
+    packageName: String,
+    userId: Int,
+    ignoreHidden: Boolean
+): Boolean {
+  return runCatching {
+        isPackageAvailable(packageName, userId) ||
+            (ignoreHidden && getApplicationHiddenSettingAsUser(packageName, userId))
+      }
+      .getOrDefault(false)
+}
+
+/** Fetches PackageInfo alongside its components (Activities, Services, Receivers, Providers). */
 fun IPackageManager.getPackageInfoWithComponents(
     packageName: String,
     flags: Int,
@@ -60,33 +88,55 @@ fun IPackageManager.getPackageInfoWithComponents(
           PackageManager.GET_RECEIVERS or
           PackageManager.GET_PROVIDERS
 
-  // Fast path: Try fetching everything at once
-  getPackageInfoCompat(packageName, fullFlags, userId)?.let {
-    return it
+  var pkgInfo: PackageInfo? = null
+
+  try {
+    // If the binder buffer overflows, it will throw an exception here.
+    pkgInfo = getPackageInfoCompatThrows(packageName, fullFlags, userId)
+  } catch (e: Exception) {
+    // Fallback path: Fetch sequentially if the initial query threw an Exception
+    pkgInfo =
+        try {
+          getPackageInfoCompatThrows(packageName, flags, userId)
+        } catch (ignored: Exception) {
+          null
+        }
+
+    if (pkgInfo != null) {
+      runCatching {
+        pkgInfo.activities =
+            getPackageInfoCompatThrows(packageName, flags or PackageManager.GET_ACTIVITIES, userId)
+                ?.activities
+      }
+      runCatching {
+        pkgInfo.services =
+            getPackageInfoCompatThrows(packageName, flags or PackageManager.GET_SERVICES, userId)
+                ?.services
+      }
+      runCatching {
+        pkgInfo.receivers =
+            getPackageInfoCompatThrows(packageName, flags or PackageManager.GET_RECEIVERS, userId)
+                ?.receivers
+      }
+      runCatching {
+        pkgInfo.providers =
+            getPackageInfoCompatThrows(packageName, flags or PackageManager.GET_PROVIDERS, userId)
+                ?.providers
+      }
+    }
   }
 
-  // Fallback path: Fetch sequentially to avoid Binder Transaction limits
-  val baseInfo = getPackageInfoCompat(packageName, flags, userId) ?: return null
-
-  runCatching {
-    baseInfo.activities =
-        getPackageInfoCompat(packageName, flags or PackageManager.GET_ACTIVITIES, userId)
-            ?.activities
-  }
-  runCatching {
-    baseInfo.services =
-        getPackageInfoCompat(packageName, flags or PackageManager.GET_SERVICES, userId)?.services
-  }
-  runCatching {
-    baseInfo.receivers =
-        getPackageInfoCompat(packageName, flags or PackageManager.GET_RECEIVERS, userId)?.receivers
-  }
-  runCatching {
-    baseInfo.providers =
-        getPackageInfoCompat(packageName, flags or PackageManager.GET_PROVIDERS, userId)?.providers
+  if (pkgInfo?.applicationInfo == null) return null
+  if (pkgInfo.packageName != "android") {
+    val sourceDir = pkgInfo.applicationInfo?.sourceDir
+    if (sourceDir == null ||
+        !File(sourceDir).exists() ||
+        !isPackageAvailable(packageName, userId, true)) {
+      return null
+    }
   }
 
-  return baseInfo
+  return pkgInfo
 }
 
 /** Extracts all unique process names associated with a package's components. */
@@ -148,10 +198,7 @@ private val getInstalledPackagesMethod: Method? by lazy {
       ?.apply { isAccessible = true }
 }
 
-/**
- * Reflectively calls getInstalledPackages and casts to ParceledListSlice. This works on Android 17+
- * because PackageInfoList extends ParceledListSlice.
- */
+/** Reflectively calls getInstalledPackages and casts to ParceledListSlice. */
 private fun IPackageManager.getInstalledPackagesReflect(
     flags: Any,
     userId: Int
@@ -164,11 +211,12 @@ private fun IPackageManager.getInstalledPackagesReflect(
       .getOrNull() ?: emptyList()
 }
 
-fun IPackageManager.getInstalledPackagesForAllUsers(
+fun IPackageManager.getInstalledPackagesFromAllUsers(
     flags: Int,
     filterNoProcess: Boolean
 ): List<PackageInfo> {
   val result = mutableListOf<PackageInfo>()
+  // Assuming userManager is available in this scope as in original code
   val users = userManager?.getRealUsers() ?: emptyList()
 
   for (user in users) {
@@ -179,20 +227,30 @@ fun IPackageManager.getInstalledPackagesForAllUsers(
     val infos = getInstalledPackagesReflect(flagParam, user.id)
     if (infos.isEmpty()) continue
 
-    result.addAll(
-        infos.filter {
-          it.applicationInfo != null && it.applicationInfo!!.uid / PER_USER_RANGE == user.id
-        })
+    val validUserApps =
+        infos
+            .parallelStream()
+            .filter {
+              it.applicationInfo != null && (it.applicationInfo!!.uid / PER_USER_RANGE) == user.id
+            }
+            .filter { isPackageAvailable(it.packageName, user.id, true) }
+            .collect(Collectors.toList())
+
+    result.addAll(validUserApps)
   }
 
   if (filterNoProcess) {
-    return result.filter {
-      getPackageInfoWithComponents(
-              it.packageName, MATCH_ALL_FLAGS, it.applicationInfo!!.uid / PER_USER_RANGE)
-          ?.fetchProcesses()
-          ?.isNotEmpty() == true
-    }
+    return result
+        .parallelStream()
+        .filter {
+          getPackageInfoWithComponents(
+                  it.packageName, MATCH_ALL_FLAGS, it.applicationInfo!!.uid / PER_USER_RANGE)
+              ?.fetchProcesses()
+              ?.isNotEmpty() == true
+        }
+        .collect(Collectors.toList())
   }
+
   return result
 }
 

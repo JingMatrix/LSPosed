@@ -405,7 +405,7 @@ object ConfigCache {
 
   fun getInstalledModules(): List<ApplicationInfo> {
     val allPackages =
-        packageManager?.getInstalledPackagesForAllUsers(MATCH_ALL_FLAGS, false) ?: emptyList()
+        packageManager?.getInstalledPackagesFromAllUsers(MATCH_ALL_FLAGS, false) ?: emptyList()
     return allPackages
         .mapNotNull { it.applicationInfo }
         .filter { info -> getModuleApkPath(info) != null }
