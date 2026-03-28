@@ -10,8 +10,8 @@ import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.lspd.service.ILSPInjectedModuleService
 import org.lsposed.lspd.service.IRemotePreferenceCallback
-import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.system.PER_USER_RANGE
 
 private const val TAG = "VectorInjectedModuleService"
@@ -23,7 +23,7 @@ class InjectedModuleService(private val packageName: String) : ILSPInjectedModul
 
   override fun getFrameworkProperties(): Long {
     var prop = IXposedService.PROP_CAP_SYSTEM or IXposedService.PROP_CAP_REMOTE
-    if (ConfigCache.isDexObfuscateEnabled()) {
+    if (PreferenceStore.isDexObfuscateEnabled()) {
       prop = prop or IXposedService.PROP_RT_API_PROTECTION
     }
     return prop
@@ -36,7 +36,7 @@ class InjectedModuleService(private val packageName: String) : ILSPInjectedModul
     val bundle = Bundle()
     val userId = Binder.getCallingUid() / PER_USER_RANGE
     bundle.putSerializable(
-        "map", ConfigCache.getModulePrefs(packageName, userId, group) as Serializable)
+        "map", PreferenceStore.getModulePrefs(packageName, userId, group) as Serializable)
 
     if (callback != null) {
       val groupCallbacks = callbacks.getOrPut(group) { ConcurrentHashMap.newKeySet() }

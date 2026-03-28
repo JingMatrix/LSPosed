@@ -43,6 +43,7 @@ object FileSystem {
   val logDirPath: Path = basePath.resolve("log")
   val oldLogDirPath: Path = basePath.resolve("log.old")
   val modulePath: Path = basePath.resolve("modules")
+  val socketPath: Path = basePath.resolve(".cli_sock")
   val daemonApkPath: Path = Paths.get(System.getProperty("java.class.path", ""))
   val managerApkPath: Path = daemonApkPath.parent.resolve("manager.apk")
   val configDirPath: Path = basePath.resolve("config")
@@ -59,10 +60,32 @@ object FileSystem {
   init {
     runCatching {
           Files.createDirectories(basePath)
+          Os.chmod(basePath.toString(), "700".toInt(8))
           SELinux.setFileContext(basePath.toString(), "u:object_r:system_file:s0")
           Files.createDirectories(configDirPath)
         }
         .onFailure { Log.e(TAG, "Failed to initialize directories", it) }
+  }
+
+  fun setupCli(): String {
+    val cliSource = daemonApkPath.parent.resolve("cli").toFile()
+    val cliDest = basePath.resolve("cli").toFile()
+    if (cliSource.exists()) {
+      runCatching {
+            cliSource.copyTo(cliDest, overwrite = true)
+            Os.chmod(cliDest.absolutePath, "700".toInt(8))
+          }
+          .onFailure { Log.e(TAG, "Failed to deploy CLI script", it) }
+    }
+
+    val cliSocket: String = socketPath.toString()
+    val socketFile = File(cliSocket)
+    if (socketFile.exists()) {
+      Log.d(TAG, "Existing $cliSocket deleted")
+      socketFile.delete()
+    }
+
+    return cliSocket
   }
 
   /** Tries to lock the daemon lockfile. Returns false if another daemon is running. */
@@ -151,7 +174,7 @@ object FileSystem {
 
     runCatching {
           ZipFile(file).use { zip ->
-            // 1. Read all classes*.dex files
+            // Read all classes*.dex files
             var secondary = 1
             while (true) {
               val entryName = if (secondary == 1) "classes.dex" else "classes$secondary.dex"
@@ -160,7 +183,7 @@ object FileSystem {
               secondary++
             }
 
-            // 2. Read initialization lists
+            // Read initialization lists
             fun readList(name: String, dest: MutableList<String>) {
               zip.getEntry(name)?.let { entry ->
                 zip.getInputStream(entry).bufferedReader().useLines { lines ->
@@ -358,7 +381,7 @@ object FileSystem {
             addFile("modules_config.db", dbPath)
             runCatching {
               os.putNextEntry(ZipEntry("scopes.txt"))
-              ConfigCache.cachedScopes.forEach { (scope, modules) ->
+              ConfigCache.state.scopes.forEach { (scope, modules) ->
                 os.write("${scope.processName}/${scope.uid}\n".toByteArray())
                 modules.forEach { mod ->
                   os.write("\t${mod.packageName}\n".toByteArray())

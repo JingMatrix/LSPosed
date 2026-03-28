@@ -16,6 +16,8 @@ import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.data.ModuleDatabase
+import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.system.NotificationManager
 import org.matrix.vector.daemon.system.PER_USER_RANGE
 import org.matrix.vector.daemon.system.activityManager
@@ -98,7 +100,8 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
   override fun getFrameworkProperties(): Long {
     ensureModule()
     var prop = IXposedService.PROP_CAP_SYSTEM or IXposedService.PROP_CAP_REMOTE
-    if (ConfigCache.isDexObfuscateEnabled()) prop = prop or IXposedService.PROP_RT_API_PROTECTION
+    if (PreferenceStore.isDexObfuscateEnabled())
+        prop = prop or IXposedService.PROP_RT_API_PROTECTION
     return prop
   }
 
@@ -110,7 +113,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
 
   override fun requestScope(packages: List<String>, callback: IXposedScopeCallback) {
     val userId = ensureModule()
-    if (!ConfigCache.isScopeRequestBlocked(loadedModule.packageName)) {
+    if (!PreferenceStore.isScopeRequestBlocked(loadedModule.packageName)) {
       packages.forEach { pkg ->
         NotificationManager.requestModuleScope(loadedModule.packageName, userId, pkg, callback)
       }
@@ -122,7 +125,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
   override fun removeScope(packages: List<String>) {
     val userId = ensureModule()
     packages.forEach { pkg ->
-      runCatching { ConfigCache.removeModuleScope(loadedModule.packageName, pkg, userId) }
+      runCatching { ModuleDatabase.removeModuleScope(loadedModule.packageName, pkg, userId) }
           .onFailure { Log.e(TAG, "Error removing scope for $pkg", it) }
     }
   }
@@ -132,7 +135,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
     return Bundle().apply {
       putSerializable(
           "map",
-          ConfigCache.getModulePrefs(loadedModule.packageName, userId, group) as Serializable)
+          PreferenceStore.getModulePrefs(loadedModule.packageName, userId, group) as Serializable)
     }
   }
 
@@ -149,14 +152,14 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
     }
 
     runCatching {
-          ConfigCache.updateModulePrefs(loadedModule.packageName, userId, group, values)
+          PreferenceStore.updateModulePrefs(loadedModule.packageName, userId, group, values)
           (loadedModule.service as? InjectedModuleService)?.onUpdateRemotePreferences(group, diff)
         }
         .getOrElse { throw RemoteException(it.message) }
   }
 
   override fun deleteRemotePreferences(group: String) {
-    ConfigCache.deleteModulePrefs(loadedModule.packageName, ensureModule(), group)
+    PreferenceStore.deleteModulePrefs(loadedModule.packageName, ensureModule(), group)
   }
 
   override fun listRemoteFiles(): Array<String> {

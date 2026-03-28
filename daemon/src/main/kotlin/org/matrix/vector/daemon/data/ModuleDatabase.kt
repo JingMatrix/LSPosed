@@ -47,30 +47,6 @@ object ModuleDatabase {
     return changed
   }
 
-  fun getModuleScope(packageName: String): MutableList<Application>? {
-    if (packageName == "lspd") return null
-    val result = mutableListOf<Application>()
-    ConfigCache.dbHelper.readableDatabase
-        .query(
-            "scope INNER JOIN modules ON scope.mid = modules.mid",
-            arrayOf("app_pkg_name", "user_id"),
-            "modules.module_pkg_name = ?",
-            arrayOf(packageName),
-            null,
-            null,
-            null)
-        .use { cursor ->
-          while (cursor.moveToNext()) {
-            result.add(
-                Application().apply {
-                  this.packageName = cursor.getString(0)
-                  this.userId = cursor.getInt(1)
-                })
-          }
-        }
-    return result
-  }
-
   fun setModuleScope(packageName: String, scope: MutableList<Application>): Boolean {
     enableModule(packageName)
     val db = ConfigCache.dbHelper.writableDatabase
@@ -149,27 +125,6 @@ object ModuleDatabase {
             "modules", "module_pkg_name = ?", arrayOf(packageName)) > 0
     if (res) ConfigCache.requestCacheUpdate()
     return res
-  }
-
-  fun getAutoInclude(packageName: String): Boolean {
-    if (packageName == "lspd") return false
-
-    var isAutoInclude = false
-    ConfigCache.dbHelper.readableDatabase
-        .query(
-            "modules",
-            arrayOf("auto_include"),
-            "module_pkg_name = ?",
-            arrayOf(packageName),
-            null,
-            null,
-            null)
-        .use { cursor ->
-          if (cursor.moveToFirst()) {
-            isAutoInclude = cursor.getInt(0) == 1
-          }
-        }
-    return isAutoInclude
   }
 
   fun setAutoInclude(packageName: String, enabled: Boolean): Boolean {

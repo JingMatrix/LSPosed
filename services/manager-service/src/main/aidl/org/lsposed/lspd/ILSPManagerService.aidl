@@ -12,8 +12,6 @@ interface ILSPManagerService {
     const int DEX2OAT_SELINUX_PERMISSIVE = 3;
     const int DEX2OAT_SEPOLICY_INCORRECT = 4;
 
-    String getApi() = 1;
-
     ParcelableListSlice<PackageInfo> getInstalledPackagesFromAllUsers(int flags, boolean filterNoProcess) = 2;
 
     String[] enabledModules() = 3;

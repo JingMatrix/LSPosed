@@ -78,11 +78,7 @@ object BridgeService {
                 val at = activityThread.applicationThread as android.app.IApplicationThread
                 val atBinder = at.asBinder()
                 val systemCtx = activityThread.systemContext
-                service?.dispatchSystemServerContext(
-                    atBinder,
-                    Context_getActivityToken(systemCtx),
-                    "Zygisk",
-                )
+                service?.dispatchSystemServerContext(atBinder, Context_getActivityToken(systemCtx))
             }
             .onFailure { Log.e(TAG, "Failed to dispatch system context", it) }
 

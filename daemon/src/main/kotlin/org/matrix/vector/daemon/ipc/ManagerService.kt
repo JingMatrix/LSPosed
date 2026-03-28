@@ -31,9 +31,12 @@ import org.lsposed.lspd.models.UserInfo
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.data.ModuleDatabase
+import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.env.Dex2OatServer
 import org.matrix.vector.daemon.env.LogcatMonitor
 import org.matrix.vector.daemon.system.*
+import org.matrix.vector.daemon.utils.applyXspaceWorkaround
 import org.matrix.vector.daemon.utils.getRealUsers
 import rikka.parcelablelist.ParcelableListSlice
 
@@ -41,7 +44,6 @@ private const val TAG = "VectorManagerService"
 
 object ManagerService : ILSPManagerService.Stub() {
 
-  @Volatile var _isVerboseLog = false
   @Volatile private var managerPid = -1
   @Volatile private var pendingManager = false
   @Volatile private var isEnabled = true
@@ -62,36 +64,7 @@ object ManagerService : ILSPManagerService.Stub() {
       ManagerService.guard = this
       runCatching {
             binder.linkToDeath(this, 0)
-            // MIUI XSpace Workaround
-            if (Build.MANUFACTURER.equals("xiaomi", ignoreCase = true)) {
-              val intent =
-                  Intent().apply {
-                    component =
-                        ComponentName.unflattenFromString(
-                            "com.miui.securitycore/com.miui.xspace.service.XSpaceService")
-                  }
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                activityManager?.bindService(
-                    SystemContext.appThread,
-                    SystemContext.token,
-                    intent,
-                    intent.type,
-                    connection,
-                    Context.BIND_AUTO_CREATE.toLong(),
-                    "android",
-                    0)
-              } else {
-                activityManager?.bindService(
-                    SystemContext.appThread,
-                    SystemContext.token,
-                    intent,
-                    intent.type,
-                    connection,
-                    Context.BIND_AUTO_CREATE,
-                    "android",
-                    0)
-              }
-            }
+            applyXspaceWorkaround(connection)
           }
           .onFailure {
             Log.e(TAG, "ManagerGuard initialization failed", it)
@@ -243,8 +216,6 @@ object ManagerService : ILSPManagerService.Stub() {
 
   override fun getXposedVersionName() = BuildConfig.VERSION_NAME
 
-  override fun getApi() = ConfigCache.api
-
   override fun getInstalledPackagesFromAllUsers(
       flags: Int,
       filterNoProcess: Boolean
@@ -253,23 +224,22 @@ object ManagerService : ILSPManagerService.Stub() {
         packageManager?.getInstalledPackagesForAllUsers(flags, filterNoProcess) ?: emptyList())
   }
 
-  override fun enabledModules() = ConfigCache.getEnabledModules().toTypedArray()
+  override fun enabledModules() = ConfigCache.state.modules.keys.toTypedArray()
 
-  override fun enableModule(packageName: String) = ConfigCache.enableModule(packageName)
+  override fun enableModule(packageName: String) = ModuleDatabase.enableModule(packageName)
 
-  override fun disableModule(packageName: String) = ConfigCache.disableModule(packageName)
+  override fun disableModule(packageName: String) = ModuleDatabase.disableModule(packageName)
 
   override fun setModuleScope(packageName: String, scope: MutableList<Application>) =
-      ConfigCache.setModuleScope(packageName, scope)
+      ModuleDatabase.setModuleScope(packageName, scope)
 
   override fun getModuleScope(packageName: String) = ConfigCache.getModuleScope(packageName)
 
-  override fun isVerboseLog() = _isVerboseLog || BuildConfig.DEBUG
+  override fun isVerboseLog() = PreferenceStore.isVerboseLogEnabled() || BuildConfig.DEBUG
 
   override fun setVerboseLog(enabled: Boolean) {
-    _isVerboseLog = enabled
     if (isVerboseLog()) LogcatMonitor.startVerbose() else LogcatMonitor.stopVerbose()
-    ConfigCache.updateModulePref("lspd", 0, "config", "enable_verbose_log", enabled)
+    PreferenceStore.setVerboseLog(enabled)
   }
 
   override fun getVerboseLog() =
@@ -483,29 +453,29 @@ object ManagerService : ILSPManagerService.Stub() {
     packageManager?.clearApplicationProfileData(packageName)
   }
 
-  override fun enableStatusNotification() = ConfigCache.enableStatusNotification
+  override fun enableStatusNotification() = PreferenceStore.isStatusNotificationEnabled()
 
   override fun setEnableStatusNotification(enable: Boolean) {
-    ConfigCache.enableStatusNotification = enable
+    PreferenceStore.setStatusNotification(enable)
     // NotificationManager.notifyStatusNotification() handled via observers later
   }
 
   override fun performDexOptMode(packageName: String) =
       org.matrix.vector.daemon.utils.performDexOptMode(packageName)
 
-  override fun getDexObfuscate() = ConfigCache.isDexObfuscateEnabled()
+  override fun getDexObfuscate() = PreferenceStore.isDexObfuscateEnabled()
 
-  override fun setDexObfuscate(enabled: Boolean) = ConfigCache.setDexObfuscate(enabled)
+  override fun setDexObfuscate(enabled: Boolean) = PreferenceStore.setDexObfuscate(enabled)
 
   override fun getDex2OatWrapperCompatibility() =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Dex2OatServer.compatibility else 0
 
-  override fun setLogWatchdog(enabled: Boolean) = ConfigCache.setLogWatchdog(enabled)
+  override fun setLogWatchdog(enabled: Boolean) = PreferenceStore.setLogWatchdog(enabled)
 
-  override fun isLogWatchdogEnabled() = ConfigCache.isLogWatchdogEnabled()
+  override fun isLogWatchdogEnabled() = PreferenceStore.isLogWatchdogEnabled()
 
   override fun setAutoInclude(packageName: String, enabled: Boolean) =
-      ConfigCache.setAutoInclude(packageName, enabled)
+      ModuleDatabase.setAutoInclude(packageName, enabled)
 
   override fun getAutoInclude(packageName: String) = ConfigCache.getAutoInclude(packageName)
 }

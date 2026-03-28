@@ -2,6 +2,7 @@ package org.matrix.vector.daemon.data
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import org.apache.commons.lang3.SerializationUtilsX
 
 object PreferenceStore {
 
@@ -20,7 +21,7 @@ object PreferenceStore {
           while (cursor.moveToNext()) {
             val key = cursor.getString(0)
             val blob = cursor.getBlob(1)
-            val obj = org.apache.commons.lang3.SerializationUtilsX.deserialize<Any>(blob)
+            val obj = SerializationUtilsX.deserialize<Any>(blob)
             if (obj != null) result[key] = obj
           }
         }
@@ -41,7 +42,7 @@ object PreferenceStore {
               ContentValues().apply {
                 put("`group`", group)
                 put("`key`", key)
-                put("data", org.apache.commons.lang3.SerializationUtilsX.serialize(value))
+                put("data", SerializationUtilsX.serialize(value))
                 put("module_pkg_name", moduleName)
                 put("user_id", userId.toString())
               }
@@ -77,6 +78,18 @@ object PreferenceStore {
 
   fun setLogWatchdog(enabled: Boolean) =
       updateModulePref("lspd", 0, "config", "enable_log_watchdog", enabled)
+
+  fun isStatusNotificationEnabled(): Boolean =
+      getModulePrefs("lspd", 0, "config")["enable_status_notification"] as? Boolean ?: true
+
+  fun setStatusNotification(enabled: Boolean) =
+      updateModulePref("lspd", 0, "config", "enable_status_notification", enabled)
+
+  fun isVerboseLogEnabled(): Boolean =
+      getModulePrefs("lspd", 0, "config")["enable_verbose_log"] as? Boolean ?: true
+
+  fun setVerboseLog(enabled: Boolean) =
+      updateModulePref("lspd", 0, "config", "enable_verbose_log", enabled)
 
   fun isScopeRequestBlocked(pkg: String): Boolean =
       (getModulePrefs("lspd", 0, "config")["scope_request_blocked"] as? Set<*>)?.contains(pkg) ==

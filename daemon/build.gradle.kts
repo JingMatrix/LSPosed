@@ -1,6 +1,7 @@
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.ide.common.signing.KeystoreHelper
 import java.io.PrintStream
+import java.util.UUID
 
 val defaultManagerPackageName: String by rootProject.extra
 val injectedPackageName: String by rootProject.extra
@@ -26,6 +27,11 @@ android {
     buildConfigField("int", "MANAGER_INJECTED_UID", """$injectedPackageUid""")
     buildConfigField("String", "VERSION_NAME", """"${versionNameProvider.get()}"""")
     buildConfigField("long", "VERSION_CODE", versionCodeProvider.get())
+
+    val cliToken = UUID.randomUUID()
+    // Inject the MSB and LSB as Long constants
+    buildConfigField("Long", "CLI_TOKEN_MSB", "${cliToken.mostSignificantBits}L")
+    buildConfigField("Long", "CLI_TOKEN_LSB", "${cliToken.leastSignificantBits}L")
   }
 
   buildTypes {
@@ -92,6 +98,8 @@ android.applicationVariants.all {
 
 dependencies {
   implementation(libs.agp.apksig)
+  implementation(libs.gson)
+  implementation(libs.picocli)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(projects.external.apache)

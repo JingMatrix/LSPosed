@@ -19,7 +19,10 @@ import kotlinx.coroutines.launch
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.lsposed.lspd.service.ILSPosedService
 import org.matrix.vector.daemon.BuildConfig
+import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.data.ConfigCache
+import org.matrix.vector.daemon.data.ModuleDatabase
+import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.data.ProcessScope
 import org.matrix.vector.daemon.ipc.ApplicationService
 import org.matrix.vector.daemon.ipc.ManagerService
@@ -36,13 +39,9 @@ object VectorService : ILSPosedService.Stub() {
   override fun dispatchSystemServerContext(
       appThread: IBinder?,
       activityToken: IBinder?,
-      api: String
   ) {
-    Log.d(TAG, "Received System Server Context (API: $api)")
-
     appThread?.let { SystemContext.appThread = IApplicationThread.Stub.asInterface(it) }
     SystemContext.token = activityToken
-    ConfigCache.api = api
 
     // Initialize OS Observers using Coroutines for the dispatch blocks
     registerReceivers()
@@ -201,8 +200,8 @@ object VectorService : ILSPosedService.Stub() {
 
   private fun dispatchBootCompleted() {
     bootCompleted = true
-    if (ConfigCache.enableStatusNotification) {
-      NotificationManager.notifyStatusNotification()
+    if (PreferenceStore.isStatusNotificationEnabled()) {
+      NotificationManager.cancelStatusNotification()
     }
   }
 
@@ -229,7 +228,7 @@ object VectorService : ILSPosedService.Stub() {
       Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
         if (moduleName != null &&
             intent.getBooleanExtra("android.intent.extra.REMOVED_FOR_ALL_USERS", false)) {
-          if (ConfigCache.removeModule(moduleName)) isXposedModule = true
+          if (ModuleDatabase.removeModule(moduleName)) isXposedModule = true
         }
       }
       Intent.ACTION_PACKAGE_ADDED,
@@ -239,16 +238,16 @@ object VectorService : ILSPosedService.Stub() {
               packageManager?.getPackageInfoCompat(moduleName, MATCH_ALL_FLAGS, 0)?.applicationInfo
           if (appInfo != null) {
             isXposedModule =
-                ConfigCache.updateModuleApkPath(
+                ModuleDatabase.updateModuleApkPath(
                     moduleName, ConfigCache.getModuleApkPath(appInfo), false)
           }
-        } else if (ConfigCache.cachedScopes.keys.any { it.uid == uid }) {
+        } else if (ConfigCache.state.scopes.keys.any { it.uid == uid }) {
           ConfigCache.requestCacheUpdate()
         }
       }
       Intent.ACTION_UID_REMOVED -> {
         if (isXposedModule) ConfigCache.requestCacheUpdate()
-        else if (ConfigCache.cachedScopes.keys.any { it.uid == uid })
+        else if (ConfigCache.state.scopes.keys.any { it.uid == uid })
             ConfigCache.requestCacheUpdate()
       }
     }
@@ -309,7 +308,7 @@ object VectorService : ILSPosedService.Stub() {
                       this.packageName = scopePackageName
                       this.userId = userId
                     })
-                ConfigCache.setModuleScope(packageName, scopes)
+                ModuleDatabase.setModuleScope(packageName, scopes)
               }
               iCallback.onScopeRequestApproved(listOf(scopePackageName))
             }
@@ -317,9 +316,9 @@ object VectorService : ILSPosedService.Stub() {
             "delete" -> iCallback.onScopeRequestFailed("Request timeout")
             "block" -> {
               val blocked =
-                  ConfigCache.getModulePrefs("lspd", 0, "config")["scope_request_blocked"]
+                  PreferenceStore.getModulePrefs("lspd", 0, "config")["scope_request_blocked"]
                       as? Set<String> ?: emptySet()
-              ConfigCache.updateModulePref(
+              PreferenceStore.updateModulePref(
                   "lspd", 0, "config", "scope_request_blocked", blocked + packageName)
               iCallback.onScopeRequestFailed("Request blocked by configuration")
             }

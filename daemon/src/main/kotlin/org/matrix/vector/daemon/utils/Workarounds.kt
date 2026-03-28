@@ -1,6 +1,10 @@
 package org.matrix.vector.daemon.utils
 
+import android.app.IServiceConnection
 import android.app.Notification
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.content.pm.UserInfo
 import android.os.Build
 import android.os.IUserManager
@@ -8,10 +12,11 @@ import android.util.Log
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.ClassNotFoundException
-import org.matrix.vector.daemon.system.packageManager
+import org.matrix.vector.daemon.system.*
 
 private const val TAG = "VectorWorkarounds"
 private val isLenovo = Build.MANUFACTURER.equals("lenovo", ignoreCase = true)
+private val isXiaomi = Build.MANUFACTURER.equals("xiaomi", ignoreCase = true)
 
 fun IUserManager.getRealUsers(): List<UserInfo> {
   val users =
@@ -86,5 +91,37 @@ fun performDexOptMode(packageName: String): Boolean {
         }
         .onFailure { Log.e(TAG, "Failed to invoke IPackageManager.performDexOptMode", it) }
         .getOrDefault(false)
+  }
+}
+
+fun applyXspaceWorkaround(connection: IServiceConnection) {
+  if (isXiaomi) {
+    val intent =
+        Intent().apply {
+          component =
+              ComponentName.unflattenFromString(
+                  "com.miui.securitycore/com.miui.xspace.service.XSpaceService")
+        }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      activityManager?.bindService(
+          SystemContext.appThread,
+          SystemContext.token,
+          intent,
+          intent.type,
+          connection,
+          Context.BIND_AUTO_CREATE.toLong(),
+          "android",
+          0)
+    } else {
+      activityManager?.bindService(
+          SystemContext.appThread,
+          SystemContext.token,
+          intent,
+          intent.type,
+          connection,
+          Context.BIND_AUTO_CREATE,
+          "android",
+          0)
+    }
   }
 }

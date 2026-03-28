@@ -1,4 +1,4 @@
-package org.matrix.vector.daemon.core
+package org.matrix.vector.daemon
 
 import android.app.ActivityThread
 import android.content.Context
@@ -13,9 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.matrix.vector.daemon.BuildConfig
-import org.matrix.vector.daemon.data.ConfigCache
+import org.matrix.vector.daemon.core.SystemServerBridge
+import org.matrix.vector.daemon.core.VectorService
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.data.PreferenceStore
+import org.matrix.vector.daemon.env.CliSocketServer
 import org.matrix.vector.daemon.env.Dex2OatServer
 import org.matrix.vector.daemon.env.LogcatMonitor
 import org.matrix.vector.daemon.ipc.ManagerService
@@ -55,12 +57,13 @@ object VectorDaemon {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       Dex2OatServer.start()
     }
+    CliSocketServer.start()
 
     // Accessing the object triggers the `init` block, reading SQLite instantly.
-    if (ConfigCache.isLogWatchdogEnabled()) LogcatMonitor.enableWatchdog()
+    if (PreferenceStore.isLogWatchdogEnabled()) LogcatMonitor.enableWatchdog()
     // Preload Framework DEX in the background
     CoroutineScope(Dispatchers.IO).launch {
-      FileSystem.getPreloadDex(ConfigCache.isDexObfuscateEnabled())
+      FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled())
     }
 
     // Setup Main Looper & System Services

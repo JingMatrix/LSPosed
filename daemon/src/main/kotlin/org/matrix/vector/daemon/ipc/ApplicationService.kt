@@ -11,6 +11,7 @@ import org.lsposed.lspd.models.Module
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
+import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.utils.InstallerVerifier
 import org.matrix.vector.daemon.utils.ObfuscationManager
 
@@ -46,14 +47,14 @@ object ApplicationService : ILSPApplicationService.Stub() {
   override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
     when (code) {
       DEX_TRANSACTION_CODE -> {
-        val shm = FileSystem.getPreloadDex(ConfigCache.isDexObfuscateEnabled()) ?: return false
+        val shm = FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled()) ?: return false
         reply?.writeNoException()
         reply?.let { shm.writeToParcel(it, 0) }
         reply?.writeLong(shm.size.toLong())
         return true
       }
       OBFUSCATION_MAP_TRANSACTION_CODE -> {
-        val obfuscation = ConfigCache.isDexObfuscateEnabled()
+        val obfuscation = PreferenceStore.isDexObfuscateEnabled()
         val signatures = ObfuscationManager.getSignatures()
         reply?.writeNoException()
         reply?.writeInt(signatures.size * 2)

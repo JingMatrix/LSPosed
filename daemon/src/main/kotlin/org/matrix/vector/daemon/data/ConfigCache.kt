@@ -7,6 +7,7 @@ import android.util.Log
 import hidden.HiddenApiBridge
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.UUID
@@ -19,20 +20,22 @@ import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.ipc.InjectedModuleService
-import org.matrix.vector.daemon.ipc.ManagerService
 import org.matrix.vector.daemon.system.*
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorConfigCache"
 
 object ConfigCache {
+  // Module preference operations are delegated to PreferenceStore
+  // Writable operations of modules are delegated to ModuleDatabase
 
-  // --- IMMUTABLE STATE ---
   @Volatile
   var state = DaemonState()
     private set
 
   val dbHelper = Database() // Kept public for PreferenceStore and ModuleDatabase
+
+  private var miscPath: Path? = null
 
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val cacheUpdateChannel = Channel<Unit>(Channel.CONFLATED)
@@ -46,37 +49,15 @@ object ConfigCache {
     initializeConfig()
   }
 
-  // --- STATE PROXIES (For backwards compatibility) ---
-  var api: String
-    get() = state.api
-    set(value) {
-      state = state.copy(api = value)
-    }
-
-  var enableStatusNotification: Boolean
-    get() = state.enableStatusNotification
-    set(value) {
-      state = state.copy(enableStatusNotification = value)
-    }
-
-  val cachedModules: Map<String, Module>
-    get() = state.modules
-
-  val cachedScopes: Map<ProcessScope, List<Module>>
-    get() = state.scopes
-
   private fun initializeConfig() {
     val config = PreferenceStore.getModulePrefs("lspd", 0, "config")
 
-    ManagerService.isVerboseLog = config["enable_verbose_log"] as? Boolean ?: true
-    val enableStatusNotif = config["enable_status_notification"] as? Boolean ?: true
-
-    if (config["enable_auto_add_shortcut"] != null) {
-      PreferenceStore.updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
-    }
+    // if (config["enable_auto_add_shortcut"] != null) {
+    //   PreferenceStore.updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
+    // }
 
     val pathStr = config["misc_path"] as? String
-    val miscPath =
+    miscPath =
         if (pathStr == null) {
           val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
           PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
@@ -88,13 +69,10 @@ object ConfigCache {
     runCatching {
           val perms =
               PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
-          Files.createDirectories(miscPath, perms)
-          FileSystem.setSelinuxContextRecursive(miscPath, "u:object_r:xposed_data:s0")
+          Files.createDirectories(miscPath!!, perms)
+          FileSystem.setSelinuxContextRecursive(miscPath!!, "u:object_r:xposed_data:s0")
         }
         .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
-
-    // Swap state with initialization data
-    state = state.copy(enableStatusNotification = enableStatusNotif, miscPath = miscPath)
   }
 
   private fun ensureCacheReady() {
@@ -104,7 +82,7 @@ object ConfigCache {
         if (!state.isCacheReady) {
           Log.i(TAG, "System services are ready. Mapping modules and scopes.")
           updateManager(false)
-          forceCacheUpdateSync()
+          performCacheUpdate()
           state = state.copy(isCacheReady = true)
         }
       }
@@ -135,10 +113,6 @@ object ConfigCache {
 
   fun requestCacheUpdate() {
     cacheUpdateChannel.trySend(Unit)
-  }
-
-  fun forceCacheUpdateSync() {
-    performCacheUpdate()
   }
 
   /** Builds a completely new Immutable State and atomically swaps it. */
@@ -291,6 +265,51 @@ object ConfigCache {
     // }
   }
 
+  fun getModuleScope(packageName: String): MutableList<Application>? {
+    if (packageName == "lspd") return null
+    val result = mutableListOf<Application>()
+    ConfigCache.dbHelper.readableDatabase
+        .query(
+            "scope INNER JOIN modules ON scope.mid = modules.mid",
+            arrayOf("app_pkg_name", "user_id"),
+            "modules.module_pkg_name = ?",
+            arrayOf(packageName),
+            null,
+            null,
+            null)
+        .use { cursor ->
+          while (cursor.moveToNext()) {
+            result.add(
+                Application().apply {
+                  this.packageName = cursor.getString(0)
+                  this.userId = cursor.getInt(1)
+                })
+          }
+        }
+    return result
+  }
+
+  fun getAutoInclude(packageName: String): Boolean {
+    if (packageName == "lspd") return false
+
+    var isAutoInclude = false
+    ConfigCache.dbHelper.readableDatabase
+        .query(
+            "modules",
+            arrayOf("auto_include"),
+            "module_pkg_name = ?",
+            arrayOf(packageName),
+            null,
+            null,
+            null)
+        .use { cursor ->
+          if (cursor.moveToFirst()) {
+            isAutoInclude = cursor.getInt(0) == 1
+          }
+        }
+    return isAutoInclude
+  }
+
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
     ensureCacheReady()
     return state.scopes[ProcessScope(processName, uid)] ?: emptyList()
@@ -368,11 +387,39 @@ object ConfigCache {
     return modules
   }
 
+  fun getModuleApkPath(info: ApplicationInfo): String? {
+    val apks = mutableListOf<String>()
+    info.sourceDir?.let { apks.add(it) }
+    info.splitSourceDirs?.let { apks.addAll(it) }
+
+    return apks.firstOrNull { apk ->
+      runCatching {
+            java.util.zip.ZipFile(apk).use { zip ->
+              zip.getEntry("META-INF/xposed/java_init.list") != null ||
+                  zip.getEntry("assets/xposed_init") != null
+            }
+          }
+          .getOrDefault(false)
+    }
+  }
+
+  fun getInstalledModules(): List<ApplicationInfo> {
+    val allPackages =
+        packageManager?.getInstalledPackagesForAllUsers(MATCH_ALL_FLAGS, false) ?: emptyList()
+    return allPackages
+        .mapNotNull { it.applicationInfo }
+        .filter { info -> getModuleApkPath(info) != null }
+  }
+
+  fun shouldSkipProcess(scope: ProcessScope): Boolean {
+    ensureCacheReady()
+    return !state.scopes.containsKey(scope) && !isManager(scope.uid)
+  }
+
   fun getPrefsPath(packageName: String, uid: Int): String {
     ensureCacheReady()
     val currentState = state
-    val basePath =
-        currentState.miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
+    val basePath = miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
 
     val userId = uid / PER_USER_RANGE
     val userSuffix = if (userId == 0) "" else userId.toString()
@@ -391,71 +438,5 @@ object ConfigCache {
     return path.toString()
   }
 
-  fun getModuleApkPath(info: ApplicationInfo): String? {
-    val apks = mutableListOf<String>()
-    info.sourceDir?.let { apks.add(it) }
-    info.splitSourceDirs?.let { apks.addAll(it) }
-
-    return apks.firstOrNull { apk ->
-      runCatching {
-            java.util.zip.ZipFile(apk).use { zip ->
-              zip.getEntry("META-INF/xposed/java_init.list") != null ||
-                  zip.getEntry("assets/xposed_init") != null
-            }
-          }
-          .getOrDefault(false)
-    }
-  }
-
-  fun shouldSkipProcess(scope: ProcessScope): Boolean {
-    ensureCacheReady()
-    return !state.scopes.containsKey(scope) && !isManager(scope.uid)
-  }
-
-  fun getEnabledModules(): List<String> = state.modules.keys.toList()
-
-  fun getDenyListPackages(): List<String> = emptyList()
-
-  fun getModulePrefs(pkg: String, userId: Int, group: String) =
-      PreferenceStore.getModulePrefs(pkg, userId, group)
-
-  fun updateModulePref(pkg: String, userId: Int, group: String, key: String, value: Any?) =
-      PreferenceStore.updateModulePref(pkg, userId, group, key, value)
-
-  fun updateModulePrefs(pkg: String, userId: Int, group: String, diff: Map<String, Any?>) =
-      PreferenceStore.updateModulePrefs(pkg, userId, group, diff)
-
-  fun deleteModulePrefs(pkg: String, userId: Int, group: String) =
-      PreferenceStore.deleteModulePrefs(pkg, userId, group)
-
-  fun isDexObfuscateEnabled() = PreferenceStore.isDexObfuscateEnabled()
-
-  fun setDexObfuscate(enabled: Boolean) = PreferenceStore.setDexObfuscate(enabled)
-
-  fun isLogWatchdogEnabled() = PreferenceStore.isLogWatchdogEnabled()
-
-  fun setLogWatchdog(enabled: Boolean) = PreferenceStore.setLogWatchdog(enabled)
-
-  fun isScopeRequestBlocked(pkg: String) = PreferenceStore.isScopeRequestBlocked(pkg)
-
-  fun enableModule(pkg: String) = ModuleDatabase.enableModule(pkg)
-
-  fun disableModule(pkg: String) = ModuleDatabase.disableModule(pkg)
-
-  fun getModuleScope(pkg: String) = ModuleDatabase.getModuleScope(pkg)
-
-  fun setModuleScope(pkg: String, scope: MutableList<Application>) =
-      ModuleDatabase.setModuleScope(pkg, scope)
-
-  fun removeModuleScope(pkg: String, scopePkg: String, userId: Int) =
-      ModuleDatabase.removeModuleScope(pkg, scopePkg, userId)
-
-  fun updateModuleApkPath(pkg: String, apkPath: String?, force: Boolean) =
-      ModuleDatabase.updateModuleApkPath(pkg, apkPath, force)
-
-  fun removeModule(pkg: String) = ModuleDatabase.removeModule(pkg)
-
-  fun getAutoInclude(pkg: String) = ModuleDatabase.getAutoInclude(pkg)
-
-  fun setAutoInclude(pkg: String, enabled: Boolean) = ModuleDatabase.setAutoInclude(pkg, enabled)
+  fun getDenyListPackages(): List<String> = emptyList() // TODO: implement it
 }
