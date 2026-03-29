@@ -3,16 +3,18 @@ package org.matrix.vector.daemon.env
 import android.net.LocalServerSocket
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
+import android.system.Os
 import android.util.Log
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import org.matrix.vector.daemon.*
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.ipc.CliHandler
 
-private const val TAG = "VectorCliSocket"
+private const val TAG = "VectorCliSever"
 
 object CliSocketServer {
 
@@ -22,38 +24,56 @@ object CliSocketServer {
     if (isRunning) return
     isRunning = true
 
-    // Use a dedicated Thread for the blocking accept() loop
     val serverThread = Thread {
+      // Keep these references outside the loop to prevent GC from closing them
+      var rootSocket: LocalSocket? = null
+      var server: LocalServerSocket? = null
+      var socketFile: File? = null
+
       try {
-        val cliSocket: String = FileSystem.setupCli()
+        val cliSocketPath: String = FileSystem.setupCli()
+        socketFile = File(cliSocketPath)
 
-        val vectorSocket = LocalSocket()
-        val address = LocalSocketAddress(cliSocket, LocalSocketAddress.Namespace.FILESYSTEM)
-        vectorSocket.bind(address)
-        val server = LocalServerSocket(vectorSocket.fileDescriptor)
+        // Create a standard LocalSocket
+        rootSocket = LocalSocket()
+        // Bind it to the filesystem path
+        val address = LocalSocketAddress(cliSocketPath, LocalSocketAddress.Namespace.FILESYSTEM)
+        rootSocket.bind(address)
 
-        Log.d(TAG, "Cli socket server created at ${cliSocket}")
+        // LocalServerSocket(FileDescriptor) requires the FD to already be listening.
+        Os.listen(rootSocket.fileDescriptor, 50)
+        // Wrap the underlying FileDescriptor into a ServerSocket
+        server = LocalServerSocket(rootSocket.fileDescriptor)
+
+        Log.d(TAG, "CLI server started at $cliSocketPath")
+
         while (!Thread.currentThread().isInterrupted) {
           try {
-            // This blocks until a command is run
             val clientSocket = server.accept()
-
-            // We handle each client in a nested try-catch.
-            // If a specific command crashes, we just close that socket and continue.
             handleClient(clientSocket)
           } catch (e: IOException) {
-            Log.w(TAG, "Error accepting client connection", e)
+            if (Thread.currentThread().isInterrupted) break
+            Log.w(TAG, "Error accepting client", e)
           }
         }
       } catch (e: Exception) {
-        Log.e(TAG, "Fatal CLI Server error. CLI commands will be unavailable.", e)
+        Log.e(TAG, "Fatal CLI Server error", e)
       } finally {
+        try {
+          server?.close()
+          rootSocket?.close()
+        } catch (ignored: Exception) {}
+
+        if (socketFile?.exists() == true) {
+          socketFile.delete()
+        }
         isRunning = false
+        Log.d(TAG, "CLI server stopped")
       }
     }
 
     serverThread.name = "VectorCliListener"
-    serverThread.priority = Thread.MIN_PRIORITY // Run as background task
+    serverThread.priority = Thread.MIN_PRIORITY
     serverThread.start()
   }
 
