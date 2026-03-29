@@ -1,5 +1,6 @@
 package org.matrix.vector.daemon.ipc
 
+import android.content.AttributionSource
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
@@ -68,7 +69,16 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
 
           val extra = Bundle().apply { putBinder("binder", asBinder()) }
           val reply: Bundle? =
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                provider.call(
+                    AttributionSource.Builder(1000).setPackageName("android").build(),
+                    authority,
+                    SEND_BINDER,
+                    null,
+                    extra)
+              } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                provider.call("android", null, authority, SEND_BINDER, null, extra)
+              } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
                 provider.call("android", authority, SEND_BINDER, null, extra)
               } else {
                 provider.call("android", SEND_BINDER, null, extra)
