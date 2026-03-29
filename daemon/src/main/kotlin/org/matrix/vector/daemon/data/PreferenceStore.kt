@@ -8,23 +8,30 @@ object PreferenceStore {
 
   fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
-    ConfigCache.dbHelper.readableDatabase
-        .query(
-            "configs",
-            arrayOf("`key`", "data"),
-            "module_pkg_name = ? AND user_id = ? AND `group` = ?",
-            arrayOf(packageName, userId.toString(), group),
-            null,
-            null,
-            null)
-        .use { cursor ->
-          while (cursor.moveToNext()) {
-            val key = cursor.getString(0)
-            val blob = cursor.getBlob(1)
-            val obj = SerializationUtilsX.deserialize<Any>(blob)
-            if (obj != null) result[key] = obj
+    val db =
+        runCatching {
+              SQLiteDatabase.openDatabase(
+                  FileSystem.dbPath.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
+            }
+            .getOrNull() ?: return result
+    db.use {
+      it.query(
+              "configs",
+              arrayOf("`key`", "data"),
+              "module_pkg_name = ? AND user_id = ? AND `group` = ?",
+              arrayOf(packageName, userId.toString(), group),
+              null,
+              null,
+              null)
+          .use { cursor ->
+            while (cursor.moveToNext()) {
+              val key = cursor.getString(0)
+              val blob = cursor.getBlob(1)
+              val obj = SerializationUtilsX.deserialize<Any>(blob)
+              if (obj != null) result[key] = obj
+            }
           }
-        }
+    }
     return result
   }
 
