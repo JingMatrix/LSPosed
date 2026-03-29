@@ -59,7 +59,6 @@ object VectorDaemon {
     }
     CliSocketServer.start()
 
-    // Accessing the object triggers the `init` block, reading SQLite instantly.
     if (PreferenceStore.isLogWatchdogEnabled()) LogcatMonitor.enableWatchdog()
     // Preload Framework DEX in the background
     CoroutineScope(Dispatchers.IO).launch {
