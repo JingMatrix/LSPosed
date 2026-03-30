@@ -103,11 +103,17 @@ public class PackageService {
         getInstalledPackagesMethod = method;
     }
 
-    private static List<PackageInfo> getInstalledPackagesReflect(IPackageManager pm, Object flags, int userId) {
+    private static List<PackageInfo> getInstalledPackagesReflect(IPackageManager pm, int flags, int userId) {
         if (getInstalledPackagesMethod == null || pm == null)
             return Collections.emptyList();
         try {
-            Object result = getInstalledPackagesMethod.invoke(pm, flags, userId);
+            Object flagsObj;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                flagsObj = (long) flags;
+            } else {
+                flagsObj = (int) flags;
+            }
+            Object result = getInstalledPackagesMethod.invoke(pm, flagsObj, userId);
             if (result instanceof ParceledListSlice) {
                 // noinspection unchecked
                 return ((ParceledListSlice<PackageInfo>) result).getList();
@@ -184,13 +190,11 @@ public class PackageService {
             throws RemoteException {
         List<PackageInfo> res = new ArrayList<>();
         IPackageManager pm = getPackageManager();
-        if (pm == null)
-            return ParcelableListSlice.emptyList();
+        if (pm == null) return ParcelableListSlice.emptyList();
         // Prepare flags once outside the loop
-        Object flagsObj = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ? (long) flags : flags;
         for (var user : UserService.getUsers()) {
             // Use the reflective helper instead of direct AIDL calls
-            List<PackageInfo> infos = getInstalledPackagesReflect(pm, flagsObj, user.id);
+            List<PackageInfo> infos = getInstalledPackagesReflect(pm, flags, user.id);
             res.addAll(infos.parallelStream()
                     .filter(info -> info.applicationInfo != null
                             && info.applicationInfo.uid / PER_USER_RANGE == user.id)
