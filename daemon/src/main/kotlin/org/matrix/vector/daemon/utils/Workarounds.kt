@@ -125,3 +125,28 @@ fun applyXspaceWorkaround(connection: IServiceConnection) {
     }
   }
 }
+
+fun disableSqliteWalFlags() {
+  // This class only exists on Android 9 (API 28) and above
+  if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) return
+
+  runCatching {
+        val clazz = Class.forName("android.database.sqlite.SQLiteCompatibilityWalFlags")
+
+        // 1. Mark as initialized so initIfNeeded() returns immediately
+        clazz.getDeclaredField("sInitialized").apply {
+          isAccessible = true
+          set(null, true)
+        }
+
+        // 2. Mark as 'Currently Calling' as a secondary safety measure
+        // This is the recursion guard that SQLite uses to avoid Settings circularity.
+        clazz.getDeclaredField("sCallingGlobalSettings").apply {
+          isAccessible = true
+          set(null, true)
+        }
+
+        Log.i(TAG, "SQLite global settings check successfully disabled.")
+      }
+      .onFailure { Log.d(TAG, "Could not disable SQLiteCompatibilityWalFlags", it) }
+}
