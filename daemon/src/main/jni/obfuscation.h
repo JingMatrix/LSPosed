@@ -16,7 +16,7 @@ class DexAllocator : public dex::Writer::Allocator {
 
 public:
     inline void* Allocate(size_t size) override {
-        LOGD("DexAllocator: attempting to allocate %zu bytes", size);
+        LOGV("DexAllocator: attempting to allocate %zu bytes", size);
 
         fd_ = ASharedMemory_create("obfuscated_dex", size);
         if (fd_ < 0) {
@@ -37,7 +37,7 @@ public:
             mapped_mem_ = nullptr;
         }
 
-        LOGD("DexAllocator: success, mapped at %p, fd=%d", mapped_mem_, fd_);
+        LOGV("DexAllocator: success, mapped at %p, fd=%d", mapped_mem_, fd_);
         return mapped_mem_;
     }
 

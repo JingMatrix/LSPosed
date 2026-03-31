@@ -112,7 +112,7 @@ static void ensureInitialized(JNIEnv *env) {
 
         for (auto &i : signatures) {
             i.second = regen(i.first);
-            LOGD("%s => %s", i.first.c_str(), i.second.c_str());
+            LOGV("%s => %s", i.first.c_str(), i.second.c_str());
         }
 
         LOGD("ObfuscationManager init successfully");
@@ -166,7 +166,6 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_getSignatures(
 }
 
 static int obfuscateDexBuffer(const void *dex_data, size_t size) {
-    // LOGD("obfuscateDexBuffer: dex_data=%p, size=%zu", dex_data, size);
     dex::Reader reader{reinterpret_cast<const dex::u1 *>(dex_data), size};
     reader.CreateFullIr();
     auto ir = reader.GetIr();
@@ -202,7 +201,7 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
     if (fd < 0) return nullptr;
 
     auto size = ASharedMemory_getSize(fd);
-    LOGD("obfuscateDex: fd=%d, size=%zu", fd, size);
+    LOGV("obfuscateDex: fd=%d, size=%zu", fd, size);
 
     // CRITICAL: We MUST use MAP_SHARED here, not MAP_PRIVATE.
     // 1. Android's SharedMemory is backed by ashmem or memfd. Mapping these as
@@ -234,7 +233,7 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
     }
 
     if (!needs_obfuscation) {
-        LOGD("No target signatures found in fd=%d, skipping slicer.", fd);
+        LOGV("No target signatures found in fd=%d, skipping slicer.", fd);
         munmap(mem, size);
 
         // Wrap the duplicated FD into Java objects and return instantly
