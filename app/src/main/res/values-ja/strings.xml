@@ -203,8 +203,6 @@
     <string name="update_channel_stable">安定版</string>
     <string name="update_channel_bate">ベータ版</string>
     <string name="update_channel_nightly">ナイトリービルド</string>
-    <string name="settings_xposed_api_call_protection">Xposed API の呼び出し保護</string>
-    <string name="settings_xposed_api_call_protection_summary">動的にロードされたモジュールコードが Xposed API を使用するのをブロックします。これにより一部のモジュールが動作しなくなる可能性がありますが、セキュリティが向上します。</string>
     <!-- Module Repo -->
     <string name="module_readme">Readme</string>
     <string name="module_releases">リリース</string>

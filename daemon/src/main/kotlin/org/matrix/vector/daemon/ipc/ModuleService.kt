@@ -110,7 +110,7 @@ class ModuleService(private val loadedModule: Module) : IXposedService.Stub() {
   override fun getFrameworkProperties(): Long {
     ensureModule()
     var prop = IXposedService.PROP_CAP_SYSTEM or IXposedService.PROP_CAP_REMOTE
-    if (PreferenceStore.isDexObfuscateEnabled())
+    if (ConfigCache.state.isDexObfuscateEnabled)
         prop = prop or IXposedService.PROP_RT_API_PROTECTION
     return prop
   }

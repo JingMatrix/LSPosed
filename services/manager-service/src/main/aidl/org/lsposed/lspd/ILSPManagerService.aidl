@@ -74,10 +74,6 @@ interface ILSPManagerService {
 
     List<String> getDenyListPackages() = 41;
 
-    boolean getDexObfuscate() = 42;
-
-    void setDexObfuscate(boolean enable) = 43;
-
     int getDex2OatWrapperCompatibility() = 44;
 
     void clearApplicationProfileData(in String packageName) = 45;

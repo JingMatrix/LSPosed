@@ -205,8 +205,6 @@
     <string name="update_channel_stable">پایدار</string>
     <string name="update_channel_bate">بتا</string>
     <string name="update_channel_nightly">نسخه شبانه</string>
-    <string name="settings_xposed_api_call_protection">حفاظت از تماس API Xposed</string>
-    <string name="settings_xposed_api_call_protection_summary">جلوگیری از استفاده کد ماژول های بارگذاری شده به صورت داینامیک از API های Xposed، ممکن است بعضی ماژول ها کار نکنند ولی امنیت بهتر می شود</string>
     <!-- Module Repo -->
     <string name="module_readme">راهنما</string>
     <string name="module_releases">نسخه ها</string>

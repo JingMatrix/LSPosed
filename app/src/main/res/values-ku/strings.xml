@@ -199,8 +199,6 @@
     <string name="update_channel_stable">Stewr</string>
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Avakirina şevê</string>
-    <string name="settings_xposed_api_call_protection">Parastina banga Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">Koda modulê ya bi dînamîk barkirî asteng bike ku Xposed API bikar bîne, ev dibe ku hin modulan bişkîne lê ji ewlehiyê sûd werdigire</string>
     <!-- Module Repo -->
     <string name="module_readme">Readme</string>
     <string name="module_releases">Releases</string>

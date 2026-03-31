@@ -161,16 +161,6 @@ public class SettingsFragment extends BaseFragment {
                 prefVerboseLogs.setOnPreferenceChangeListener((preference, newValue) -> ConfigManager.setVerboseLogEnabled(!(boolean) newValue));
             }
 
-            MaterialSwitchPreference prefDexObfuscate = findPreference("enable_dex_obfuscate");
-            if (prefDexObfuscate != null) {
-                prefDexObfuscate.setEnabled(installed);
-                prefDexObfuscate.setChecked(!installed || ConfigManager.isDexObfuscateEnabled());
-                prefDexObfuscate.setOnPreferenceChangeListener((preference, newValue) -> {
-                    parentFragment.showHint(R.string.reboot_required, true, R.string.reboot, v -> ConfigManager.reboot());
-                    return ConfigManager.setDexObfuscateEnabled((boolean) newValue);
-                });
-            }
-
             MaterialSwitchPreference notificationPreference = findPreference("enable_status_notification");
             if (notificationPreference != null) {
                 notificationPreference.setVisible(installed);

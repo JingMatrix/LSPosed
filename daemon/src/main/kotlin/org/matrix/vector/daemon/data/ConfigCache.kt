@@ -7,7 +7,6 @@ import android.util.Log
 import hidden.HiddenApiBridge
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.UUID
@@ -33,8 +32,6 @@ object ConfigCache {
 
   val dbHelper = Database() // Kept public for PreferenceStore and ModuleDatabase
 
-  private var miscPath: Path? = null
-
   private val cacheUpdateChannel = Channel<Unit>(Channel.CONFLATED)
 
   init {
@@ -45,38 +42,15 @@ object ConfigCache {
     }
   }
 
-  private fun setupMiscPath() {
-    val pathStr = PreferenceStore.getModulePrefs("lspd", 0, "config")["misc_path"] as? String
-    miscPath =
-        if (pathStr == null) {
-          val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
-          PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
-          newPath
-        } else {
-          Paths.get(pathStr)
-        }
-
-    runCatching {
-          val perms =
-              PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
-          Files.createDirectories(miscPath!!, perms)
-          FileSystem.setSelinuxContextRecursive(miscPath!!, "u:object_r:xposed_data:s0")
-        }
-        .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
-  }
-
   private fun ensureCacheReady() {
-    val currentState = state
-    if (!currentState.isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
+    if (!state.isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
       synchronized(this) {
-        if (miscPath == null) {
-          setupMiscPath()
-        }
         if (!state.isCacheReady) {
           Log.i(TAG, "System services are ready. Mapping modules and scopes.")
           updateManager(false)
+          setupMiscPath()
           performCacheUpdate()
-          state = currentState.copy(isCacheReady = true)
+          state = state.copy(isCacheReady = true)
         }
       }
     }
@@ -87,16 +61,35 @@ object ConfigCache {
       state = state.copy(managerUid = -1)
       return
     }
-    if (packageManager?.asBinder()?.isBinderAlive == true) {
-      runCatching {
-            val info =
-                packageManager?.getPackageInfoCompat(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0)
-            val uid = info?.applicationInfo?.uid ?: -1
-            if (uid == -1) Log.i(TAG, "Manager is not installed")
-            state = state.copy(managerUid = uid)
-          }
-          .onFailure { state = state.copy(managerUid = -1) }
-    }
+    runCatching {
+          val info =
+              packageManager?.getPackageInfoCompat(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0)
+          val uid = info?.applicationInfo?.uid ?: -1
+          if (uid == -1) Log.i(TAG, "Manager is not installed")
+          state = state.copy(managerUid = uid)
+        }
+        .onFailure { state = state.copy(managerUid = -1) }
+  }
+
+  private fun setupMiscPath() {
+    val pathStr = PreferenceStore.getModulePrefs("lspd", 0, "config")["misc_path"] as? String
+    val path =
+        if (pathStr == null) {
+          val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
+          PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", newPath.toString())
+          newPath
+        } else {
+          Paths.get(pathStr)
+        }
+    state = state.copy(miscPath = path)
+
+    runCatching {
+          val perms =
+              PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
+          Files.createDirectories(state.miscPath!!, perms)
+          FileSystem.setSelinuxContextRecursive(state.miscPath!!, "u:object_r:xposed_data:s0")
+        }
+        .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
   }
 
   fun isManager(uid: Int): Boolean {
@@ -115,7 +108,6 @@ object ConfigCache {
     Log.d(TAG, "Executing Cache Update...")
     val db = dbHelper.readableDatabase
     val oldState = state
-    val isDexObfuscateEnabled = PreferenceStore.isDexObfuscateEnabled()
 
     val newModules = mutableMapOf<String, Module>()
     val obsoleteModules = mutableSetOf<String>()
@@ -175,7 +167,7 @@ object ConfigCache {
               obsoletePaths[pkgName] = realApkPath
             }
 
-            val preLoadedApk = FileSystem.loadModule(apkPath, isDexObfuscateEnabled)
+            val preLoadedApk = FileSystem.loadModule(apkPath, state.isDexObfuscateEnabled)
             if (preLoadedApk != null) {
               val module =
                   Module().apply {
@@ -370,7 +362,7 @@ object ConfigCache {
               uid = module.appId
             }
 
-            FileSystem.loadModule(apkPath, PreferenceStore.isDexObfuscateEnabled())?.let {
+            FileSystem.loadModule(apkPath, state.isDexObfuscateEnabled)?.let {
               module.file = it
               modules.add(module)
               // We intentionally don't mutate state.modules here. Cache update will catch it.
@@ -412,7 +404,7 @@ object ConfigCache {
   fun getPrefsPath(packageName: String, uid: Int): String {
     ensureCacheReady()
     val currentState = state
-    val basePath = miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
+    val basePath = state.miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
 
     val userId = uid / PER_USER_RANGE
     val userSuffix = if (userId == 0) "" else userId.toString()

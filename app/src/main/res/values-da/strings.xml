@@ -199,8 +199,6 @@
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Nightly build</string>
-    <string name="settings_xposed_api_call_protection">Beskyttelse af Xposed API-opkald</string>
-    <string name="settings_xposed_api_call_protection_summary">Bloker dynamisk indlæst modulkode for at bruge Xposed API, hvilket kan ødelægge nogle moduler, men gavner sikkerheden</string>
     <!-- Module Repo -->
     <string name="module_readme">Læs</string>
     <string name="module_releases">Udgivelser</string>

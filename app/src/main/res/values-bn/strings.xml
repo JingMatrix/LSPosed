@@ -199,8 +199,6 @@
     <string name="update_channel_stable">স্থিতিশীল</string>
     <string name="update_channel_bate">বেটা</string>
     <string name="update_channel_nightly">রাতারাতি নির্মাণ</string>
-    <string name="settings_xposed_api_call_protection">Xposed API কল সুরক্ষা</string>
-    <string name="settings_xposed_api_call_protection_summary">এক্সপোজড এপিআই ব্যবহার করতে গতিশীলভাবে লোড করা মডিউল কোড ব্লক করুন, এটি কিছু মডিউল ভেঙে ফেলতে পারে তবে নিরাপত্তার সুবিধা পাবে</string>
     <!-- Module Repo -->
     <string name="module_readme">রিডমি</string>
     <string name="module_releases">মুক্তি দেয়</string>

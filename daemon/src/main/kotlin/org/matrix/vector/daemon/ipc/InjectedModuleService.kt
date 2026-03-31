@@ -10,6 +10,7 @@ import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.lspd.service.ILSPInjectedModuleService
 import org.lsposed.lspd.service.IRemotePreferenceCallback
+import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.system.PER_USER_RANGE
@@ -23,7 +24,7 @@ class InjectedModuleService(private val packageName: String) : ILSPInjectedModul
 
   override fun getFrameworkProperties(): Long {
     var prop = IXposedService.PROP_CAP_SYSTEM or IXposedService.PROP_CAP_REMOTE
-    if (PreferenceStore.isDexObfuscateEnabled()) {
+    if (ConfigCache.state.isDexObfuscateEnabled) {
       prop = prop or IXposedService.PROP_RT_API_PROTECTION
     }
     return prop

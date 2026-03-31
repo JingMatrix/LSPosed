@@ -203,8 +203,6 @@
     <string name="update_channel_stable">Stabilus</string>
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Naktinis kūrimas</string>
-    <string name="settings_xposed_api_call_protection">\"Xposed API\" skambučių apsauga</string>
-    <string name="settings_xposed_api_call_protection_summary">Blokuoti dinamiškai įkeltą modulio kodą, kad būtų galima naudoti Xposed API, tai gali pažeisti kai kuriuos modulius, bet naudinga saugumui</string>
     <!-- Module Repo -->
     <string name="module_readme">Readme</string>
     <string name="module_releases">Leidiniai</string>

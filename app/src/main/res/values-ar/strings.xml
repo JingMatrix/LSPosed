@@ -209,8 +209,6 @@
     <string name="update_channel_stable">مستقر</string>
     <string name="update_channel_bate">تجريبي</string>
     <string name="update_channel_nightly">البناء الليلي</string>
-    <string name="settings_xposed_api_call_protection">حماية استدعاء Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">حظر رمز الوحدة الذي يتم تحميله ديناميكيًا لاستخدام Xposed API ، قد يؤدي ذلك إلى كسر بعض الوحدات ولكنه يفيد الأمان</string>
     <!-- Module Repo -->
     <string name="module_readme">اقرأني</string>
     <string name="module_releases">إصدارات</string>

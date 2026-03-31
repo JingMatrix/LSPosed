@@ -199,8 +199,6 @@
     <string name="update_channel_stable">स्थिर</string>
     <string name="update_channel_bate">बीटा</string>
     <string name="update_channel_nightly">सॉफ़्टवेयर की स्थिरता</string>
-    <string name="settings_xposed_api_call_protection">Xposed API कॉल सुरक्षा</string>
-    <string name="settings_xposed_api_call_protection_summary">Xposed API का उपयोग करने के लिए गतिशील रूप से लोड किए गए मॉड्यूल कोड को ब्लॉक करें, इससे कुछ मॉड्यूल टूट सकते हैं लेकिन सुरक्षा को लाभ होगा</string>
     <!-- Module Repo -->
     <string name="module_readme">रीडमी</string>
     <string name="module_releases">विज्ञप्ति</string>

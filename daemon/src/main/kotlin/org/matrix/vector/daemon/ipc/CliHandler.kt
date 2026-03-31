@@ -169,7 +169,6 @@ object CliHandler {
         val key = keys[0]
         val value =
             when (key) {
-              "dex-obfuscate" -> ManagerService.dexObfuscate
               "status-notification" -> ManagerService.enableStatusNotification()
               "verbose-log" -> ManagerService.isVerboseLog
               else -> throw IllegalArgumentException("Unknown config key: $key")
@@ -184,7 +183,6 @@ object CliHandler {
                 ?: throw IllegalArgumentException("Value must be 'true' or 'false'.")
 
         when (key) {
-          "dex-obfuscate" -> ManagerService.dexObfuscate = value
           "status-notification" -> ManagerService.setEnableStatusNotification(value)
           "verbose-log" -> ManagerService.setVerboseLog(value)
           else -> throw IllegalArgumentException("Unknown config key: $key")

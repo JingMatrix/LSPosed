@@ -18,8 +18,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.FileSystem
-import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.env.CliSocketServer
 import org.matrix.vector.daemon.env.Dex2OatServer
 import org.matrix.vector.daemon.env.LogcatMonitor
@@ -71,6 +71,7 @@ object VectorDaemon {
     CliSocketServer.start()
 
     // Preload Framework DEX in the background
+    scope.launch { FileSystem.getPreloadDex(ConfigCache.state.isDexObfuscateEnabled) }
 
     // Setup Main Looper & System Services
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
@@ -91,7 +92,6 @@ object VectorDaemon {
 
     applyNotificationWorkaround()
 
-    scope.launch { FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled()) }
     // Inject Vector into system_server
     sendToBridge(VectorService.asBinder(), isRestart = false, systemServerService)
 

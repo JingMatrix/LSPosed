@@ -469,10 +469,6 @@ object ManagerService : ILSPManagerService.Stub() {
   override fun performDexOptMode(packageName: String) =
       org.matrix.vector.daemon.utils.performDexOptMode(packageName)
 
-  override fun getDexObfuscate() = PreferenceStore.isDexObfuscateEnabled()
-
-  override fun setDexObfuscate(enabled: Boolean) = PreferenceStore.setDexObfuscate(enabled)
-
   override fun getDex2OatWrapperCompatibility() =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Dex2OatServer.compatibility else 0
 

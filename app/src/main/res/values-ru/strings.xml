@@ -209,8 +209,6 @@
     <string name="update_channel_stable">Стабильные версии</string>
     <string name="update_channel_bate">Бета-версии</string>
     <string name="update_channel_nightly">Еженочные версии</string>
-    <string name="settings_xposed_api_call_protection">Защита запросов Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">Блокировка динамически загружаемого кода модуля для использования Xposed API, это может нарушить работу некоторых модулей, но повысит безопасность</string>
     <!-- Module Repo -->
     <string name="module_readme">ПрочтиМеня</string>
     <string name="module_releases">Версии</string>

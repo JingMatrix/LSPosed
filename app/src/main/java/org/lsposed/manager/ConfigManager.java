@@ -335,25 +335,6 @@ public class ConfigManager {
         }
     }
 
-    public static boolean isDexObfuscateEnabled() {
-        try {
-            return LSPManagerServiceHolder.getService().getDexObfuscate();
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
-
-    public static boolean setDexObfuscateEnabled(boolean enabled) {
-        try {
-            LSPManagerServiceHolder.getService().setDexObfuscate(enabled);
-            return true;
-        } catch (RemoteException e) {
-            Log.e(App.TAG, Log.getStackTraceString(e));
-            return false;
-        }
-    }
-
     public static int getDex2OatWrapperCompatibility() {
         try {
             return LSPManagerServiceHolder.getService().getDex2OatWrapperCompatibility();

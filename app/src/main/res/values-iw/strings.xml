@@ -203,8 +203,6 @@
     <string name="update_channel_stable">יציב</string>
     <string name="update_channel_bate">בטא</string>
     <string name="update_channel_nightly">בניה לילית</string>
-    <string name="settings_xposed_api_call_protection">הגנה מפני קריאות Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">חסום קוד מודול שנטען באופן דינמי לשימוש ב-Xposed API, זה עשוי לשבור מודולים מסוימים אך להועיל לאבטחה</string>
     <!-- Module Repo -->
     <string name="module_readme">קרא אותי</string>
     <string name="module_releases">גרסאות</string>

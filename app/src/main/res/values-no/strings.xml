@@ -199,8 +199,6 @@
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">beta</string>
     <string name="update_channel_nightly">Nattlig bygg</string>
-    <string name="settings_xposed_api_call_protection">Xposed API-anropsbeskyttelse</string>
-    <string name="settings_xposed_api_call_protection_summary">Blokker dynamisk lastet modulkode for å bruke Xposed API, dette kan ødelegge noen moduler, men gi fordeler for sikkerheten</string>
     <!-- Module Repo -->
     <string name="module_readme">Lesmeg</string>
     <string name="module_releases">Utgivelser</string>

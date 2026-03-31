@@ -2,37 +2,36 @@ package org.matrix.vector.daemon.data
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
 import org.apache.commons.lang3.SerializationUtilsX
 
 private const val TAG = "VectorPreferenceStore"
 
 object PreferenceStore {
 
-  fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
+  fun getModulePrefs(
+      packageName: String,
+      userId: Int,
+      group: String,
+      db: SQLiteDatabase = ConfigCache.dbHelper.readableDatabase
+  ): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
 
-    runCatching {
-          ConfigCache.dbHelper.readableDatabase
-              .query(
-                  "configs",
-                  arrayOf("`key`", "data"),
-                  "module_pkg_name = ? AND user_id = ? AND `group` = ?",
-                  arrayOf(packageName, userId.toString(), group),
-                  null,
-                  null,
-                  null)
-              .use { cursor -> // We only close the cursor
-                while (cursor.moveToNext()) {
-                  val key = cursor.getString(0)
-                  val blob = cursor.getBlob(1)
-                  val obj = SerializationUtilsX.deserialize<Any>(blob)
-                  if (obj != null) result[key] = obj
-                }
-              }
+    db.query(
+            "configs",
+            arrayOf("`key`", "data"),
+            "module_pkg_name = ? AND user_id = ? AND `group` = ?",
+            arrayOf(packageName, userId.toString(), group),
+            null,
+            null,
+            null)
+        .use { cursor -> // We only close the cursor
+          while (cursor.moveToNext()) {
+            val key = cursor.getString(0)
+            val blob = cursor.getBlob(1)
+            val obj = SerializationUtilsX.deserialize<Any>(blob)
+            if (obj != null) result[key] = obj
+          }
         }
-        .onFailure { Log.e(TAG, "Failed to getModulePrefs for $packageName: ${it.message}") }
-
     return result
   }
 
@@ -74,12 +73,6 @@ object PreferenceStore {
         "module_pkg_name=? AND user_id=? AND `group`=?",
         arrayOf(moduleName, userId.toString(), group))
   }
-
-  fun isDexObfuscateEnabled(): Boolean =
-      getModulePrefs("lspd", 0, "config")["enable_dex_obfuscate"] as? Boolean ?: false
-
-  fun setDexObfuscate(enabled: Boolean) =
-      updateModulePref("lspd", 0, "config", "enable_dex_obfuscate", enabled)
 
   fun isStatusNotificationEnabled(): Boolean =
       getModulePrefs("lspd", 0, "config")["enable_status_notification"] as? Boolean ?: true

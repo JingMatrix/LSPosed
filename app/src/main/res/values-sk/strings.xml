@@ -203,8 +203,6 @@
     <string name="update_channel_stable">Stabilné</string>
     <string name="update_channel_bate">Beta</string>
     <string name="update_channel_nightly">Nočné zostavenie</string>
-    <string name="settings_xposed_api_call_protection">Ochrana volaní Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">Blokovať dynamicky načítaný kód modulu, aby používal Xposed API, čo môže rozbiť niektoré moduly, ale prospeje bezpečnosti</string>
     <!-- Module Repo -->
     <string name="module_readme">Readme</string>
     <string name="module_releases">Uvoľňuje</string>

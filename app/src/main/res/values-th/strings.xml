@@ -198,8 +198,6 @@
     <string name="update_channel_stable">มั่นคง</string>
     <string name="update_channel_bate">เบต้า</string>
     <string name="update_channel_nightly">สร้างทุกคืน</string>
-    <string name="settings_xposed_api_call_protection">การป้องกันการโทร Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">บล็อกโค้ดโมดูลที่โหลดแบบไดนามิกเพื่อใช้ Xposed API ซึ่งอาจทำให้บางโมดูลเสียหายแต่ได้ประโยชน์ด้านความปลอดภัย</string>
     <!-- Module Repo -->
     <string name="module_readme">ต้องอ่าน</string>
     <string name="module_releases">เผยแพร่</string>

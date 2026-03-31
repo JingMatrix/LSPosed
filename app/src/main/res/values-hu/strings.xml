@@ -200,8 +200,6 @@
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Béta</string>
     <string name="update_channel_nightly">Nightly</string>
-    <string name="settings_xposed_api_call_protection">Xposed API hívásvédelem</string>
-    <string name="settings_xposed_api_call_protection_summary">A dinamikusan betöltött modul kódjának blokkolása az Xposed API használatához, ez néhány modult tönkretehet, de a biztonság javára válik</string>
     <!-- Module Repo -->
     <string name="module_readme">Olvass el</string>
     <string name="module_releases">Kiadások</string>

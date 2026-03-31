@@ -209,8 +209,6 @@
     <string name="update_channel_stable">Стабільний</string>
     <string name="update_channel_bate">Бета-версія</string>
     <string name="update_channel_nightly">Нічна збірка</string>
-    <string name="settings_xposed_api_call_protection">Захист викликів Xposed API</string>
-    <string name="settings_xposed_api_call_protection_summary">Блокування динамічно завантаженого коду модуля для використання Xposed API, це може призвести до поломки деяких модулів, але покращить безпеку</string>
     <!-- Module Repo -->
     <string name="module_readme">Опис</string>
     <string name="module_releases">Релізи</string>

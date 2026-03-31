@@ -199,8 +199,6 @@
     <string name="update_channel_stable">ස්ථාවර</string>
     <string name="update_channel_bate">බීටා</string>
     <string name="update_channel_nightly">රාත්රී ගොඩනැගීම</string>
-    <string name="settings_xposed_api_call_protection">Xposed API ඇමතුම් ආරක්ෂාව</string>
-    <string name="settings_xposed_api_call_protection_summary">Xposed API භාවිතා කිරීමට ගතිකව පටවන ලද මොඩියුල කේතය අවහිර කරන්න, මෙය සමහර මොඩියුල බිඳ දැමිය හැකි නමුත් ආරක්ෂාවට ප්‍රතිලාභ ලබා දෙයි</string>
     <!-- Module Repo -->
     <string name="module_readme">කියවන්න</string>
     <string name="module_releases">නිකුත් කරයි</string>
