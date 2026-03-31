@@ -67,14 +67,11 @@ object VectorDaemon {
 
     // Start Environmental Daemons
     LogcatMonitor.start()
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) 
       Dex2OatServer.start()
-    }
     CliSocketServer.start()
 
-    if (PreferenceStore.isLogWatchdogEnabled()) LogcatMonitor.enableWatchdog()
     // Preload Framework DEX in the background
-    scope.launch { FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled()) }
 
     // Setup Main Looper & System Services
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
@@ -95,6 +92,7 @@ object VectorDaemon {
 
     applyNotificationWorkaround()
 
+    scope.launch { FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled()) }
     // Inject Vector into system_server
     sendToBridge(VectorService.asBinder(), isRestart = false, systemServerService)
 

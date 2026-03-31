@@ -166,8 +166,6 @@
     <string name="settings_group_framework">框架</string>
     <string name="settings_disable_verbose_log">停用詳細日誌</string>
     <string name="settings_disable_verbose_log_summary">回報問題要求包含詳細日誌</string>
-    <string name="settings_enable_log_watchdog">啟用日誌看門狗</string>
-    <string name="settings_enable_log_watchdog_summary">LSPosed 的日誌看門狗會修改系統屬性，可被利用來偵測 LSPosed</string>
     <string name="pure_black_dark_theme">黑色主題</string>
     <string name="pure_black_dark_theme_summary">當深色主題啟用時使用純黑色主題</string>
     <string name="settings_group_theme">主題</string>

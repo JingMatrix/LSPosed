@@ -176,8 +176,6 @@
     <string name="settings_group_framework">إطار العمل</string>
     <string name="settings_disable_verbose_log">تعطيل السجلات المفصّلة</string>
     <string name="settings_disable_verbose_log_summary">الإبلاغ عن مشاكل طلب لتضمين السجلات المفصولة</string>
-    <string name="settings_enable_log_watchdog">تمكين مراقبة السجل</string>
-    <string name="settings_enable_log_watchdog_summary">يقوم مراقب السجل الخاص بـ LSPosed بتعديل خصائص النظام، والتي يمكن استغلالها للكشف عن LSPosed</string>
     <string name="pure_black_dark_theme">السمة السوداء المظلمة</string>
     <string name="pure_black_dark_theme_summary">استخدام السمة السوداء الخالصة إذا تم تمكين السمة المظلمة</string>
     <string name="settings_group_theme">السمة</string>

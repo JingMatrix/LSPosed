@@ -476,10 +476,6 @@ object ManagerService : ILSPManagerService.Stub() {
   override fun getDex2OatWrapperCompatibility() =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Dex2OatServer.compatibility else 0
 
-  override fun setLogWatchdog(enabled: Boolean) = PreferenceStore.setLogWatchdog(enabled)
-
-  override fun isLogWatchdogEnabled() = PreferenceStore.isLogWatchdogEnabled()
-
   override fun setAutoInclude(packageName: String, enabled: Boolean) =
       ModuleDatabase.setAutoInclude(packageName, enabled)
 

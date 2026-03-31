@@ -172,8 +172,6 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Desactivar registros detallados</string>
     <string name="settings_disable_verbose_log_summary">Solicitud de inclusión de registros detallados en los informes de incidencias</string>
-    <string name="settings_enable_log_watchdog">Habilitar el watchdog de registro</string>
-    <string name="settings_enable_log_watchdog_summary">El watchdog de registro de LSPosed modifica propiedades del sistema, lo que podría usarse para detectar LSPosed</string>
     <string name="pure_black_dark_theme">Tema negro oscuro</string>
     <string name="pure_black_dark_theme_summary">Usar el tema negro puro si el tema oscuro está activado</string>
     <string name="settings_group_theme">Tema</string>

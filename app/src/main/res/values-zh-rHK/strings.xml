@@ -170,8 +170,6 @@
     <string name="settings_group_framework">框架</string>
     <string name="settings_disable_verbose_log">禁用詳細紀錄檔</string>
     <string name="settings_disable_verbose_log_summary">回報問題要求包含詳細記錄檔</string>
-    <string name="settings_enable_log_watchdog">啟用日誌監控</string>
-    <string name="settings_enable_log_watchdog_summary">LSPosed 的日誌監控會修改系統屬性，可能被利用來偵測 LSPosed</string>
     <string name="pure_black_dark_theme">使用純黑深色主題</string>
     <string name="pure_black_dark_theme_summary">使用純黑色背景當深色模式已啟用</string>
     <string name="settings_group_theme">主題</string>

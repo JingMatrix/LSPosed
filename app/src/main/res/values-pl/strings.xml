@@ -176,8 +176,6 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Wyłącz logi</string>
     <string name="settings_disable_verbose_log_summary">Zgłaszanie problemów wymaga dołączenia pełnych dzienników</string>
-    <string name="settings_enable_log_watchdog">Włącz nadzór dziennika</string>
-    <string name="settings_enable_log_watchdog_summary">Nadzór dziennika LSPosed modyfikuje właściwości systemowe, które mogą być wykorzystywane do wykrywania LSPosed</string>
     <string name="pure_black_dark_theme">Czarny ciemny motyw</string>
     <string name="pure_black_dark_theme_summary">Użyj czarnego motywu, jeśli ciemny motyw jest włączony</string>
     <string name="settings_group_theme">Motyw</string>

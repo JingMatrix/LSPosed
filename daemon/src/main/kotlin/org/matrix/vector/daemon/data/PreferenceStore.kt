@@ -82,12 +82,6 @@ object PreferenceStore {
   fun setDexObfuscate(enabled: Boolean) =
       updateModulePref("lspd", 0, "config", "enable_dex_obfuscate", enabled)
 
-  fun isLogWatchdogEnabled(): Boolean =
-      getModulePrefs("lspd", 0, "config")["enable_log_watchdog"] as? Boolean ?: true
-
-  fun setLogWatchdog(enabled: Boolean) =
-      updateModulePref("lspd", 0, "config", "enable_log_watchdog", enabled)
-
   fun isStatusNotificationEnabled(): Boolean =
       getModulePrefs("lspd", 0, "config")["enable_status_notification"] as? Boolean ?: true
 

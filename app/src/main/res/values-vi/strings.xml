@@ -167,8 +167,6 @@ Nên gỡ cài đặt ứng dụng hiện tại.</string>
     <string name="settings_group_framework">Khung hệ thống</string>
     <string name="settings_disable_verbose_log">Vô hiệu hoá nhật ký chi tiết</string>
     <string name="settings_disable_verbose_log_summary">Báo cáo sự cố yêu cầu bao gồm nhật ký chi tiết</string>
-    <string name="settings_enable_log_watchdog">Bật chức năng giám sát nhật ký</string>
-    <string name="settings_enable_log_watchdog_summary">Log watchdog sửa đổi các thuộc tính hệ thống của LSPosed, có thể được khai thác để phát hiện LSPosed</string>
     <string name="pure_black_dark_theme">Chủ đề Đen - Tối</string>
     <string name="pure_black_dark_theme_summary">Sử dụng chủ đề đen nếu chủ đề tối được bật</string>
     <string name="settings_group_theme">Chủ đề</string>

@@ -171,7 +171,6 @@ object CliHandler {
             when (key) {
               "dex-obfuscate" -> ManagerService.dexObfuscate
               "status-notification" -> ManagerService.enableStatusNotification()
-              "log-watchdog" -> ManagerService.isLogWatchdogEnabled
               "verbose-log" -> ManagerService.isVerboseLog
               else -> throw IllegalArgumentException("Unknown config key: $key")
             }
@@ -187,7 +186,6 @@ object CliHandler {
         when (key) {
           "dex-obfuscate" -> ManagerService.dexObfuscate = value
           "status-notification" -> ManagerService.setEnableStatusNotification(value)
-          "log-watchdog" -> ManagerService.setLogWatchdog(value)
           "verbose-log" -> ManagerService.setVerboseLog(value)
           else -> throw IllegalArgumentException("Unknown config key: $key")
         }

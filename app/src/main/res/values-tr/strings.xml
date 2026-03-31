@@ -172,8 +172,6 @@
     <string name="settings_group_framework">Çerçeve</string>
     <string name="settings_disable_verbose_log">Ayrıntılı günlükleri devre dışı bırak</string>
     <string name="settings_disable_verbose_log_summary">Ayrıntılı günlükleri dahil etme isteğini raporlayın</string>
-    <string name="settings_enable_log_watchdog">Watchdog log\'u etkinleştir</string>
-    <string name="settings_enable_log_watchdog_summary">LSPosed\'in watchdog log\'u, LSPosed\'i tespit etmek için kullanılabilecek sistem özelliklerini değiştirir</string>
     <string name="pure_black_dark_theme">Siyah koyu tema</string>
     <string name="pure_black_dark_theme_summary">Koyu tema etkinse saf siyah temayı kullanın</string>
     <string name="settings_group_theme">Tema</string>

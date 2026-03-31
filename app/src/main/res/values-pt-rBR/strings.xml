@@ -172,8 +172,6 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Desativar registros detalhados</string>
     <string name="settings_disable_verbose_log_summary">Relate o problema para incluir os registros detalhados</string>
-    <string name="settings_enable_log_watchdog">Ativar monitoramento de registro</string>
-    <string name="settings_enable_log_watchdog_summary">O monitoramento de registro do LSPosed modifica as propriedades do sistema, que podem ser exploradas para detectar o LSPosed.</string>
     <string name="pure_black_dark_theme">Tema preto puro</string>
     <string name="pure_black_dark_theme_summary">Use o tema preto puro se o tema escuro estiver ativo</string>
     <string name="settings_group_theme">Tema</string>

@@ -170,8 +170,6 @@
     <string name="settings_group_framework">フレームワーク</string>
     <string name="settings_disable_verbose_log">詳細ログの無効化</string>
     <string name="settings_disable_verbose_log_summary">問題を報告する際は、詳細なログを含めるようにしてください</string>
-    <string name="settings_enable_log_watchdog">ログウォッチドッグを有効化</string>
-    <string name="settings_enable_log_watchdog_summary">LSPosed のログウォッチドッグはシステムプロパティを変更し、LSPosed を検出するために悪用される可能性があります</string>
     <string name="pure_black_dark_theme">黒のダークテーマ</string>
     <string name="pure_black_dark_theme_summary">ダークテーマが有効になっている場合は、ピュアブラックテーマを使用します</string>
     <string name="settings_group_theme">テーマ</string>

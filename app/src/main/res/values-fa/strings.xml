@@ -172,8 +172,6 @@
     <string name="settings_group_framework">چارچوب</string>
     <string name="settings_disable_verbose_log">غیرفعال کردن لاگ مفصل</string>
     <string name="settings_disable_verbose_log_summary">لاگ مفصل برای گزارش مشکل لازم است</string>
-    <string name="settings_enable_log_watchdog">فعال کردن نظارت لاگ</string>
-    <string name="settings_enable_log_watchdog_summary">نظارت لاگ LSPosed ویژگی های سیستم را تغییر می دهد و ممکن است برای شناسایی LSPosed استفاده شود</string>
     <string name="pure_black_dark_theme">تم سیاه کامل</string>
     <string name="pure_black_dark_theme_summary">اگر تم تاریک فعال است از تم کاملا سیاه استفاده کن</string>
     <string name="settings_group_theme">تم</string>

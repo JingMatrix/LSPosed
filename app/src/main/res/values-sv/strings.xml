@@ -172,8 +172,6 @@
     <string name="settings_group_framework">Framework</string>
     <string name="settings_disable_verbose_log">Inaktivera utförliga loggar</string>
     <string name="settings_disable_verbose_log_summary">Begäran om att inkludera verbose-loggar i rapporten</string>
-    <string name="settings_enable_log_watchdog">Aktivera loggövervakning</string>
-    <string name="settings_enable_log_watchdog_summary">Loggövervakning av LSPosed ändrar systemegenskaper, vilket kan utnyttjas för att upptäcka LSPosed</string>
     <string name="pure_black_dark_theme">Svart mörkt tema</string>
     <string name="pure_black_dark_theme_summary">Använd det rena svarta temat om mörkt tema är aktiverat</string>
     <string name="settings_group_theme">Tema</string>

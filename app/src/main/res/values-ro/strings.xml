@@ -174,8 +174,6 @@
     <string name="settings_group_framework">Comportament</string>
     <string name="settings_disable_verbose_log">Dezactivare jurnale detaliate</string>
     <string name="settings_disable_verbose_log_summary">Rapoartele de depanare necesită includerea de jurnale detaliate</string>
-    <string name="settings_enable_log_watchdog">Proces de supervizare cu jurnal</string>
-    <string name="settings_enable_log_watchdog_summary">Monitorizează LSPosed. Activarea acestuia modifică proprietățile de sistem, care pot fi exploatate de către alte aplicații pentru detectarea drepturilor de superutilizator</string>
     <string name="pure_black_dark_theme">Temă întunecată</string>
     <string name="pure_black_dark_theme_summary">Utilizați negru pur pentru tema întunecată</string>
     <string name="settings_group_theme">Temă</string>
