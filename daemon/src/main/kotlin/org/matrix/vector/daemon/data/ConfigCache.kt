@@ -43,17 +43,10 @@ object ConfigCache {
         performCacheUpdate()
       }
     }
-    initializeConfig()
   }
 
-  private fun initializeConfig() {
-    val config = PreferenceStore.getModulePrefs("lspd", 0, "config")
-
-    // if (config["enable_auto_add_shortcut"] != null) {
-    //   PreferenceStore.updateModulePref("lspd", 0, "config", "enable_auto_add_shortcut", null)
-    // }
-
-    val pathStr = config["misc_path"] as? String
+  private fun setupMiscPath() {
+    val pathStr = PreferenceStore.getModulePrefs("lspd", 0, "config")["misc_path"] as? String
     miscPath =
         if (pathStr == null) {
           val newPath = Paths.get("/data/misc", UUID.randomUUID().toString())
@@ -76,6 +69,9 @@ object ConfigCache {
     val currentState = state
     if (!currentState.isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
       synchronized(this) {
+        if (miscPath == null) {
+          setupMiscPath()
+        }
         if (!state.isCacheReady) {
           Log.i(TAG, "System services are ready. Mapping modules and scopes.")
           updateManager(false)

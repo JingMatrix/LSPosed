@@ -31,7 +31,7 @@ object PreferenceStore {
                 }
               }
         }
-        .onFailure { Log.e(TAG, "Failed to getModulePrefs for $packageName", it) }
+        .onFailure { Log.e(TAG, "Failed to getModulePrefs for $packageName: ${it.message}") }
 
     return result
   }
