@@ -2,7 +2,6 @@ package org.matrix.vector.daemon.data
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageParser
-import android.database.sqlite.SQLiteDatabase
 import android.system.Os
 import android.util.Log
 import hidden.HiddenApiBridge
@@ -31,9 +30,6 @@ object ConfigCache {
   @Volatile
   var state = DaemonState()
     private set
-
-  @Volatile private var useHelper = false
-  private var earlyDb: SQLiteDatabase? = null
 
   val dbHelper = Database() // Kept public for PreferenceStore and ModuleDatabase
 
@@ -76,43 +72,11 @@ object ConfigCache {
         .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
   }
 
-  /** Transition from raw early-boot connection to standard Helper. */
-  private fun promoteToHelper() {
-    if (useHelper) return
-    synchronized(this) {
-      if (!useHelper) {
-        useHelper = true
-        earlyDb?.close()
-        earlyDb = null
-        Log.i(TAG, "Promoted to standard DatabaseHelper.")
-      }
-    }
-  }
-
-  fun getReadableDatabase(): SQLiteDatabase {
-    if (useHelper) return dbHelper.readableDatabase
-
-    synchronized(this) {
-      if (useHelper) return dbHelper.readableDatabase
-
-      if (earlyDb == null || !earlyDb!!.isOpen) {
-        earlyDb =
-            runCatching {
-                  SQLiteDatabase.openDatabase(
-                      FileSystem.dbPath.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
-                }
-                .getOrNull()
-      }
-      return earlyDb ?: dbHelper.readableDatabase
-    }
-  }
-
   private fun ensureCacheReady() {
     val currentState = state
     if (!currentState.isCacheReady && packageManager?.asBinder()?.isBinderAlive == true) {
       synchronized(this) {
         if (!state.isCacheReady) {
-          promoteToHelper()
           Log.i(TAG, "System services are ready. Mapping modules and scopes.")
           updateManager(false)
           performCacheUpdate()
@@ -153,7 +117,7 @@ object ConfigCache {
     if (packageManager == null) return
 
     Log.d(TAG, "Executing Cache Update...")
-    val db = getReadableDatabase()
+    val db = dbHelper.readableDatabase
     val oldState = state
     val isDexObfuscateEnabled = PreferenceStore.isDexObfuscateEnabled()
 
@@ -301,7 +265,7 @@ object ConfigCache {
   fun getModuleScope(packageName: String): MutableList<Application>? {
     if (packageName == "lspd") return null
     val result = mutableListOf<Application>()
-    getReadableDatabase()
+    dbHelper.readableDatabase
         .query(
             "scope INNER JOIN modules ON scope.mid = modules.mid",
             arrayOf("app_pkg_name", "user_id"),
@@ -326,7 +290,7 @@ object ConfigCache {
     if (packageName == "lspd") return false
 
     var isAutoInclude = false
-    getReadableDatabase()
+    dbHelper.readableDatabase
         .query(
             "modules",
             arrayOf("auto_include"),
@@ -361,7 +325,7 @@ object ConfigCache {
 
     val currentState = state
 
-    getReadableDatabase()
+    dbHelper.readableDatabase
         .query(
             "scope INNER JOIN modules ON scope.mid = modules.mid",
             arrayOf("module_pkg_name", "apk_path"),

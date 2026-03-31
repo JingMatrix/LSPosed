@@ -12,10 +12,9 @@ object PreferenceStore {
   fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
 
-    val db = ConfigCache.getReadableDatabase()
-
     runCatching {
-          db.query(
+          ConfigCache.dbHelper.readableDatabase
+              .query(
                   "configs",
                   arrayOf("`key`", "data"),
                   "module_pkg_name = ? AND user_id = ? AND `group` = ?",
@@ -32,7 +31,7 @@ object PreferenceStore {
                 }
               }
         }
-        .onFailure { Log.e(TAG, "Query failed for $packageName", it) }
+        .onFailure { Log.e(TAG, "Failed to getModulePrefs for $packageName", it) }
 
     return result
   }
