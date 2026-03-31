@@ -20,7 +20,7 @@ import org.lsposed.lspd.util.Utils.Log
 object BridgeService {
     private const val TRANSACTION_CODE =
         ('_'.code shl 24) or ('V'.code shl 16) or ('E'.code shl 8) or 'C'.code
-    private const val TAG = "VectorBridge"
+    private const val TAG = "VectorZygiskBridge"
 
     /** Actions supported by the manual IPC bridge. */
     private enum class Action {
@@ -34,19 +34,19 @@ object BridgeService {
 
     @Volatile private var service: ILSPosedService? = null
 
-    /** Cleans up service references if the remote LSPosed process crashes. */
+    /** Cleans up service references if the remote Vector process crashes. */
     private val serviceRecipient: DeathRecipient = DeathRecipient {
-        Log.e(TAG, "LSPosed system service died.")
+        Log.e(TAG, "Vector system service died.")
         serviceBinder?.unlinkToDeath(this.serviceRecipient, 0)
         serviceBinder = null
         service = null
     }
 
-    /** Returns the active LSPosed system service interface. */
+    /** Returns the active Vector system service interface. */
     @JvmStatic fun getService(): ILSPosedService? = service
 
     /**
-     * Initializes the client-side connection to the LSPosed system service.
+     * Initializes the client-side connection to the Vector system service.
      *
      * @param binder The raw binder for [ILSPosedService].
      */
@@ -82,7 +82,7 @@ object BridgeService {
             }
             .onFailure { Log.e(TAG, "Failed to dispatch system context", it) }
 
-        Log.i(TAG, "LSPosed system service binder linked.")
+        Log.i(TAG, "Vector system service binder linked.")
     }
 
     /** Handles manual parcel transactions. Called via reflection/JNI from the native hook. */

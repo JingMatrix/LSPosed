@@ -11,14 +11,12 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.UUID
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.Module
 import org.matrix.vector.daemon.BuildConfig
+import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.ipc.InjectedModuleService
 import org.matrix.vector.daemon.system.*
 import org.matrix.vector.daemon.utils.getRealUsers
@@ -37,11 +35,10 @@ object ConfigCache {
 
   private var miscPath: Path? = null
 
-  private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val cacheUpdateChannel = Channel<Unit>(Channel.CONFLATED)
 
   init {
-    scope.launch {
+    VectorDaemon.scope.launch {
       for (request in cacheUpdateChannel) {
         performCacheUpdate()
       }
@@ -122,6 +119,7 @@ object ConfigCache {
     Log.d(TAG, "Executing Cache Update...")
     val db = dbHelper.readableDatabase
     val oldState = state
+    val isDexObfuscateEnabled = PreferenceStore.isDexObfuscateEnabled()
 
     val newModules = mutableMapOf<String, Module>()
     val obsoleteModules = mutableSetOf<String>()
@@ -181,8 +179,7 @@ object ConfigCache {
               obsoletePaths[pkgName] = realApkPath
             }
 
-            val preLoadedApk =
-                FileSystem.loadModule(apkPath, PreferenceStore.isDexObfuscateEnabled())
+            val preLoadedApk = FileSystem.loadModule(apkPath, isDexObfuscateEnabled)
             if (preLoadedApk != null) {
               val module =
                   Module().apply {

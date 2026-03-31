@@ -2,36 +2,61 @@ package org.matrix.vector.daemon.data
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import org.apache.commons.lang3.SerializationUtilsX
+
+private const val TAG = "VectorPreferenceStore"
 
 object PreferenceStore {
 
+  @Volatile private var readOnlyDb: SQLiteDatabase? = null
+
+  // Safely maintains a single, persistent read-only connection.
+  private fun getReadOnlyDb(): SQLiteDatabase? {
+    var db = readOnlyDb
+    if (db != null && db.isOpen) return db
+
+    synchronized(this) {
+      db = readOnlyDb
+      if (db != null && db.isOpen) return db
+
+      db =
+          runCatching {
+                SQLiteDatabase.openDatabase(
+                    FileSystem.dbPath.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
+              }
+              .onFailure { Log.e(TAG, "Failed to open read-only database", it) }
+              .getOrNull()
+
+      readOnlyDb = db
+      return db
+    }
+  }
+
   fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
-    val db =
-        runCatching {
-              SQLiteDatabase.openDatabase(
-                  FileSystem.dbPath.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
-            }
-            .getOrNull() ?: return result
-    db.use {
-      it.query(
-              "configs",
-              arrayOf("`key`", "data"),
-              "module_pkg_name = ? AND user_id = ? AND `group` = ?",
-              arrayOf(packageName, userId.toString(), group),
-              null,
-              null,
-              null)
-          .use { cursor ->
-            while (cursor.moveToNext()) {
-              val key = cursor.getString(0)
-              val blob = cursor.getBlob(1)
-              val obj = SerializationUtilsX.deserialize<Any>(blob)
-              if (obj != null) result[key] = obj
-            }
-          }
-    }
+    val db = getReadOnlyDb() ?: return result
+
+    runCatching {
+          db.query(
+                  "configs",
+                  arrayOf("`key`", "data"),
+                  "module_pkg_name = ? AND user_id = ? AND `group` = ?",
+                  arrayOf(packageName, userId.toString(), group),
+                  null,
+                  null,
+                  null)
+              .use { cursor -> // We only close the cursor
+                while (cursor.moveToNext()) {
+                  val key = cursor.getString(0)
+                  val blob = cursor.getBlob(1)
+                  val obj = SerializationUtilsX.deserialize<Any>(blob)
+                  if (obj != null) result[key] = obj
+                }
+              }
+        }
+        .onFailure { Log.e(TAG, "Error reading preferences for $packageName", it) }
+
     return result
   }
 
@@ -75,7 +100,7 @@ object PreferenceStore {
   }
 
   fun isDexObfuscateEnabled(): Boolean =
-      getModulePrefs("lspd", 0, "config")["enable_dex_obfuscate"] as? Boolean ?: true
+      getModulePrefs("lspd", 0, "config")["enable_dex_obfuscate"] as? Boolean ?: false
 
   fun setDexObfuscate(enabled: Boolean) =
       updateModulePref("lspd", 0, "config", "enable_dex_obfuscate", enabled)

@@ -13,9 +13,8 @@ import java.io.FileDescriptor
 import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Paths
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.matrix.vector.daemon.VectorDaemon
 
 private const val TAG = "VectorDex2Oat"
 
@@ -197,7 +196,7 @@ object Dex2OatServer {
     selinuxObserver.onEvent(0, null)
 
     // Run the socket accept loop in an IO coroutine
-    CoroutineScope(Dispatchers.IO).launch { runSocketLoop() }
+    VectorDaemon.scope.launch { runSocketLoop() }
   }
 
   private fun runSocketLoop() {

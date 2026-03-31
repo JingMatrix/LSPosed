@@ -13,9 +13,8 @@ import java.io.FileDescriptor
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Paths
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.data.FileSystem
 
 private const val TAG = "VectorLogcat"
@@ -72,7 +71,7 @@ object LogcatMonitor {
   }
 
   private fun dumpPropsAndDmesg() {
-    CoroutineScope(Dispatchers.IO).launch {
+    VectorDaemon.scope.launch {
       // Filter privacy props by temporarily assuming an untrusted context
       runCatching {
             SELinux.setFSCreateContext("u:object_r:app_data_file:s0")
@@ -94,7 +93,7 @@ object LogcatMonitor {
   fun start() {
     if (isRunning) return
     isRunning = true
-    CoroutineScope(Dispatchers.IO).launch {
+    VectorDaemon.scope.launch {
       runCatching {
             Log.i(TAG, "Logcat daemon starting")
             runLogcat() // Blocks until the native logcat process dies

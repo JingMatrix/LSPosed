@@ -1,4 +1,4 @@
-package org.matrix.vector.daemon.core
+package org.matrix.vector.daemon
 
 import android.app.IApplicationThread
 import android.content.Context
@@ -13,13 +13,9 @@ import android.os.IBinder
 import android.util.Log
 import hidden.HiddenApiBridge
 import io.github.libxposed.service.IXposedScopeCallback
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.lsposed.lspd.service.ILSPosedService
-import org.matrix.vector.daemon.BuildConfig
-import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.ModuleDatabase
 import org.matrix.vector.daemon.data.PreferenceStore
@@ -33,7 +29,6 @@ private const val TAG = "VectorService"
 
 object VectorService : ILSPosedService.Stub() {
 
-  private val ioScope = CoroutineScope(Dispatchers.IO)
   private var bootCompleted = false
 
   override fun dispatchSystemServerContext(
@@ -91,7 +86,7 @@ object VectorService : ILSPosedService.Stub() {
             sticky: Boolean,
             sendingUser: Int
         ) {
-          ioScope.launch {
+          VectorDaemon.scope.launch {
             when (intent.action) {
               Intent.ACTION_LOCKED_BOOT_COMPLETED -> dispatchBootCompleted()
               NotificationManager.openManagerAction -> ManagerService.openManager(intent.data)

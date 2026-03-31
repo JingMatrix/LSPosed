@@ -123,7 +123,7 @@ object ParasiticManagerHooker {
 
     /**
      * Passes the IPC binder to the Manager's internal [Constants] class so it can communicate back
-     * to the LSPosed system service.
+     * to the Vector system service.
      */
     private fun sendBinderToManager(classLoader: ClassLoader, binder: IBinder) {
         runCatching {

@@ -22,7 +22,7 @@ The daemon relies on a dual-IPC architecture and extensive use of Android Binder
 ```text
 src/main/
 ├── kotlin/org/matrix/vector/daemon/
-│   ├── core/       # Entry point (Main), looper setup, and OS broadcast receivers
+│   ├── *.kt        # Entry point (Daemon, Cli), looper setup, and OS broadcast receivers
 │   ├── ipc/        # AIDL implementations (Manager, Module, App, SystemServer endpoints)
 │   ├── data/       # SQLite DB, Immutable State (DaemonState, ConfigCache), PreferenceStore, File & ZIP parsing
 │   ├── system/     # System binder wrappers, UID observers, Notification UI

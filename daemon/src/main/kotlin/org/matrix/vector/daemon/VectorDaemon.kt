@@ -4,29 +4,42 @@ import android.app.ActivityThread
 import android.content.Context
 import android.ddm.DdmHandleAppName
 import android.os.Build
+import android.os.IBinder
 import android.os.Looper
+import android.os.Parcel
 import android.os.Process
 import android.os.ServiceManager
+import android.system.Os
 import android.util.Log
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.matrix.vector.daemon.core.SystemServerBridge
-import org.matrix.vector.daemon.core.VectorService
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.data.PreferenceStore
 import org.matrix.vector.daemon.env.CliSocketServer
 import org.matrix.vector.daemon.env.Dex2OatServer
 import org.matrix.vector.daemon.env.LogcatMonitor
+import org.matrix.vector.daemon.ipc.BRIDGE_TRANSACTION_CODE
 import org.matrix.vector.daemon.ipc.ManagerService
 import org.matrix.vector.daemon.ipc.SystemServerService
 import org.matrix.vector.daemon.utils.applyNotificationWorkaround
 
 private const val TAG = "VectorDaemon"
+private const val ACTION_SEND_BINDER = 1
 
 object VectorDaemon {
+  private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+    Log.e(TAG, "Caught fatal coroutine exception in background task!", throwable)
+  }
+
+  // Dispatchers.IO: Uses the shared background thread pool.
+  // SupervisorJob(): Ensures one failing task doesn't kill the whole daemon.
+  val scope = CoroutineScope(Dispatchers.IO + SupervisorJob() + exceptionHandler)
+
   var isLateInject = false
   var proxyServiceName = "serial"
 
@@ -61,9 +74,7 @@ object VectorDaemon {
 
     if (PreferenceStore.isLogWatchdogEnabled()) LogcatMonitor.enableWatchdog()
     // Preload Framework DEX in the background
-    CoroutineScope(Dispatchers.IO).launch {
-      FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled())
-    }
+    scope.launch { FileSystem.getPreloadDex(PreferenceStore.isDexObfuscateEnabled()) }
 
     // Setup Main Looper & System Services
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
@@ -85,8 +96,7 @@ object VectorDaemon {
     applyNotificationWorkaround()
 
     // Inject Vector into system_server
-    SystemServerBridge.sendToBridge(
-        VectorService.asBinder(), isRestart = false, systemServerService)
+    sendToBridge(VectorService.asBinder(), isRestart = false, systemServerService)
 
     if (!ManagerService.isVerboseLog()) {
       LogcatMonitor.stopVerbose()
@@ -100,6 +110,69 @@ object VectorDaemon {
     while (ServiceManager.getService(name) == null) {
       Log.i(TAG, "Waiting system service: $name for 1s")
       delay(1000)
+    }
+  }
+
+  @Suppress("DEPRECATION")
+  private fun sendToBridge(
+      binder: IBinder,
+      isRestart: Boolean,
+      systemServerService: SystemServerService
+  ) {
+    scope.launch {
+      runCatching {
+            Os.seteuid(0)
+
+            var bridgeService: IBinder?
+            while (true) {
+              bridgeService = ServiceManager.getService("activity")
+              if (bridgeService?.pingBinder() == true) break
+              Log.i(TAG, "activity service not ready, waiting 1s...")
+              delay(1000)
+            }
+
+            if (isRestart) Log.w(TAG, "System Server restarted...")
+
+            // Setup death recipient to handle system_server crashes
+            val deathRecipient =
+                object : IBinder.DeathRecipient {
+                  override fun binderDied() {
+                    Log.w(TAG, "System Server died! Clearing caches and re-injecting...")
+                    bridgeService.unlinkToDeath(this, 0)
+                    systemServerService.putBinderForSystemServer()
+                    ManagerService.guard = null // ManagerGuard binderDied
+                    sendToBridge(binder, isRestart = true, systemServerService)
+                  }
+                }
+            bridgeService.linkToDeath(deathRecipient, 0)
+
+            // Try sending the Binder payload (up to 3 times)
+            var success = false
+            for (i in 0 until 3) {
+              val data = Parcel.obtain()
+              val reply = Parcel.obtain()
+              try {
+                data.writeInt(ACTION_SEND_BINDER)
+                data.writeStrongBinder(binder)
+                success = bridgeService.transact(BRIDGE_TRANSACTION_CODE, data, reply, 0) == true
+                reply.readException()
+                if (success) break
+              } finally {
+                data.recycle()
+                reply.recycle()
+              }
+              Log.w(TAG, "No response from bridge, retrying...")
+              delay(1000)
+            }
+
+            if (success) Log.i(TAG, "Successfully injected Vector into system_server")
+            else {
+              Log.e(TAG, "Failed to inject Vector into system_server")
+              systemServerService.maybeRetryInject()
+            }
+          }
+          .onFailure { Log.e(TAG, "Error during System Server bridging", it) }
+          .also { if (!BuildConfig.DEBUG) runCatching { Os.seteuid(1000) } }
     }
   }
 }
