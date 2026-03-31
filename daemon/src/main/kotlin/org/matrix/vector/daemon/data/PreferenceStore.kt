@@ -9,33 +9,10 @@ private const val TAG = "VectorPreferenceStore"
 
 object PreferenceStore {
 
-  @Volatile private var readOnlyDb: SQLiteDatabase? = null
-
-  // Safely maintains a single, persistent read-only connection.
-  private fun getReadOnlyDb(): SQLiteDatabase? {
-    var db = readOnlyDb
-    if (db != null && db.isOpen) return db
-
-    synchronized(this) {
-      db = readOnlyDb
-      if (db != null && db.isOpen) return db
-
-      db =
-          runCatching {
-                SQLiteDatabase.openDatabase(
-                    FileSystem.dbPath.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
-              }
-              .onFailure { Log.e(TAG, "Failed to open read-only database", it) }
-              .getOrNull()
-
-      readOnlyDb = db
-      return db
-    }
-  }
-
   fun getModulePrefs(packageName: String, userId: Int, group: String): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
-    val db = getReadOnlyDb() ?: return result
+
+    val db = ConfigCache.getReadableDatabase()
 
     runCatching {
           db.query(
@@ -55,7 +32,7 @@ object PreferenceStore {
                 }
               }
         }
-        .onFailure { Log.e(TAG, "Error reading preferences for $packageName", it) }
+        .onFailure { Log.e(TAG, "Query failed for $packageName", it) }
 
     return result
   }
