@@ -77,14 +77,13 @@ inline void LogToAndroid(int prio, const char *tag, fmt::format_string<T...> fmt
 }  // namespace vector::native::detail
 
 #ifndef NDEBUG
-#define LOGV(fmt, ...)                                                                             \
-    ::vector::native::detail::LogToAndroid(ANDROID_LOG_VERBOSE, LOG_TAG, "{}:{} ({}): " fmt,       \
-                                           __FILE_NAME__, __LINE__,                                \
-                                           __PRETTY_FUNCTION__ __VA_OPT__(, ) __VA_ARGS__)
 #define LOGD(fmt, ...)                                                                             \
     ::vector::native::detail::LogToAndroid(ANDROID_LOG_DEBUG, LOG_TAG, "{}:{} ({}): " fmt,         \
                                            __FILE_NAME__, __LINE__,                                \
                                            __PRETTY_FUNCTION__ __VA_OPT__(, ) __VA_ARGS__)
+#define LOGV(fmt, ...)                                                                             \
+    ::vector::native::detail::LogToAndroid(ANDROID_LOG_VERBOSE, LOG_TAG,                           \
+                                           fmt __VA_OPT__(, ) __VA_ARGS__)
 #else
 #define LOGV(...) ((void)0)
 #define LOGD(...) ((void)0)
