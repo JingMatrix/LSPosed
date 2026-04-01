@@ -37,7 +37,6 @@ object CliHandler {
         "Framework Version" to BuildConfig.VERSION_NAME,
         "Version Code" to BuildConfig.VERSION_CODE,
         "Enabled Modules" to ConfigCache.state.modules.size,
-        "Daemon Status" to "Running",
         "Status Notification" to PreferenceStore.isStatusNotificationEnabled())
   }
 

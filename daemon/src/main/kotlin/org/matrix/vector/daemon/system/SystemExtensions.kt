@@ -29,10 +29,6 @@ const val MATCH_ALL_FLAGS =
         PackageManager.MATCH_UNINSTALLED_PACKAGES or
         MATCH_ANY_USER
 
-/**
- * Internal helper that throws exceptions instead of swallowing them. This is crucial for detecting
- * TransactionTooLargeException (Binder limits).
- */
 @Throws(Exception::class)
 private fun IPackageManager.getPackageInfoCompatThrows(
     packageName: String,
@@ -46,7 +42,6 @@ private fun IPackageManager.getPackageInfoCompatThrows(
   }
 }
 
-/** Safely fetches PackageInfo, handling API level differences. */
 fun IPackageManager.getPackageInfoCompat(
     packageName: String,
     flags: Int,
@@ -179,10 +174,6 @@ fun IPackageManager.queryIntentActivitiesCompat(
       }
 }
 
-fun IPackageManager.clearApplicationProfileDataCompat(packageName: String) {
-  runCatching { clearApplicationProfileData(packageName) }
-}
-
 /** Cached method reference to avoid repeated reflection lookups in loops. */
 private val getInstalledPackagesMethod: Method? by lazy {
   val isLongFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
@@ -284,11 +275,6 @@ fun IActivityManager.registerReceiverCompat(
       }
       .onFailure { Log.e(TAG, "registerReceiver failed", it) }
       .getOrNull()
-}
-
-fun IActivityManager.registerUidObserverCompat(observer: IUidObserver, which: Int, cutpoint: Int) {
-  runCatching { registerUidObserver(observer, which, cutpoint, "android") }
-      .onFailure { Log.e(TAG, "registerUidObserver failed", it) }
 }
 
 fun IActivityManager.broadcastIntentCompat(intent: Intent) {

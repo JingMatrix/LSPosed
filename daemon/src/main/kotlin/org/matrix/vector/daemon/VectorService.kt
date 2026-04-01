@@ -16,8 +16,8 @@ import android.util.Log
 import hidden.HiddenApiBridge
 import io.github.libxposed.service.IXposedScopeCallback
 import kotlinx.coroutines.launch
+import org.lsposed.lspd.service.IDaemonService
 import org.lsposed.lspd.service.ILSPApplicationService
-import org.lsposed.lspd.service.ILSPosedService
 import org.matrix.vector.daemon.data.ConfigCache
 import org.matrix.vector.daemon.data.ModuleDatabase
 import org.matrix.vector.daemon.data.PreferenceStore
@@ -29,7 +29,7 @@ import org.matrix.vector.daemon.system.*
 
 private const val TAG = "VectorService"
 
-object VectorService : ILSPosedService.Stub() {
+object VectorService : IDaemonService.Stub() {
 
   private var bootCompleted = false
   private val ACTION_SECRET_CODE =
@@ -77,8 +77,6 @@ object VectorService : ILSPosedService.Stub() {
   }
 
   override fun preStartManager() = ManagerService.preStartManager()
-
-  override fun setManagerEnabled(enabled: Boolean) = true // Omitted specific toggle logic
 
   private fun createReceiver() =
       object : IIntentReceiver.Stub() {
@@ -146,6 +144,7 @@ object VectorService : ILSPosedService.Stub() {
 
     val scopeFilter =
         IntentFilter(NotificationManager.moduleScopeAction).apply { addDataScheme("module") }
+
     val secretCodeFilter =
         IntentFilter().apply {
           addDataScheme("android_secret_code")
@@ -155,10 +154,12 @@ object VectorService : ILSPosedService.Stub() {
     // Define strict Android 14+ flags and the system-only BRICK permission
     val notExported = Context.RECEIVER_NOT_EXPORTED
     val exported = Context.RECEIVER_EXPORTED
-    val brickPerm = "android.permission.BRICK"
+    val brickPerm = "android.permission.BRICK" // Restrict senders to Android system only
 
+    // userId = 0 => USER_SYSTEM
     activityManager?.registerReceiverCompat(
         createReceiver(), configFilter, brickPerm, 0, notExported)
+    // userId = -1 => USER_ALL
     activityManager?.registerReceiverCompat(
         createReceiver(), packageFilter, brickPerm, -1, notExported)
     activityManager?.registerReceiverCompat(createReceiver(), uidFilter, brickPerm, -1, notExported)
@@ -199,8 +200,8 @@ object VectorService : ILSPosedService.Stub() {
             HiddenApiBridge.ActivityManager_UID_OBSERVER_IDLE() or
             HiddenApiBridge.ActivityManager_UID_OBSERVER_CACHED()
 
-    activityManager?.registerUidObserverCompat(
-        uidObserver, which, HiddenApiBridge.ActivityManager_PROCESS_STATE_UNKNOWN())
+    activityManager?.registerUidObserver(
+        uidObserver, which, HiddenApiBridge.ActivityManager_PROCESS_STATE_UNKNOWN(), "android")
     Log.d(TAG, "Registered all OS Receivers and UID Observers")
   }
 
@@ -226,7 +227,7 @@ object VectorService : ILSPosedService.Stub() {
   private fun dispatchPackageChanged(intent: Intent) {
     val uid = intent.getIntExtra(Intent.EXTRA_UID, -1)
     val action = intent.action ?: return
-    val userId = intent.getIntExtra("android.intent.extra.user_handle", uid % PER_USER_RANGE)
+    val userId = intent.getIntExtra("android.intent.extra.user_handle", uid / PER_USER_RANGE)
     val uri = intent.data
     val moduleName = uri?.schemeSpecificPart ?: ConfigCache.getModuleByUid(uid)?.packageName
 

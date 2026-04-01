@@ -8,6 +8,7 @@ import android.os.IPowerManager
 import android.os.IServiceManager
 import android.os.IUserManager
 import android.os.RemoteException
+import android.os.ServiceManager
 import com.android.internal.os.BinderInternal
 import hidden.HiddenApiBridge
 import kotlin.properties.ReadOnlyProperty
@@ -31,7 +32,7 @@ class SystemService<T>(private val name: String, private val asInterface: (IBind
       instance?.let {
         return it
       }
-      val binder = android.os.ServiceManager.getService(name) ?: return null
+      val binder = ServiceManager.getService(name) ?: return null
       try {
         binder.linkToDeath(deathRecipient, 0)
         instance = asInterface(binder)

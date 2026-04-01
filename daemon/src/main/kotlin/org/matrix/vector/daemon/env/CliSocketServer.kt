@@ -10,6 +10,7 @@ import java.io.DataOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import kotlinx.coroutines.launch
 import org.matrix.vector.daemon.*
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.ipc.CliHandler
@@ -50,7 +51,7 @@ object CliSocketServer {
         while (!Thread.currentThread().isInterrupted) {
           try {
             val clientSocket = server.accept()
-            handleClient(clientSocket)
+            VectorDaemon.scope.launch { handleClient(clientSocket) }
           } catch (e: IOException) {
             if (Thread.currentThread().isInterrupted) break
             Log.w(TAG, "Error accepting client", e)

@@ -183,7 +183,7 @@ object VectorDaemon {
   private fun clearSystemCaches() {
     Log.i(TAG, "Clearing ServiceManager and ActivityManager caches...")
     runCatching {
-          // lear ServiceManager.sServiceManager
+          // Clear ServiceManager.sServiceManager
           var field = ServiceManager::class.java.getDeclaredField("sServiceManager")
           field.isAccessible = true
           field.set(null, null)

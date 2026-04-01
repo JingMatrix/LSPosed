@@ -23,10 +23,10 @@ import org.matrix.vector.daemon.R
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.utils.FakeContext
 
-private const val TAG = "VectorNotifManager"
+private const val TAG = "VectorNotificationManager"
 private const val STATUS_CHANNEL_ID = "vector_status"
 private const val UPDATED_CHANNEL_ID = "vector_module_updated"
-private const val STATUS_NOTIF_ID = 2000
+private const val STATUS_NOTIF_ID = BuildConfig.MANAGER_INJECTED_UID
 
 object NotificationManager {
   val openManagerAction = UUID.randomUUID().toString()

@@ -13,10 +13,7 @@ import java.io.File
 import org.matrix.vector.daemon.data.FileSystem
 import org.matrix.vector.daemon.system.packageManager as sysPackageManager
 
-/**
- * A stub context used by the daemon to forge intents and notifications without triggering
- * system_server strict mode violations.
- */
+/** A stub context used by the daemon to initilize database, forge intents and notifications. */
 class FakeContext(private val fakePackageName: String = "android") : ContextWrapper(null) {
 
   companion object {

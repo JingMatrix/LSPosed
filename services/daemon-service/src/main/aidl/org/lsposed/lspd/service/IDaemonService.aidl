@@ -2,12 +2,10 @@ package org.lsposed.lspd.service;
 
 import org.lsposed.lspd.service.ILSPApplicationService;
 
-interface ILSPosedService {
+interface IDaemonService {
     ILSPApplicationService requestApplicationService(int uid, int pid, String processName, IBinder heartBeat);
 
     oneway void dispatchSystemServerContext(in IBinder activityThread, in IBinder activityToken);
 
     boolean preStartManager();
-
-    boolean setManagerEnabled(boolean enabled);
 }
