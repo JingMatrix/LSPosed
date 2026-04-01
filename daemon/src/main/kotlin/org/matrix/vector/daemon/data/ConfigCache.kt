@@ -19,7 +19,7 @@ import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.ipc.InjectedModuleService
 import org.matrix.vector.daemon.system.*
 import org.matrix.vector.daemon.utils.InstallerVerifier
-import org.matrix.vector.daemon.utils.disableSqliteWalFlags
+import org.matrix.vector.daemon.utils.applySqliteHelperWorkaround
 import org.matrix.vector.daemon.utils.getRealUsers
 
 private const val TAG = "VectorConfigCache"
@@ -42,7 +42,7 @@ object ConfigCache {
         performCacheUpdate()
       }
     }
-    disableSqliteWalFlags()
+    applySqliteHelperWorkaround()
   }
 
   private fun ensureCacheReady() {
