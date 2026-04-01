@@ -143,7 +143,7 @@ object VectorDaemon {
                   bridgeService.unlinkToDeath(this, 0)
                   clearSystemCaches()
                   systemServerService.putBinderForSystemServer()
-                  ManagerService.guard = null // ManagerGuard binderDied
+                  ManagerService.guard = null // Remove dead guard
                   Handler(Looper.getMainLooper()).post {
                     sendToBridge(binder, isRestart = true, systemServerService)
                   }

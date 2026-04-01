@@ -18,6 +18,7 @@ import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.VectorDaemon
 import org.matrix.vector.daemon.ipc.InjectedModuleService
 import org.matrix.vector.daemon.system.*
+import org.matrix.vector.daemon.utils.InstallerVerifier
 import org.matrix.vector.daemon.utils.disableSqliteWalFlags
 import org.matrix.vector.daemon.utils.getRealUsers
 
@@ -66,8 +67,16 @@ object ConfigCache {
     runCatching {
           val info =
               packageManager?.getPackageInfoCompat(BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME, 0, 0)
-          val uid = info?.applicationInfo?.uid ?: -1
-          if (uid == -1) Log.i(TAG, "Manager is not installed")
+          val uid = info?.applicationInfo?.uid
+          val installedApkPath = info?.applicationInfo?.sourceDir
+          if (uid == null || installedApkPath == null) {
+            Log.i(TAG, "Manager is not installed")
+            state = state.copy(managerUid = -1)
+            return
+          }
+
+          InstallerVerifier.verifyInstallerSignature(installedApkPath)
+          Log.i(TAG, "Manager verified and found at UID: $uid")
           state = state.copy(managerUid = uid)
         }
         .onFailure { state = state.copy(managerUid = -1) }
@@ -400,7 +409,7 @@ object ConfigCache {
 
   fun shouldSkipProcess(scope: ProcessScope): Boolean {
     ensureCacheReady()
-    return !state.scopes.containsKey(scope) && !isManager(scope.uid)
+    return !state.scopes.containsKey(scope)
   }
 
   fun getPrefsPath(packageName: String, uid: Int): String {

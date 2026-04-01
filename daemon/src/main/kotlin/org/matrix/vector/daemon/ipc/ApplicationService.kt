@@ -116,7 +116,7 @@ object ApplicationService : ILSPApplicationService.Stub() {
     val pid = info.key.pid
     val uid = info.key.uid
 
-    if (ManagerService.postStartManager(pid, uid) || ConfigCache.isManager(uid)) {
+    if (ManagerService.postStartManager(pid) || ConfigCache.isManager(uid)) {
       binderList.add(ManagerService.obtainManagerBinder(info.heartBeat, pid, uid))
     }
 

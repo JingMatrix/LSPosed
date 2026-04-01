@@ -44,9 +44,8 @@ private const val TAG = "VectorManagerService"
 
 object ManagerService : ILSPManagerService.Stub() {
 
-  @Volatile private var managerPid = -1
-  @Volatile private var pendingManager = false
-  @Volatile private var isEnabled = true
+  private var managerPid = -1
+  private var pendingManager = false
 
   private var managerIntent: Intent? = null
 
@@ -83,22 +82,28 @@ object ManagerService : ILSPManagerService.Stub() {
 
   @Synchronized
   fun preStartManager(): Boolean {
+    Log.v(TAG, "Pre-start parasitic manager.")
     pendingManager = true
     managerPid = -1
     return true
   }
 
   @Synchronized
-  fun shouldStartManager(pid: Int, uid: Int, processName: String): Boolean {
-    if (!isEnabled ||
-        uid != BuildConfig.MANAGER_INJECTED_UID ||
-        processName != BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME ||
-        !pendingManager)
-        return false
-    pendingManager = false
-    managerPid = pid
-    return true
+  fun tryRegisterManagerProcess(pid: Int, uid: Int, processName: String): Boolean {
+    if (ConfigCache.isManager(uid) && processName == BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME) {
+      if (pendingManager) {
+        Log.v(TAG, "Parasitic manager registered.")
+        pendingManager = false
+      } else {
+        Log.v(TAG, "Starting user-installed manager process.")
+      }
+      managerPid = pid
+      return true
+    }
+    return false
   }
+
+  fun postStartManager(pid: Int): Boolean = pid == managerPid
 
   private fun getManagerIntent(): Intent? {
     if (managerIntent != null) return managerIntent
@@ -163,9 +168,6 @@ object ManagerService : ILSPManagerService.Stub() {
         .onFailure { Log.e(TAG, "Failed to open manager", it) }
   }
 
-  fun postStartManager(pid: Int, uid: Int): Boolean =
-      isEnabled && uid == BuildConfig.MANAGER_INJECTED_UID && pid == managerPid
-
   /** Fixes permissions for the WebView cache. */
   private fun fixWebViewPermissions(file: File, targetUid: Int) {
     if (!file.exists()) return
@@ -202,7 +204,7 @@ object ManagerService : ILSPManagerService.Stub() {
 
   fun obtainManagerBinder(heartbeat: IBinder, pid: Int, uid: Int): IBinder {
     ManagerGuard(heartbeat, pid, uid)
-    if (uid == BuildConfig.MANAGER_INJECTED_UID) {
+    if (ConfigCache.isManager(uid)) {
       ensureWebViewPermission()
     }
     return this
@@ -331,7 +333,7 @@ object ManagerService : ILSPManagerService.Stub() {
   }
 
   override fun isSepolicyLoaded() =
-      android.os.SELinux.checkSELinuxAccess(
+      SELinux.checkSELinuxAccess(
           "u:r:dex2oat:s0", "u:object_r:dex2oat_exec:s0", "file", "execute_no_trans")
 
   override fun getUsers(): List<UserInfo> {

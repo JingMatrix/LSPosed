@@ -10,6 +10,8 @@ import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Telephony
+import android.telephony.TelephonyManager
 import android.util.Log
 import hidden.HiddenApiBridge
 import io.github.libxposed.service.IXposedScopeCallback
@@ -30,6 +32,9 @@ private const val TAG = "VectorService"
 object VectorService : ILSPosedService.Stub() {
 
   private var bootCompleted = false
+  private val ACTION_SECRET_CODE =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) TelephonyManager.ACTION_SECRET_CODE
+      else Telephony.Sms.Intents.SECRET_CODE_ACTION
 
   override fun dispatchSystemServerContext(
       appThread: IBinder?,
@@ -60,7 +65,7 @@ object VectorService : ILSPosedService.Stub() {
     if (ApplicationService.hasRegister(uid, pid)) return null
 
     val scope = ProcessScope(processName, uid)
-    if (!ManagerService.shouldStartManager(pid, uid, processName) &&
+    if (!ManagerService.tryRegisterManagerProcess(pid, uid, processName) &&
         ConfigCache.shouldSkipProcess(scope)) {
       Log.d(TAG, "Skipped $processName/$uid")
       return null
@@ -91,6 +96,7 @@ object VectorService : ILSPosedService.Stub() {
               Intent.ACTION_LOCKED_BOOT_COMPLETED -> dispatchBootCompleted()
               Intent.ACTION_CONFIGURATION_CHANGED -> dispatchConfigurationChanged()
               NotificationManager.openManagerAction -> ManagerService.openManager(intent.data)
+              ACTION_SECRET_CODE -> ManagerService.openManager(intent.data)
               NotificationManager.moduleScopeAction -> dispatchModuleScope(intent)
               else -> dispatchPackageChanged(intent)
             }
@@ -141,7 +147,7 @@ object VectorService : ILSPosedService.Stub() {
     val scopeFilter =
         IntentFilter(NotificationManager.moduleScopeAction).apply { addDataScheme("module") }
     val secretCodeFilter =
-        IntentFilter("android.provider.Telephony.SECRET_CODE").apply {
+        IntentFilter().apply {
           addDataScheme("android_secret_code")
           addDataAuthority("5776733", null)
         }
