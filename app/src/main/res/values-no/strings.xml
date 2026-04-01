@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Den gjeldende standardstarteren støtter ikke pin-snarveier</string>
     <string name="settings_enable_status_notification">Statusvarsel</string>
     <string name="settings_enable_status_notification_summary">Vis et varsel som kan åpne parasitic manager</string>
-    <string name="disable_status_notification_error">Ingen snarvei, kan ikke deaktivere varsling</string>
     <string name="settings_update_channel">Oppdater kanal</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">beta</string>

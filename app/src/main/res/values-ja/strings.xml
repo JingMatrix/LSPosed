@@ -198,7 +198,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">現在のデフォルトランチャーはショートカットのピン留めをサポートしていません</string>
     <string name="settings_enable_status_notification">ステータス通知</string>
     <string name="settings_enable_status_notification_summary">パラサイトマネージャーを開くことができる通知を表示します</string>
-    <string name="disable_status_notification_error">ショートカットがないため、通知を無効にできません</string>
     <string name="settings_update_channel">更新チャンネル</string>
     <string name="update_channel_stable">安定版</string>
     <string name="update_channel_bate">ベータ版</string>

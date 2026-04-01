@@ -200,7 +200,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">The current default launcher does not support pin shortcuts</string>
     <string name="settings_enable_status_notification">Status Notification</string>
     <string name="settings_enable_status_notification_summary">Show a notification that can open parasitic manager</string>
-    <string name="disable_status_notification_error">No shortcut, cannot disable notification</string>
     <string name="settings_update_channel">Update channel</string>
     <string name="update_channel_stable">Stable</string>
     <string name="update_channel_bate">Beta</string>

@@ -204,7 +204,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Bieżący domyślny launcher nie wspiera skrótów pinezkowych</string>
     <string name="settings_enable_status_notification">Status powiadomień</string>
     <string name="settings_enable_status_notification_summary">Pokazuj powiadomienie, za pomocą którego otworzysz menadżera pasożytów</string>
-    <string name="disable_status_notification_error">Brak skrótu, nie można wyłączyć powiadomienia</string>
     <string name="settings_update_channel">Kanał aktualizacji</string>
     <string name="update_channel_stable">Stabilny</string>
     <string name="update_channel_bate">Beta</string>

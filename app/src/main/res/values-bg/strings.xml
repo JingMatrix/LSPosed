@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Текущият стартер по подразбиране не поддържа преки пътища</string>
     <string name="settings_enable_status_notification">Известие за състоянието</string>
     <string name="settings_enable_status_notification_summary">Показване на известие, което може да отвори паразитен мениджър</string>
-    <string name="disable_status_notification_error">Няма пряк път, не мога да деактивирам известието</string>
     <string name="settings_update_channel">Актуализиране на канала</string>
     <string name="update_channel_stable">Стабилен</string>
     <string name="update_channel_bate">Бета</string>

@@ -200,7 +200,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">لانچر پیش فرض فعلی شورتکات های پین شده را پشتیبانی نمی کند</string>
     <string name="settings_enable_status_notification">نمایش اعلان وضعیت</string>
     <string name="settings_enable_status_notification_summary">نمایش اعلانی که مدیر Parasitic را باز کند</string>
-    <string name="disable_status_notification_error">شورتکات نیست، نمی توان اعلان را غیرفعال کرد</string>
     <string name="settings_update_channel">کانال بروزرسانی</string>
     <string name="update_channel_stable">پایدار</string>
     <string name="update_channel_bate">بتا</string>

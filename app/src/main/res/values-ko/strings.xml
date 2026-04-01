@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">현재 기본 런쳐는 핀 바로가기를 지원하지 않습니다</string>
     <string name="settings_enable_status_notification">상태 알림</string>
     <string name="settings_enable_status_notification_summary">기생 관리자를 열 수 있는 알림 표시</string>
-    <string name="disable_status_notification_error">바로 가기 없음, 알림을 비활성화할 수 없음</string>
     <string name="settings_update_channel">업데이트 채널</string>
     <string name="update_channel_stable">안정</string>
     <string name="update_channel_bate">베타</string>

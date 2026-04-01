@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Destpêkera xwerû ya heyî kurtebirên pin piştgirî nake</string>
     <string name="settings_enable_status_notification">Notification Status</string>
     <string name="settings_enable_status_notification_summary">Agahdariyek nîşan bide ku dikare rêveberê parazît veke</string>
-    <string name="disable_status_notification_error">Ne kurtebir, nekare ragihandinê neçalak bike</string>
     <string name="settings_update_channel">Kanalê nûve bikin</string>
     <string name="update_channel_stable">Stewr</string>
     <string name="update_channel_bate">Beta</string>

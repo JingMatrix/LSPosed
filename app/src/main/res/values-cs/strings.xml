@@ -198,7 +198,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Současný výchozí spouštěč nepodporuje připnuté zkratky</string>
     <string name="settings_enable_status_notification">Oznámení o stavu</string>
     <string name="settings_enable_status_notification_summary">Zobrazení oznámení, které může otevřít parazitního správce</string>
-    <string name="disable_status_notification_error">Žádný zástupce, nelze zakázat oznámení</string>
     <string name="settings_update_channel">Kanál aktualizace</string>
     <string name="update_channel_stable">Stabilní</string>
     <string name="update_channel_bate">Beta</string>

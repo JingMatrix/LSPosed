@@ -202,7 +202,6 @@ JingMatrix</string>
     <string name="settings_unsupported_pin_shortcut_summary">Le lanceur par défaut actuel ne supporte pas les raccourcis épinglés</string>
     <string name="settings_enable_status_notification">Notification d\'état</string>
     <string name="settings_enable_status_notification_summary">Afficher une notification qui peut ouvrir le gestionnaire de parasites</string>
-    <string name="disable_status_notification_error">Pas de raccourcis, la notification ne peut pas être désactivée</string>
     <string name="settings_update_channel">Canal de mise à jour</string>
     <string name="update_channel_stable">Stable</string>
     <string name="update_channel_bate">Bêta</string>

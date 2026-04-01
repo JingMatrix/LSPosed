@@ -195,6 +195,7 @@ object VectorService : ILSPosedService.Stub() {
 
   private fun dispatchBootCompleted() {
     bootCompleted = true
+    Log.d(TAG, "BOOT_COMPLETED event received.")
     if (PreferenceStore.isStatusNotificationEnabled()) {
       NotificationManager.notifyStatusNotification()
     }

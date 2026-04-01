@@ -196,7 +196,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">L\'attuale launcher predefinito non supporta le scorciatoie con i pin</string>
     <string name="settings_enable_status_notification">Notifica di stato</string>
     <string name="settings_enable_status_notification_summary">Mostra una notifica che può aprire il manager parassitario</string>
-    <string name="disable_status_notification_error">Nessuna scorciatoia, impossibile disattivare la notifica</string>
     <string name="settings_update_channel">Canale di aggiornamento</string>
     <string name="update_channel_stable">Stabile</string>
     <string name="update_channel_bate">Beta</string>

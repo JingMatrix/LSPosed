@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Die huidige versteklanseerder ondersteun nie penkortpaaie nie</string>
     <string name="settings_enable_status_notification">Statuskennisgewing</string>
     <string name="settings_enable_status_notification_summary">Wys \'n kennisgewing wat parasitiese bestuurder kan oopmaak</string>
-    <string name="disable_status_notification_error">Geen kortpad nie, kan nie kennisgewing deaktiveer nie</string>
     <string name="settings_update_channel">Dateer kanaal op</string>
     <string name="update_channel_stable">Stabiel</string>
     <string name="update_channel_bate">Beta</string>

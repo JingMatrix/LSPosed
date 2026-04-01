@@ -201,7 +201,6 @@ JJ108</string>
     <string name="settings_unsupported_pin_shortcut_summary">Der aktuelle Standard-Launcher unterstützt keine Pin-Verknüpfungen</string>
     <string name="settings_enable_status_notification">Status-Benachrichtigung</string>
     <string name="settings_enable_status_notification_summary">Eine Benachrichtigung anzeigen, die den parasitären Manager öffnen kann</string>
-    <string name="disable_status_notification_error">Keine Verknüpfung, Benachrichtigung kann nicht deaktiviert werden</string>
     <string name="settings_update_channel">Update-Kanal</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>

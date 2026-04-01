@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Ο τρέχων προεπιλεγμένος εκτοξευτής δεν υποστηρίζει συντομεύσεις καρφίτσας</string>
     <string name="settings_enable_status_notification">Ειδοποίηση καταστάσεως</string>
     <string name="settings_enable_status_notification_summary">Εμφάνιση μιας ειδοποίησης που μπορεί να ανοίξει τον διαχειριστή παρασιτικής</string>
-    <string name="disable_status_notification_error">Δεν υπάρχει συντόμευση, δεν είναι δυνατή η απενεργοποίηση της ειδοποίησης</string>
     <string name="settings_update_channel">Ενημέρωση καναλιού</string>
     <string name="update_channel_stable">Σταθερό</string>
     <string name="update_channel_bate">Βήτα</string>

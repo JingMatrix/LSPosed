@@ -200,7 +200,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">A launcher padrão atual não suporta atalhos fixados</string>
     <string name="settings_enable_status_notification">Notificação de estado</string>
     <string name="settings_enable_status_notification_summary">Mostre uma notificação que possa abrir o gerenciador parasita</string>
-    <string name="disable_status_notification_error">Nenhum atalho, não é possível desativar a notificação.</string>
     <string name="settings_update_channel">Canal de atualizações</string>
     <string name="update_channel_stable">Estável</string>
     <string name="update_channel_bate">Beta</string>

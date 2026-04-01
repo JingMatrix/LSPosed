@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">El llançador predeterminat actual no admet dreceres de pin</string>
     <string name="settings_enable_status_notification">Notificació d\'estat</string>
     <string name="settings_enable_status_notification_summary">Mostra una notificació que pugui obrir el gestor de paràsits</string>
-    <string name="disable_status_notification_error">Sense drecera, no es pot desactivar la notificació</string>
     <string name="settings_update_channel">Actualitza el canal</string>
     <string name="update_channel_stable">Estable</string>
     <string name="update_channel_bate">Beta</string>

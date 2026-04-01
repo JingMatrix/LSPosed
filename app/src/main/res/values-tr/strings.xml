@@ -200,7 +200,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Geçerli varsayılan başlatıcı, pin kısayollarını desteklemiyor</string>
     <string name="settings_enable_status_notification">Durum Bildirimi</string>
     <string name="settings_enable_status_notification_summary">Parazit yöneticiyi açabilmek için bir bildirim göster</string>
-    <string name="disable_status_notification_error">Kısayol yok, bildirim devre dışı bırakılamaz</string>
     <string name="settings_update_channel">Güncelleme kanalı</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>

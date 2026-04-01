@@ -198,7 +198,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">מפעיל ברירת המחדל הנוכחי אינו תומך בקיצורי דרך</string>
     <string name="settings_enable_status_notification">הודעת סטטוס</string>
     <string name="settings_enable_status_notification_summary">הצג הודעה שיכולה לפתוח מנהל טפילי</string>
-    <string name="disable_status_notification_error">אין קיצור דרך, לא ניתן להשבית הודעה</string>
     <string name="settings_update_channel">ערוץ עדכון</string>
     <string name="update_channel_stable">יציב</string>
     <string name="update_channel_bate">בטא</string>

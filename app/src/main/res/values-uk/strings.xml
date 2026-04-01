@@ -204,7 +204,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Поточна панель запуску за замовчуванням не підтримує шорткати пін-кодів</string>
     <string name="settings_enable_status_notification">Повідомлення про статус</string>
     <string name="settings_enable_status_notification_summary">Показати повідомлення, яке може відкрити паразитний менеджер</string>
-    <string name="disable_status_notification_error">Немає ярлика, не можна відключити сповіщення</string>
     <string name="settings_update_channel">Канал оновлень</string>
     <string name="update_channel_stable">Стабільний</string>
     <string name="update_channel_bate">Бета-версія</string>

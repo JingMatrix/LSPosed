@@ -196,7 +196,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Trenutačni zadani pokretač ne podržava prečace pribadače</string>
     <string name="settings_enable_status_notification">Obavijest o statusu</string>
     <string name="settings_enable_status_notification_summary">Prikaži obavijest koja može otvoriti parazitski upravitelj</string>
-    <string name="disable_status_notification_error">Nema prečaca, nije moguće onemogućiti obavijest</string>
     <string name="settings_update_channel">Ažurirajte kanal</string>
     <string name="update_channel_stable">Stabilan</string>
     <string name="update_channel_bate">Beta</string>

@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">वर्तमान डिफ़ॉल्ट लांचर पिन शॉर्टकट का समर्थन नहीं करता</string>
     <string name="settings_enable_status_notification">स्थिति अधिसूचना</string>
     <string name="settings_enable_status_notification_summary">एक अधिसूचना दिखाएं जो परजीवी प्रबंधक खोल सकती है</string>
-    <string name="disable_status_notification_error">कोई शॉर्टकट नहीं, अधिसूचना अक्षम नहीं कर सकता</string>
     <string name="settings_update_channel">चैनल अपडेट करें</string>
     <string name="update_channel_stable">स्थिर</string>
     <string name="update_channel_bate">बीटा</string>

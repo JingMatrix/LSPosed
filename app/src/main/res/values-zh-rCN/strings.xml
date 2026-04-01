@@ -199,7 +199,6 @@ JingMatrix</string>
     <string name="settings_unsupported_pin_shortcut_summary">当前默认桌面不支持固定快捷方式</string>
     <string name="settings_enable_status_notification">状态通知</string>
     <string name="settings_enable_status_notification_summary">显示一个通知以打开寄生管理器</string>
-    <string name="disable_status_notification_error">没有快捷方式，无法禁用通知</string>
     <string name="settings_update_channel">模块更新通道</string>
     <string name="update_channel_stable">稳定版</string>
     <string name="update_channel_bate">测试版</string>

@@ -198,7 +198,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Dabartinė numatytoji paleidimo programa nepalaiko prisegamų nuorodų</string>
     <string name="settings_enable_status_notification">Pranešimas apie būseną</string>
     <string name="settings_enable_status_notification_summary">Rodyti pranešimą, kad galima atidaryti parazitinį tvarkytuvą</string>
-    <string name="disable_status_notification_error">Nėra sparčiųjų klavišų, negalima išjungti pranešimo</string>
     <string name="settings_update_channel">Atnaujinti kanalą</string>
     <string name="update_channel_stable">Stabilus</string>
     <string name="update_channel_bate">Beta</string>

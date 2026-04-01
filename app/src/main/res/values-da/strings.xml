@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Den nuværende standardstarter understøtter ikke pin-genveje</string>
     <string name="settings_enable_status_notification">Meddelelse om status</string>
     <string name="settings_enable_status_notification_summary">Vis en meddelelse, der kan åbne parasitic manager</string>
-    <string name="disable_status_notification_error">Ingen genvej, kan ikke deaktivere meddelelse</string>
     <string name="settings_update_channel">Opdater kanal</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>

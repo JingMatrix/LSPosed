@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Nykyinen oletuskäynnistin ei tue pin-pikakuvakkeita.</string>
     <string name="settings_enable_status_notification">Tilailmoitus</string>
     <string name="settings_enable_status_notification_summary">Näytä ilmoitus, joka voi avata loishallintaohjelman</string>
-    <string name="disable_status_notification_error">Ei pikakuvaketta, ilmoitusta ei voi poistaa käytöstä</string>
     <string name="settings_update_channel">Päivitä kanava</string>
     <string name="update_channel_stable">Vakaa</string>
     <string name="update_channel_bate">Beeta</string>

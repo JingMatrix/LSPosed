@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">De huidige standaard launcher ondersteunt geen pin-snelkoppelingen</string>
     <string name="settings_enable_status_notification">Statusmelding</string>
     <string name="settings_enable_status_notification_summary">Toon een melding die parasitaire manager kan openen</string>
-    <string name="disable_status_notification_error">Geen snelkoppeling, kan melding niet uitschakelen</string>
     <string name="settings_update_channel">Kanaal bijwerken</string>
     <string name="update_channel_stable">Stabiel</string>
     <string name="update_channel_bate">Bèta</string>

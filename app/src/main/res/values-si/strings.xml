@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">වත්මන් පෙරනිමි දියත් කිරීම pin කෙටිමං සඳහා සහය නොදක්වයි</string>
     <string name="settings_enable_status_notification">තත්ත්ව දැනුම්දීම</string>
     <string name="settings_enable_status_notification_summary">පරපෝෂිත කළමනාකරු විවෘත කළ හැකි දැනුම්දීමක් පෙන්වන්න</string>
-    <string name="disable_status_notification_error">කෙටි මගක් නැත, දැනුම්දීම අක්‍රිය කළ නොහැක</string>
     <string name="settings_update_channel">නාලිකාව යාවත්කාලීන කරන්න</string>
     <string name="update_channel_stable">ස්ථාවර</string>
     <string name="update_channel_bate">බීටා</string>

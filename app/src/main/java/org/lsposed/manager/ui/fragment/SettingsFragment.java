@@ -134,18 +134,6 @@ public class SettingsFragment extends BaseFragment {
             parentFragment = null;
         }
 
-        private boolean setNotificationPreferenceEnabled(MaterialSwitchPreference notificationPreference, boolean preferenceEnabled) {
-            var notificationEnabled = ConfigManager.enableStatusNotification();
-            if (notificationPreference != null) {
-                notificationPreference.setEnabled(!notificationEnabled || preferenceEnabled);
-                notificationPreference.setSummaryOn(preferenceEnabled ?
-                        notificationPreference.getContext().getString(R.string.settings_enable_status_notification_summary) :
-                        notificationPreference.getContext().getString(R.string.settings_enable_status_notification_summary) + "\n" +
-                                notificationPreference.getContext().getString(R.string.disable_status_notification_error));
-            }
-            return notificationEnabled;
-        }
-
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final String SYSTEM = "SYSTEM";
@@ -165,15 +153,13 @@ public class SettingsFragment extends BaseFragment {
             if (notificationPreference != null) {
                 notificationPreference.setVisible(installed);
                 if (installed) {
-                    notificationPreference.setChecked(setNotificationPreferenceEnabled(notificationPreference, !App.isParasitic || ShortcutUtil.isLaunchShortcutPinned()));
+                    notificationPreference.setChecked(ConfigManager.enableStatusNotification());
+                    notificationPreference.setSummaryOn(R.string.settings_enable_status_notification_summary);
+                    notificationPreference.setEnabled(true);
                 }
-                notificationPreference.setOnPreferenceChangeListener((p, v) -> {
-                    var succeeded = ConfigManager.setEnableStatusNotification((boolean) v);
-                    if ((boolean) v && App.isParasitic && !ShortcutUtil.isLaunchShortcutPinned()) {
-                        setNotificationPreferenceEnabled(notificationPreference, false);
-                    }
-                    return succeeded;
-                });
+                notificationPreference.setOnPreferenceChangeListener((p, v) ->
+                    ConfigManager.setEnableStatusNotification((boolean) v)
+                );
             }
 
             Preference shortcut = findPreference("add_shortcut");
@@ -185,7 +171,6 @@ public class SettingsFragment extends BaseFragment {
                 }
                 shortcut.setOnPreferenceClickListener(preference -> {
                     if (!ShortcutUtil.requestPinLaunchShortcut(() -> {
-                        setNotificationPreferenceEnabled(notificationPreference, true);
                         App.getPreferences().edit().putBoolean("never_show_welcome", true).apply();
                         parentFragment.showHint(R.string.settings_shortcut_pinned_hint, false);
                     })) {

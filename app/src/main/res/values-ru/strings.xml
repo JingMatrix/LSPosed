@@ -204,7 +204,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Текущий лаунчер по умолчанию не поддерживает закрепление ярлыков</string>
     <string name="settings_enable_status_notification">Уведомление о состоянии</string>
     <string name="settings_enable_status_notification_summary">Показывать уведомление, через которое можно открыть parasitic-менеджер (т. е. LSPosed в скрытом режиме)</string>
-    <string name="disable_status_notification_error">Отсутствует ярлык, невозможно отключить уведомление</string>
     <string name="settings_update_channel">Канал обновлений</string>
     <string name="update_channel_stable">Стабильные версии</string>
     <string name="update_channel_bate">Бета-версии</string>

@@ -198,7 +198,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Súčasný predvolený spúšťač nepodporuje pripnuté skratky</string>
     <string name="settings_enable_status_notification">Oznámenie o stave</string>
     <string name="settings_enable_status_notification_summary">Zobrazenie oznámenia, ktoré môže otvoriť parazitický správca</string>
-    <string name="disable_status_notification_error">Žiadna skratka, nie je možné vypnúť upozornenie</string>
     <string name="settings_update_channel">Aktualizačný kanál</string>
     <string name="update_channel_stable">Stabilné</string>
     <string name="update_channel_bate">Beta</string>

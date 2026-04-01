@@ -195,7 +195,6 @@ Nên gỡ cài đặt ứng dụng hiện tại.</string>
     <string name="settings_unsupported_pin_shortcut_summary">Trình khởi chạy hiện tại không hỗ trợ tạo lối tắt</string>
     <string name="settings_enable_status_notification">Thông báo trạng thái</string>
     <string name="settings_enable_status_notification_summary">Hiện thông báo để mở trình quản lý phụ thuộc</string>
-    <string name="disable_status_notification_error">Không có lối tắt nên không thể tắt thông báo</string>
     <string name="settings_update_channel">Kênh cập nhật</string>
     <string name="update_channel_stable">Ổn định</string>
     <string name="update_channel_bate">Thử nghiệm</string>

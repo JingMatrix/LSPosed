@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Praegune vaikekäivitusprogramm ei toeta nööpnõelte otseteid</string>
     <string name="settings_enable_status_notification">Staatuse teatamine</string>
     <string name="settings_enable_status_notification_summary">Kuva teatis, mis võib avada parasiitide halduri</string>
-    <string name="disable_status_notification_error">Otsetee puudub, teavitust ei saa keelata</string>
     <string name="settings_update_channel">Uuenduskanal</string>
     <string name="update_channel_stable">Stabiilne</string>
     <string name="update_channel_bate">Beeta</string>

@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">موجودہ ڈیفالٹ لانچر پن شارٹ کٹس کو سپورٹ نہیں کرتا ہے۔</string>
     <string name="settings_enable_status_notification">اسٹیٹس کی اطلاع</string>
     <string name="settings_enable_status_notification_summary">ایک اطلاع دکھائیں جو پرجیوی مینیجر کو کھول سکے۔</string>
-    <string name="disable_status_notification_error">کوئی شارٹ کٹ نہیں، اطلاع کو غیر فعال نہیں کر سکتا</string>
     <string name="settings_update_channel">چینل کو اپ ڈیٹ کریں۔</string>
     <string name="update_channel_stable">مستحکم</string>
     <string name="update_channel_bate">بیٹا</string>

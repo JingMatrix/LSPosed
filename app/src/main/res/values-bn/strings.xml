@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">বর্তমান ডিফল্ট লঞ্চার পিন শর্টকাট সমর্থন করে না</string>
     <string name="settings_enable_status_notification">স্থিতি বিজ্ঞপ্তি</string>
     <string name="settings_enable_status_notification_summary">পরজীবী ম্যানেজার খুলতে পারে এমন একটি বিজ্ঞপ্তি দেখান</string>
-    <string name="disable_status_notification_error">কোন শর্টকাট, বিজ্ঞপ্তি নিষ্ক্রিয় করতে পারবেন না</string>
     <string name="settings_update_channel">চ্যানেল আপডেট করুন</string>
     <string name="update_channel_stable">স্থিতিশীল</string>
     <string name="update_channel_bate">বেটা</string>

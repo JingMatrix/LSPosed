@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">O lançador padrão actual não suporta atalhos de pinos</string>
     <string name="settings_enable_status_notification">Notificação de estado</string>
     <string name="settings_enable_status_notification_summary">Mostrar uma notificação que possa abrir o gerenciador parasita</string>
-    <string name="disable_status_notification_error">Nenhum atalho, não é possível desativar a notificação</string>
     <string name="settings_update_channel">Canal de Atualizações</string>
     <string name="update_channel_stable">Estável</string>
     <string name="update_channel_bate">Beta</string>

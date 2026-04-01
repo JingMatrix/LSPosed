@@ -193,7 +193,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Launcher เริ่มต้นปัจจุบันไม่รองรับทางลัด PIN</string>
     <string name="settings_enable_status_notification">การแจ้งเตือนสถานะ</string>
     <string name="settings_enable_status_notification_summary">แสดงการแจ้งเตือนที่สามารถเปิดตัวจัดการปรสิต</string>
-    <string name="disable_status_notification_error">ไม่มีทางลัด ไม่สามารถปิดการแจ้งเตือนได้</string>
     <string name="settings_update_channel">อัพเดทช่อง</string>
     <string name="update_channel_stable">มั่นคง</string>
     <string name="update_channel_bate">เบต้า</string>

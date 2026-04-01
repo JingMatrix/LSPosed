@@ -195,7 +195,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">A jelenlegi alapértelmezett indítóprogram nem támogatja a pin parancsikonokat</string>
     <string name="settings_enable_status_notification">Állapot értesítés</string>
     <string name="settings_enable_status_notification_summary">Értesítés megjelenítése, amely megnyithatja a parazita-kezelőt</string>
-    <string name="disable_status_notification_error">Nincs parancsikon, nem lehet letiltani az értesítést</string>
     <string name="settings_update_channel">Frissítési csatorna</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Béta</string>

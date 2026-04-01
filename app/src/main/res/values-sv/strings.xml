@@ -200,7 +200,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Den nuvarande standardstartaren har inte stöd för genvägar med stift</string>
     <string name="settings_enable_status_notification">Meddelande om status</string>
     <string name="settings_enable_status_notification_summary">Visa en anmälan som kan öppna parasitansvarig</string>
-    <string name="disable_status_notification_error">Ingen genväg, kan inte inaktivera anmälan</string>
     <string name="settings_update_channel">Uppdatera kanal</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>

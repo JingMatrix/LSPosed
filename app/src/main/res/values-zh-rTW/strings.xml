@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">目前的預設啟動器不支援釘選捷徑</string>
     <string name="settings_enable_status_notification">狀態通知</string>
     <string name="settings_enable_status_notification_summary">顯示通知以便開啟寄生管理員</string>
-    <string name="disable_status_notification_error">沒有捷徑，無法停用通知</string>
     <string name="settings_update_channel">更新通道</string>
     <string name="update_channel_stable">穩定版</string>
     <string name="update_channel_bate">測試版</string>

@@ -204,7 +204,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">المشغل الافتراضي الحالي لا يدعم اختصارات الدبوس</string>
     <string name="settings_enable_status_notification">إشعارات الحالة</string>
     <string name="settings_enable_status_notification_summary">إظهار إشعار يمكنه فتح مدير الطفيليات</string>
-    <string name="disable_status_notification_error">لا يوجد اختصار، لا يمكن تعطيل الإشعار</string>
     <string name="settings_update_channel">قناة التحديث</string>
     <string name="update_channel_stable">مستقر</string>
     <string name="update_channel_bate">تجريبي</string>

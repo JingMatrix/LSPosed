@@ -194,7 +194,6 @@
     <string name="settings_unsupported_pin_shortcut_summary">Peluncur default saat ini tidak mendukung pintasan pin</string>
     <string name="settings_enable_status_notification">Notifikasi Status</string>
     <string name="settings_enable_status_notification_summary">Tampilkan notifikasi yang dapat membuka manajer parasit</string>
-    <string name="disable_status_notification_error">Tidak ada pintasan, tidak dapat mematikan notifikasi</string>
     <string name="settings_update_channel">Perbarui saluran</string>
     <string name="update_channel_stable">Stabil</string>
     <string name="update_channel_bate">Beta</string>
