@@ -29,6 +29,7 @@ import org.matrix.vector.daemon.ipc.BRIDGE_TRANSACTION_CODE
 import org.matrix.vector.daemon.ipc.ManagerService
 import org.matrix.vector.daemon.ipc.SystemServerService
 import org.matrix.vector.daemon.utils.applyNotificationWorkaround
+import org.matrix.vector.daemon.utils.applyPermissionManagerWorkaround
 
 private const val TAG = "VectorDaemon"
 private const val ACTION_SEND_BINDER = 1
@@ -93,6 +94,7 @@ object VectorDaemon {
     waitForSystemService(Context.APP_OPS_SERVICE)
 
     applyNotificationWorkaround()
+    applyPermissionManagerWorkaround()
 
     // Inject Vector into system_server
     sendToBridge(VectorService.asBinder(), isRestart = false, systemServerService)

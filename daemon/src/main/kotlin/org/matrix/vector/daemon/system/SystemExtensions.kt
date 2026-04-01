@@ -1,7 +1,6 @@
 package org.matrix.vector.daemon.system
 
 import android.app.IActivityManager
-import android.app.IUidObserver
 import android.content.IIntentReceiver
 import android.content.Intent
 import android.content.IntentFilter

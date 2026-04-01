@@ -6,12 +6,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.UserInfo
+import android.os.Binder
 import android.os.Build
+import android.os.IBinder
 import android.os.IUserManager
+import android.os.Parcel
+import android.os.ServiceManager
 import android.util.Log
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.ClassNotFoundException
+import java.lang.reflect.Method
 import org.matrix.vector.daemon.system.*
 
 private const val TAG = "VectorWorkarounds"
@@ -62,6 +67,65 @@ fun applyNotificationWorkaround() {
           Log.e(TAG, "Failed to build dummy notification", it)
         }
       }
+}
+
+fun applyPermissionManagerWorkaround() {
+  try {
+    val sCacheField = ServiceManager::class.java.getDeclaredField("sCache")
+    sCacheField.isAccessible = true
+
+    @Suppress("UNCHECKED_CAST") val sCache = sCacheField.get(null) as MutableMap<String, IBinder>
+
+    // Inject proxies for the services that AMS checks during broadcast validation
+    sCache["permissionmgr"] = BinderProxy("permissionmgr")
+    sCache["legacy_permission"] = BinderProxy("legacy_permission")
+    sCache["appops"] = BinderProxy("appops")
+
+    Log.d(TAG, "Permission manager workarounds applied successfully")
+  } catch (e: Throwable) {
+    Log.e(TAG, "Failed to init permission manager workaround", e)
+  }
+}
+
+private class BinderProxy(private val serviceName: String) : Binder() {
+  private var mReal: IBinder? = null
+
+  companion object {
+    private val rawGetService: Method? by lazy {
+      try {
+        ServiceManager::class.java.getDeclaredMethod("rawGetService", String::class.java).apply {
+          isAccessible = true
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Could not find rawGetService", e)
+        null
+      }
+    }
+  }
+
+  override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+    synchronized(this) {
+      if (mReal == null) {
+        try {
+          mReal = rawGetService?.invoke(null, serviceName) as? IBinder
+        } catch (ignored: Exception) {}
+      }
+
+      val real = mReal
+      if (real != null) {
+        return real.transact(code, data, reply, flags)
+      }
+    }
+
+    // Fallback logic if the real service cannot be reached
+    // This prevents the calling process from crashing/hanging
+    if (reply != null && serviceName == "permissionmgr") {
+      // If the system calls getSplitPermissions(), return an empty list
+      // This is a common call during broadcast permission checks
+      reply.writeTypedList(emptyList<android.content.pm.PermissionInfo>())
+    }
+    return true
+  }
 }
 
 /**

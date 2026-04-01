@@ -32,6 +32,7 @@ private const val TAG = "VectorService"
 object VectorService : IDaemonService.Stub() {
 
   private var bootCompleted = false
+  @Suppress("DEPRECATION")
   private val ACTION_SECRET_CODE =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) TelephonyManager.ACTION_SECRET_CODE
       else Telephony.Sms.Intents.SECRET_CODE_ACTION
@@ -230,6 +231,7 @@ object VectorService : IDaemonService.Stub() {
     val userId = intent.getIntExtra("android.intent.extra.user_handle", uid / PER_USER_RANGE)
     val uri = intent.data
     val moduleName = uri?.schemeSpecificPart ?: ConfigCache.getModuleByUid(uid)?.packageName
+    Log.d(TAG, "dispatchPackageChanged $action $moduleName [$uid]")
 
     var isXposedModule = false
     if (moduleName != null) {
@@ -289,9 +291,14 @@ object VectorService : IDaemonService.Stub() {
             addFlags(
                 0x01000000 or
                     0x00400000) // FLAG_RECEIVER_INCLUDE_BACKGROUND | FLAG_RECEIVER_FROM_SHELL
-            setPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME)
           }
-      activityManager?.broadcastIntentCompat(notifyIntent)
+      val targets =
+          listOf(BuildConfig.MANAGER_INJECTED_PKG_NAME, BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME)
+
+      targets.forEach { pkg ->
+        val finalIntent = Intent(notifyIntent).setPackage(pkg)
+        activityManager?.broadcastIntentCompat(finalIntent)
+      }
     }
   }
 
