@@ -227,7 +227,8 @@ object VectorService : IDaemonService.Stub() {
 
   private const val EXTRA_REMOVED_FOR_ALL_USERS = "android.intent.extra.REMOVED_FOR_ALL_USERS"
   private const val EXTRA_USER_HANDLE = "android.intent.extra.user_handle"
-  private const val ACTION_MANAGER_NOTIFICATION = "org.lsposed.manager.NOTIFICATION"
+  private const val ACTION_MANAGER_NOTIFICATION =
+      "${BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME}.NOTIFICATION"
   private const val FLAG_RECEIVER_INCLUDE_BACKGROUND = 0x01000000
   private const val FLAG_RECEIVER_FROM_SHELL = 0x00400000
 
