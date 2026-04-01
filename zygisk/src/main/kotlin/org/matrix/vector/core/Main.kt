@@ -44,11 +44,13 @@ object Main {
             .onFailure { t -> Utils.logE("Failed to configure logs from service", t) }
 
         // Check if this process is the designated Vector Manager.
-        // If so, we perform "parasitic" injection into a host (com.android.shell)
-        // and terminate further standard Xposed loading for this specific process.
-        if (niceName == BuildConfig.ManagerPackageName && ParasiticManagerHooker.start()) {
-            Utils.logI("Parasitic manager loaded into host, skipping standard bootstrap.")
-            return
+        if (niceName == BuildConfig.ManagerPackageName) {
+            val type =
+                if (Process.myUid() == BuildConfig.HostPackageUid) "parasitic" else "user-installed"
+            if (ParasiticManagerHooker.start()) {
+                Utils.logI("Manager ($type) loaded into host, skipping standard bootstrap.")
+                return
+            }
         }
 
         // Standard Xposed module loading for third-party apps

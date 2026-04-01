@@ -21,6 +21,7 @@ android {
 
     defaultConfig {
         multiDexEnabled = false
+        buildConfigField("int", "HostPackageUid", "${injectedPackageUid}")
         buildConfigField("String", "InjectedPackageName", """"${injectedPackageName}"""")
         buildConfigField("String", "ManagerPackageName", """"${defaultManagerPackageName}"""")
 
