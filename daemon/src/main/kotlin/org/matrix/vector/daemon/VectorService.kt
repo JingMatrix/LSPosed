@@ -89,6 +89,7 @@ object VectorService : ILSPosedService.Stub() {
           VectorDaemon.scope.launch {
             when (intent.action) {
               Intent.ACTION_LOCKED_BOOT_COMPLETED -> dispatchBootCompleted()
+              Intent.ACTION_CONFIGURATION_CHANGED -> dispatchConfigurationChanged()
               NotificationManager.openManagerAction -> ManagerService.openManager(intent.data)
               NotificationManager.moduleScopeAction -> dispatchModuleScope(intent)
               else -> dispatchPackageChanged(intent)
@@ -112,6 +113,8 @@ object VectorService : ILSPosedService.Stub() {
       }
 
   private fun registerReceivers() {
+    val configFilter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
+
     val packageFilter =
         IntentFilter().apply {
           addAction(Intent.ACTION_PACKAGE_ADDED)
@@ -148,6 +151,8 @@ object VectorService : ILSPosedService.Stub() {
     val exported = Context.RECEIVER_EXPORTED
     val brickPerm = "android.permission.BRICK"
 
+    activityManager?.registerReceiverCompat(
+        createReceiver(), configFilter, brickPerm, 0, notExported)
     activityManager?.registerReceiverCompat(
         createReceiver(), packageFilter, brickPerm, -1, notExported)
     activityManager?.registerReceiverCompat(createReceiver(), uidFilter, brickPerm, -1, notExported)
@@ -198,6 +203,17 @@ object VectorService : ILSPosedService.Stub() {
     Log.d(TAG, "BOOT_COMPLETED event received.")
     if (PreferenceStore.isStatusNotificationEnabled()) {
       NotificationManager.notifyStatusNotification()
+    }
+  }
+
+  private fun dispatchConfigurationChanged() {
+    Log.d(TAG, "CONFIGURATION_CHANGED event received.")
+
+    if (!bootCompleted) return
+    if (PreferenceStore.isStatusNotificationEnabled()) {
+      NotificationManager.notifyStatusNotification()
+    } else {
+      NotificationManager.cancelStatusNotification()
     }
   }
 
