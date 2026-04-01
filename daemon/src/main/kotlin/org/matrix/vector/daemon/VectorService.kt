@@ -32,6 +32,7 @@ private const val TAG = "VectorService"
 object VectorService : IDaemonService.Stub() {
 
   private var bootCompleted = false
+  @Suppress("DEPRECATION")
   private val ACTION_SECRET_CODE =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) TelephonyManager.ACTION_SECRET_CODE
       else Telephony.Sms.Intents.SECRET_CODE_ACTION
@@ -224,74 +225,98 @@ object VectorService : IDaemonService.Stub() {
     }
   }
 
+  private const val EXTRA_REMOVED_FOR_ALL_USERS = "android.intent.extra.REMOVED_FOR_ALL_USERS"
+  private const val EXTRA_USER_HANDLE = "android.intent.extra.user_handle"
+  private const val ACTION_MANAGER_NOTIFICATION = "org.lsposed.manager.NOTIFICATION"
+  private const val FLAG_RECEIVER_INCLUDE_BACKGROUND = 0x01000000
+  private const val FLAG_RECEIVER_FROM_SHELL = 0x00400000
+
   private fun dispatchPackageChanged(intent: Intent) {
-    val uid = intent.getIntExtra(Intent.EXTRA_UID, -1)
     val action = intent.action ?: return
-    val userId = intent.getIntExtra("android.intent.extra.user_handle", uid / PER_USER_RANGE)
+    val uid = intent.getIntExtra(Intent.EXTRA_UID, -1)
+    val userId = intent.getIntExtra(EXTRA_USER_HANDLE, uid / PER_USER_RANGE)
+    val isRemovedForAllUsers = intent.getBooleanExtra(EXTRA_REMOVED_FOR_ALL_USERS, false)
+
     val uri = intent.data
     val moduleName = uri?.schemeSpecificPart ?: ConfigCache.getModuleByUid(uid)?.packageName
 
-    var isXposedModule = false
-    if (moduleName != null) {
-      val appInfo =
+    Log.d(TAG, "dispatchPackageChanged $action $moduleName [$uid]")
+
+    val appInfo =
+        moduleName?.let {
           packageManager
-              ?.getPackageInfoCompat(moduleName, MATCH_ALL_FLAGS or PackageManager.GET_META_DATA, 0)
+              ?.getPackageInfoCompat(it, MATCH_ALL_FLAGS or PackageManager.GET_META_DATA, 0)
               ?.applicationInfo
-      isXposedModule =
-          appInfo != null &&
-              ((appInfo.metaData?.containsKey("xposedminversion") == true) ||
-                  ConfigCache.getModuleApkPath(appInfo) != null)
-    }
+        }
+    var isXposedModule =
+        appInfo != null &&
+            (appInfo.metaData?.containsKey("xposedminversion") == true ||
+                ConfigCache.getModuleApkPath(appInfo) != null)
 
     when (action) {
       Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
-        if (moduleName != null &&
-            intent.getBooleanExtra("android.intent.extra.REMOVED_FOR_ALL_USERS", false)) {
-          if (ModuleDatabase.removeModule(moduleName)) isXposedModule = true
+        // When a package is gone, we can't check metadata.
+        // If it was in our DB and we successfully removed it, we treat it as an Xposed module.
+        if (moduleName != null && isRemovedForAllUsers) {
+          if (ModuleDatabase.removeModule(moduleName)) {
+            isXposedModule = true
+          }
         }
       }
       Intent.ACTION_PACKAGE_ADDED,
       Intent.ACTION_PACKAGE_CHANGED -> {
-        if (isXposedModule && moduleName != null) {
-          val appInfo =
-              packageManager?.getPackageInfoCompat(moduleName, MATCH_ALL_FLAGS, 0)?.applicationInfo
-          if (appInfo != null) {
-            isXposedModule =
-                ModuleDatabase.updateModuleApkPath(
-                    moduleName, ConfigCache.getModuleApkPath(appInfo), false)
-          }
+        if (isXposedModule && moduleName != null && appInfo != null) {
+          // Update the database with the new APK path if it's an Xposed module
+          isXposedModule =
+              ModuleDatabase.updateModuleApkPath(
+                  moduleName, ConfigCache.getModuleApkPath(appInfo), false)
         } else if (ConfigCache.state.scopes.keys.any { it.uid == uid }) {
+          // If not a module, but it's an app that was previously a "scope" (target)
+          // for a module, we need to refresh the cache.
           ConfigCache.requestCacheUpdate()
         }
       }
       Intent.ACTION_UID_REMOVED -> {
-        if (isXposedModule) ConfigCache.requestCacheUpdate()
-        else if (ConfigCache.state.scopes.keys.any { it.uid == uid })
-            ConfigCache.requestCacheUpdate()
+        // If the UID being removed was a module or a scoped app, refresh the cache.
+        if (isXposedModule || ConfigCache.state.scopes.keys.any { it.uid == uid }) {
+          ConfigCache.requestCacheUpdate()
+        }
       }
     }
 
-    val removed =
+    // Special handling if the app being changed is the Vector Manager itself.
+    val isRemovedAction =
         action == Intent.ACTION_PACKAGE_FULLY_REMOVED || action == Intent.ACTION_UID_REMOVED
     if (moduleName == BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME && userId == 0) {
       Log.d(TAG, "Manager updated")
-      ConfigCache.updateManager(removed)
+      ConfigCache.updateManager(isRemovedAction)
     }
 
-    // Broadcast back to Manager
+    // Notify the manager (foreground) that a package state changed so it can refresh its view.
     if (moduleName != null) {
       val notifyIntent =
-          Intent("org.lsposed.manager.NOTIFICATION").apply {
+          Intent(ACTION_MANAGER_NOTIFICATION).apply {
             putExtra(Intent.EXTRA_INTENT, intent)
             putExtra("android.intent.extra.PACKAGES", moduleName)
             putExtra(Intent.EXTRA_USER, userId)
             putExtra("isXposedModule", isXposedModule)
-            addFlags(
-                0x01000000 or
-                    0x00400000) // FLAG_RECEIVER_INCLUDE_BACKGROUND | FLAG_RECEIVER_FROM_SHELL
-            setPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME)
+            addFlags(FLAG_RECEIVER_INCLUDE_BACKGROUND or FLAG_RECEIVER_FROM_SHELL)
           }
-      activityManager?.broadcastIntentCompat(notifyIntent)
+
+      // Send to both the parasitic manager and the standalone manager
+      listOf(BuildConfig.MANAGER_INJECTED_PKG_NAME, BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME)
+          .forEach { pkg ->
+            activityManager?.broadcastIntentCompat(Intent(notifyIntent).setPackage(pkg))
+          }
+    }
+
+    // If an actual Xposed module was updated (not removed), show a system notification.
+    if (moduleName != null && isXposedModule && !isRemovedAction && !isRemovedForAllUsers) {
+      val scopes = ConfigCache.getModuleScope(moduleName) ?: emptyList()
+      val isSystemModule = scopes.any { it.packageName == "system" }
+      val isEnabled = ManagerService.enabledModules().contains(moduleName)
+
+      NotificationManager.notifyModuleUpdated(moduleName, userId, isEnabled, isSystemModule)
     }
   }
 
