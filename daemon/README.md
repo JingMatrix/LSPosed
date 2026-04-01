@@ -1,63 +1,87 @@
-# Vector Daemon
+# Vector Daemon Subsystem
 
-The Vector `daemon` is a highly privileged, standalone executable that runs as `root`.
-It acts as the central coordinator and backend for the entire Vector framework.
+The Vector daemon is a standalone, root-privileged Dalvik executable bootstrapped via `app_process`. Operating entirely outside the standard Android application sandbox, it serves as the central coordinator, state manager, and inter-process communication (IPC) asset server for the Vector framework. 
 
-Unlike the injected framework code, the daemon does not hook methods directly. Instead, it manages state, provides IPC endpoints to hooked apps and modules, handles AOT compilation evasion, and interacts safely with Android system services.
+Target processes operating under strict Android sandbox and SELinux constraints cannot safely access external configuration files or SQLite databases. The daemon offloads these operations, providing an IPC backend that serves memory-mapped resources, configuration states, and native file descriptors to target applications securely and efficiently.
 
-## Architecture Overview
+## Directory Structure
 
-The daemon relies on a dual-IPC architecture and extensive use of Android Binder mechanisms to orchestrate the framework lifecycle without triggering SELinux denials or breaking system stability.
-
-1. _Bootstrapping & Bridge (`core/`)_: The daemon starts early in the boot process. It forces its primary Binder (`VectorService`) into `system_server` by hijacking transactions on the Android `activity` service.
-2. _Privileged IPC Provider (`ipc/`)_: Android's sandbox prevents target processes from reading the framework APK, accessing SQLite databases, or resolving hidden ART symbols. The daemon exploits its root/system-level permissions to act as an asset server. It provides three critical components to hooked processes over Binder IPC:
-    * _Framework Loader DEX_: Dispatched via `SharedMemory` to avoid disk-based detection and bypass SELinux `exec` restrictions.
-    * _Obfuscation Maps_: Dictionaries provided over IPC when API protection is enabled, allowing the injected code to correctly resolve the randomized class names at runtime.
-    * _Dynamic Module Scopes_: Fast, lock-free lookups of which modules should be loaded into a specific UID/ProcessName.
-3. _State Management (`data/`)_: To ensure IPC calls resolve in microseconds without race conditions, the daemon uses an _Immutable State Container_ (`DaemonState`). Module topology and scopes are built into a frozen snapshot in the background, which is atomically swapped into memory. High-volume module preference updates are isolated in a separate `PreferenceStore` to prevent state pollution.
-4. _Native Environment (`env/` & JNI)_: Background threads (C++ and Kotlin Coroutines) handle low-level system subversion, including `dex2oat` compilation hijacking and logcat monitoring.
-
-## Directory Layout
+The daemon is organized into discrete packages handling IPC, state management, OS interfacing, and native environments.
 
 ```text
 src/main/
-├── kotlin/org/matrix/vector/daemon/
-│   ├── *.kt        # Entry point (Daemon, Cli), looper setup, and OS broadcast receivers
-│   ├── ipc/        # AIDL implementations (Manager, Module, App, SystemServer endpoints)
-│   ├── data/       # SQLite DB, Immutable State (DaemonState, ConfigCache), PreferenceStore, File & ZIP parsing
-│   ├── system/     # System binder wrappers, UID observers, Notification UI
-│   ├── env/        # Socket servers and monitors communicating with JNI (dex2oat, logcat)
-│   └── utils/      # OEM-specific workarounds, FakeContext, JNI bindings
-└── jni/            # Native C++ layer (dex2oat wrapper, logcat watcher, slicer obfuscation)
+├── jni/                      # Native C++ implementations (dex2oat wrapper, logcat parser)
+└── kotlin/org/matrix/vector/daemon/
+    ├── data/                 # SQLite schema, immutable state cache, and file operations
+    ├── env/                  # UNIX domain socket servers and native process monitors
+    ├── ipc/                  # AIDL endpoints (Application, Manager, Module, SystemServer)
+    ├── system/               # System binder delegates and Notification UI
+    ├── utils/                # Context forgery, signature verification, and JNI bridges
+    ├── Cli.kt                # Command-line interface definitions
+    ├── VectorDaemon.kt       # Main entry point and looper initialization
+    └── VectorService.kt      # Primary IDaemonService implementation
 ```
 
-## Core Technical Mechanisms
+## Concurrency and State Management
 
-### 1. IPC Routing (The Two Doors)
-* _Door 1 (`SystemServerService`)_: A native-to-native entry point used exclusively for the _System-Level Initialization_ of `system_server`. By proxying the hardware `serial` service (via `IServiceCallback`), the daemon provides a rendezvous point accessible to the system before the Activity Manager is even initialized. It handles raw UID/PID/Heartbeat packets to authorize the base system framework hook.
-* _Door 2 (`VectorService`)_: The _Application-Level Entrance_ used by user-space apps. Since user apps are forbidden by SELinux from accessing hardware services like `serial`, they use the "Activity Bridge" to reach the daemon. This door utilizes an action-based protocol allowing the daemon to perform _Scope Filtering_—matching the calling process against the current `DaemonState` before granting access to the framework.
+To handle concurrent IPC requests without starving Android Binder thread pools, the daemon separates background I/O operations from state reads.
 
-### 2. AOT Compilation Hijacking (`dex2oat`)
-To prevent Android's ART from inlining hooked methods (which makes them unhookable), Vector hijacks the Ahead-of-Time (AOT) compiler.
-* _Mechanism_: The daemon (`Dex2OatServer`) mounts a C++ wrapper binary (`bin/dex2oatXX`) over the system's actual `dex2oat` binaries in the `/apex` mount namespace.
-* _FD Passing_: When the wrapper executes, to read the original compiler or the `liboat_hook.so`, it opens a UNIX domain socket to the daemon. The daemon (running as root) opens the files and passes the File Descriptors (FDs) back to the wrapper via `SCM_RIGHTS`.
-* _Execution_: The wrapper uses `memfd_create` and `sendfile` to load the hook, bypassing execute restrictions, and uses `LD_PRELOAD` to inject the hook into the real `dex2oat` process while appending `--inline-max-code-units=0`.
+* Immutable State Container: The `DaemonState` data class holds a frozen snapshot of all enabled modules and process scopes. IPC threads read from this object without acquiring locks.
+* Atomic Swaps: When the underlying SQLite database changes, the daemon triggers a conflated channel request. A background coroutine queries the database, computes the new module topology, instantiates a new `DaemonState`, and atomically swaps the reference in `ConfigCache`.
+* Preference Isolation: High-frequency module preference reads and writes are decoupled from the core state. Managed by `PreferenceStore`, preferences are serialized as binary blobs and pushed as differential updates to modules, preventing unnecessary cache rebuilds.
 
-### 3. API Protection & DEX Obfuscation
-To prevent unauthorized apps from detecting the framework or invoking the Xposed API, the daemon randomizes framework and loader class names on each boot. JNI maps the input `SharedMemory` via `MAP_SHARED` to gain direct, zero-copy access to the physical pages populated by Java. Using the [DexBuilder](https://github.com/JingMatrix/DexBuilder) library, the daemon mutates the DEX string pool in-place; this is highly efficient as the library's Intermediate Representation points directly to the mapped buffer, avoiding unnecessary heap allocations during the randomization process.
+## IPC Architecture
 
-Once mutation is complete, the finalized DEX is written into a new `SharedMemory` region and the original plaintext handle is closed. Because signatures are now randomized, the daemon provides _Obfuscation Maps_ via Door 1 and Door 2. These dictionaries allow the injected code to correctly "re-link" and resolve the framework's internal classes at runtime despite their randomized names.
+The daemon implements a multi-layered IPC design utilizing Android's Binder mechanism and UNIX domain sockets. It avoids registering standard AIDL services with `ServiceManager`, relying instead on intercepting Binder transactions via the Zygisk module and actively pushing Binder references to target processes.
 
-### 4. Lifecycle & Process Injection
-Vector uses a proactive _Push Model_ to distribute the `IXposedService` binder. Upon detecting a process start via `IUidObserver`, the daemon utilizes `getContentProviderExternal` to obtain a direct line to the module's internal provider. It then executes a synchronous `IContentProvider.call()`, passing the control binder within a `Bundle`. This ensures the framework reference is injected into the target process’s memory before its `Application.onCreate()` executes, bypassing the detection and latency associated with standard `bindService` calls.
+### 1. System Server Bootstrapping
+During device boot, the daemon establishes a communication channel with the native Vector Zygisk module residing in `system_server`.
 
-_Remote Preferences & Files_ are supported by a combination of the injected Binder and custom SELinux types. The daemon stores preferences and shared files in directories labeled `xposed_data`. Because the policy allows global access to this type, the injected binder simply provides the path or File Descriptor, and the target app can perform direct I/O, bypassing standard per-app sandbox restrictions.
+* The daemon registers an `IServiceCallback` to listen for the registration of a hardware proxy service (typically the `serial` service). Once intercepted, the daemon replaces the proxy service with its own binder.
+* The Zygisk module queries this proxy service to retrieve the framework loader DEX via `SharedMemory` and the class obfuscation map.
+* Concurrently, the daemon sends a raw `ACTION_SEND_BINDER` transaction to the `activity` service. The Zygisk module's JNI hook intercepts this transaction before it reaches the Activity Manager, extracting and storing the daemon's primary `VectorService` binder for future use.
 
-## Development & Maintenance Guidelines
+### 2. Target Application Rendezvous
+When a standard user application spawns, it requests framework access from the daemon.
 
-When modifying the daemon, strictly adhere to the following principles:
+* The target application queries the `activity` service. The Zygisk module inside `system_server` intercepts this query.
+* The `system_server` forwards the application's UID, PID, process name, and a newly created heartbeat `BBinder` to the daemon using the previously stored `VectorService` reference.
+* The daemon verifies the request against its `ConfigCache` to determine if the application is within the scope of any enabled modules.
+* If approved, the daemon returns an `ApplicationService` binder, which the `system_server` passes back to the target application.
+* The daemon links a `DeathRecipient` to the heartbeat binder to automatically clean up internal tracking maps when the application process dies.
+* The target application uses the `ApplicationService` binder to fetch its specific module list, framework DEX, and obfuscation map.
 
-1. _Never Block IPC Threads_: AIDL `onTransact` methods are called synchronously by the Android framework and target apps. Blocking these threads (e.g., by executing raw SQL queries or heavy I/O directly) will cause Application Not Responding (ANR) crashes system-wide. Always read from the lock-free, immutable `DaemonState` snapshot exposed by `ConfigCache.state`.
-2. _Resource Determinism_: The daemon runs indefinitely. Leaking a single `Cursor`, `ParcelFileDescriptor`, or `SharedMemory` instance will eventually exhaust system limits and crash the OS. Always use Kotlin's `.use { }` blocks or explicit C++ RAII wrappers for native resources.
-3. _Isolate OEM Quirks_: Android OS behavior varies wildly between manufacturers (e.g., Lenovo hiding cloned apps in user IDs 900-909, MIUI killing background dual-apps). Place all OEM-specific logic in `utils/Workarounds.kt` to prevent core logic pollution.
-4. _Context Forgery (`FakeContext`)_: The daemon does not have a real Android `Context`. To interact with system APIs that require one (like building Notifications or querying packages), use `FakeContext`. Be aware that standard `Context` methods may crash if not explicitly mocked.
+### 3. Libxposed Module Injection
+Unlike target applications which request access, the daemon actively pushes its API binder to module processes. This mechanism is strictly limited to modules utilizing the modern libxposed API.
+
+* The daemon registers an `IUidObserver` with the Activity Manager to monitor process lifecycles.
+* When a UID becomes active, `ModuleService` checks if the UID belongs to an enabled libxposed module.
+* The daemon retrieves an `IXposedService` binder. To deliver it, the daemon calls `IActivityManager.getContentProviderExternal`, targeting a synthetic authority constructed from the module's package name.
+* The daemon executes `IContentProvider.call` with the action `SEND_BINDER` and a `Bundle` containing the binder. This injects the binder into the module's process space before `Application.onCreate` executes, providing access to API verification, scope requests, and remote preferences.
+
+### 4. Native Socket IPC
+For native components that operate outside the Java Binder context, the daemon provisions two distinct types of UNIX domain sockets.
+
+* Command-Line Interface: The `CliSocketServer` exposes a filesystem-based socket at `/data/adb/lspd/.cli_sock`. The CLI client authenticates using a compiled-in UUID token and communicates using structured JSON. For live log streaming, the daemon attaches the log file's raw `FileDescriptor` to the socket reply payload, allowing the client to read directly from the OS-level stream buffer.
+* Dex2Oat Wrapper: The `Dex2OatServer` listens on an abstract UNIX domain socket. To prevent conflicts and detection, the exact name of this abstract socket is randomized during module installation. The C++ `dex2oat` wrapper connects to this socket to receive necessary file descriptors via `SCM_RIGHTS`.
+
+## Native Environment Subsystems
+
+The daemon relies on native C++ subsystems to intercept Android's compilation pipeline and parse system log buffers directly, avoiding the overhead and limitations of standard shell utilities.
+
+### AOT Compilation Hijacking
+
+Android's ART compiler aggressively inlines methods, which permanently prevents those methods from being hooked at runtime. To enforce the `--inline-max-code-units=0` flag system-wide, Vector utilizes a C++ binary wrapper mounted over the system's `dex2oat` and `dex2oat64` binaries. 
+
+The daemon manages this interception entirely through its native JNI layer. To ensure the replaced compiler binaries are globally visible to all newly spawned application processes, the daemon forks a privileged child process and uses `setns` with `CLONE_NEWNS` to enter the `init` (`PID 1`) mount namespace via `/proc/1/ns/mnt`. It then performs read-only bind mounts (`MS_BIND | MS_REMOUNT | MS_RDONLY`) over the target compiler binaries located in the `/apex` mount points.
+
+When the wrapper executes, it connects to the daemon's abstract UNIX domain socket to retrieve the original compiler binary and the hooking library (`liboat_hook.so`) via `SCM_RIGHTS`. To guarantee the wrapper can connect without SELinux denials, the daemon dynamically writes to `/proc/self/task/[tid]/attr/sockcreate` before binding the socket. This instructs the kernel to label the abstract socket with a specific context, such as `u:r:dex2oat:s0` or `u:r:installd:s0`, matching the strict domains under which the compiler operates.
+
+If the wrapper is disabled or incompatible, the daemon unmounts the binaries and utilizes `resetprop` to inject the inline flag directly into the `dalvik.vm.dex2oat-flags` system property as a fallback. The Kotlin daemon continuously monitors SELinux states via a `FileObserver` on `/sys/fs/selinux/enforce` and its policy files. It dynamically remounts the wrappers if the system drops to permissive mode or alters policy, ensuring the interception persists across state changes.
+
+### Native Logcat Telemetry
+Instead of relying on standard logcat shell execution, the daemon runs a native C++ process that interfaces directly with Android's `liblog` buffers (`LOG_ID_MAIN` and `LOG_ID_CRASH`). 
+
+The native parser performs zero-copy processing of log events, strictly filtering output by predefined exact tags (e.g., Magisk, KernelSU) and prefix tags (e.g., dex2oat, Vector, LSPosed). It writes the filtered output into two rotating log files: one for module frameworks and one for verbose system debugging, rotating them automatically when they reach 4MB.
+
+To control this isolated native loop, the Kotlin daemon injects specific string triggers (such as `!!refresh_modules!!` or `!!start_verbose!!`) directly into the Android log stream. The C++ parser intercepts these specific messages originating from its own parent PID and dynamically rotates its file descriptors or alters its verbosity state without requiring additional IPC overhead.
