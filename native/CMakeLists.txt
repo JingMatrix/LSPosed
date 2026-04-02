@@ -13,7 +13,7 @@ set(IGNORED_WARNINGS
     -Wno-c99-extensions
     -Wno-extra-semi
     -Wno-gnu-flexible-array-initializer
-    -Wno-gnu-string-literal-operator-templat
+    -Wno-gnu-string-literal-operator-template
     -Wno-gnu-zero-variadic-macro-arguments
     -Wno-variadic-macros
     -Wno-zero-length-array

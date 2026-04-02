@@ -64,14 +64,12 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
 
                 // Hook the resolution method to inject our redirection logic
                 VectorHookBuilder(resolveMethod).intercept { chain ->
-                    Utils.logD("inside resolveMethod, calling proceed")
-                    // 1. Execute the original resolution first
+                    // Execute the original resolution first
                     val result = chain.proceed()
 
                     val intent = chain.args[0] as? Intent ?: return@intercept result
-                    Utils.logD("proceed called, intent ${intent}")
 
-                    // Check if this intent is meant for the LSPosed Manager
+                    // Check if this intent is meant for the Vector Manager
                     if (!intent.hasCategory(BuildConfig.ManagerPackageName + ".LAUNCH_MANAGER"))
                         return@intercept result
 
@@ -88,7 +86,6 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
                     if (originalActivityInfo.packageName != BuildConfig.InjectedPackageName)
                         return@intercept result
 
-                    Utils.logD("creat redirectedInfo")
                     // --- Redirection Logic ---
                     // We create a copy of the ActivityInfo to avoid polluting the system's cache.
                     val redirectedInfo =
@@ -110,7 +107,6 @@ class ParasiticManagerSystemHooker : HandleSystemServerProcessHooker.Callback {
                     // Notify the bridge service that we are about to start the manager
                     BridgeService.getService()?.preStartManager()
 
-                    Utils.logD("returning redirectedInfo ${redirectedInfo}")
                     redirectedInfo
                 }
 
