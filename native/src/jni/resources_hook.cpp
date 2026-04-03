@@ -61,7 +61,7 @@ static std::string GetXResourcesClassName() {
 }
 
 /**
- * @brief Finds and caches the addresses of private functions in libframework.so.
+ * @brief Finds and caches the addresses of private functions in libandroidfw.so.
  *
  * It uses the ElfImage utility to parse the Android framework's shared library in memory,
  * find functions by their C++ mangled names, and

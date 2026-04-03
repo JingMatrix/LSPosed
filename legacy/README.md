@@ -22,28 +22,28 @@ The `LegacyDelegateImpl` satisfies the `LegacyFrameworkDelegate` interface, acti
 - Native hook execution routing (`processLegacyHook`).
 - Resource directory tracking (`setPackageNameForResDir`).
 
-## Module Initialization and In-Memory Isolation
+## Module Initialization
 
 Legacy modules are loaded during the initialization phase via `XposedInit.loadLegacyModules()`. The framework queries the daemon (`VectorServiceClient.INSTANCE.getLegacyModulesList()`) to retrieve the list of enabled APK paths.
 
 Modules are not loaded using standard Android mechanism. To prevent detection via `ClassLoader.getParent()` chain-walking and to eliminate residual file descriptors, `XposedInit.loadModule` utilizes `VectorModuleClassLoader`. This classloader loads the module APK directly into memory, isolating the module's execution environment from the host application's classpath.
 
-Once mapped into memory, the framework parses two specific manifest files within the APK:
-1.  **`assets/native_init`**: native hooks, invoking `NativeAPI.recordNativeEntrypoint` to queue the libraries for memory-mapped loading.
-2.  **`assets/xposed_init`**: entrypoint class, loading each via the `VectorModuleClassLoader`.
+Once mapped into memory, the framework parses two specific manifest files within the APK to initialize Java and native execution hooks:
 
-For each loaded entrypoint class, the framework checks for implementations of the `IXposedMod` marker interfaces:
-- `IXposedHookZygoteInit`: Invoked immediately with a `StartupParam` structure containing the module path and system server status.
-- `IXposedHookLoadPackage`: Wrapped in `IXposedHookLoadPackage.Wrapper` and appended to the `XposedBridge.sLoadedPackageCallbacks` array.
-- `IXposedHookInitPackageResources`: Appended to `XposedBridge.sInitPackageResourcesCallbacks` array, which subsequently triggers the native resource hooking subsystem via `XposedInit.hookResources()`.
+1. `assets/xposed_init`: Defines the Java entrypoint class, which is loaded via `VectorModuleClassLoader` and inspected for `IXposedMod` implementations to be registered with the internal callback arrays:
+    - `IXposedHookZygoteInit`: Invoked immediately with a `StartupParam` structure containing the module path and system server status.
+    - `IXposedHookLoadPackage`: Wrapped in `IXposedHookLoadPackage.Wrapper` and appended to the `XposedBridge.sLoadedPackageCallbacks` array.
+    - `IXposedHookInitPackageResources`: Appended to `XposedBridge.sInitPackageResourcesCallbacks` array, which subsequently triggers the native resource hooking subsystem via `XposedInit.hookResources()`.
 
-## Lifecycle Event Translation
+2. `assets/native_init`: Defines native library filenames that are treated as [native hooking modules](https://github.com/LSPosed/LSPosed/wiki/Native-Hook). These names are registered via` NativeAPI::recordNativeEntrypoint` to be intercepted during the dynamic linking process. The `native` module provides an infrastructure for native modules to perform inline hooking via [native_api.cpp](../native/src/jni/native_api_bridge.cpp) without direct access to the framework's core symbols.
+
+### Lifecycle Event Translation
 
 The `xposed` module manages Android lifecycle events (e.g., `LoadedApk.createOrUpdateClassLoaderLocked`), and dispatches a `LegacyPackageInfo` payload to `LegacyDelegateImpl`.
 
 `LegacyDelegateImpl.onPackageLoaded` translates the modern payload into the classic Xposed format. It constructs an `XC_LoadPackage.LoadPackageParam` object, mapping the following fields: `packageName`, `processName`, `classLoader`, `appInfo`, and `isFirstApplication`. The populated parameter object is then passed to `XC_LoadPackage.callAll`, which iterates over the `sLoadedPackageCallbacks` array and executes the registered module callbacks.
 
-The system server represents a unique lifecycle edge case. `LegacyDelegateImpl.onSystemServerLoaded` manually registers `android` into the `loadedPackagesInProcess` set and constructs a hardcoded `LoadPackageParam` with the process name `system_server`. This ensures legacy modules targeting the system framework receive the correct execution context.
+The system server represents a unique lifecycle edge case. `LegacyDelegateImpl.onSystemServerLoaded` manually registers `android` into the `loadedPackagesInProcess` set and constructs a hardcoded `LoadPackageParam` with the process name `system_server`.
 
 ## Execution Routing and Method Hooking
 
@@ -51,20 +51,18 @@ The method hooking lifecycle involves identifying target executables via reflect
 
 ### Structural Reflection Caching
 
-Legacy modules rely heavily on reflection to locate target methods and fields (e.g., via `XposedHelpers.findAndHookMethod`). Traditional string-based reflection caching causes severe garbage collection overhead due to constant string concatenation during lookups.
-
-The `legacy` module resolves this by implementing a structural caching mechanism within `XposedHelpers`. Queries are encapsulated into `MemberCacheKey` subclasses (`Method`, `Constructor`, `Field`). These keys compute their hashes based on object identity and structural properties (class references, parameter array contents, and exactness flags) rather than strings. The keys are stored in `ConcurrentHashMap` instances (`fieldCache`, `methodCache`, `constructorCache`), enabling zero-allocation cache hits for repeated reflective lookups.
+Legacy modules rely heavily on reflection to locate target methods and fields (e.g., via `XposedHelpers.findAndHookMethod`). The `legacy` module implements a structural caching mechanism within `XposedHelpers`. Queries are encapsulated into `MemberCacheKey` subclasses (`Method`, `Constructor`, `Field`). These keys compute their hashes based on object identity and structural properties (class references, parameter array contents, and exactness flags) rather than strings. The keys are stored in `ConcurrentHashMap` instances (`fieldCache`, `methodCache`, `constructorCache`), enabling zero-allocation cache hits for repeated reflective lookups.
 
 ### AOT Deoptimization
 
 Modern Android Runtime (ART) environments utilize Ahead-Of-Time (AOT) compilation, which frequently inlines short methods into their callers. If an inlined method is hooked, the JNI trampoline will be bypassed because the caller executes the inlined machine code directly.
 
-To mitigate this, the `xposed` module implements `VectorDeopter`. During initialization or application load, `VectorDeopter.deoptMethods()` queries a registry of known inlined methods (`VectorInlinedCallers`). It iterates through these targets and issues a native command (`HookBridge.deoptimizeMethod`) to force ART to discard the compiled machine code for the target. This forces the method execution back into the ART interpreter, which strictly respects method boundaries and guarantees execution of the installed JNI trampolines.
+To mitigate this, the `xposed` module implements `VectorDeopter`. During initialization or application load, `VectorDeopter.deoptMethods()` queries a registry of known inlined methods [VectorInlinedCallers](../xposed/src/main/kotlin/org/matrix/vector/impl/core/VectorInlinedCallers.kt). It iterates through these targets and issues a native command (`HookBridge.deoptimizeMethod`) to force ART to discard the compiled machine code for the target. This forces the method execution back into the ART interpreter (via `ClassLinker::SetEntryPointsToInterpreter` in `lsplant`), which strictly respects method boundaries and guarantees execution of the installed JNI trampolines.
 
 ### Native Hook Registry and Execution State Translation
 
 Hook registration is routed from `XposedBridge` to the native layer in [hook_bridge.cpp](../native/src/jni/hook_bridge.cpp). The native environment manages a concurrent global registry to track hooked executables and their associated callbacks.
-When a hooked method executes, the native engine pauses standard execution and routes control back to the JVM via the `LegacyFrameworkDelegate.processLegacyHook` interface.
+When a hooked method executes, the native engine pauses standard execution and routes control back to `xposed`, which invokes the `LegacyFrameworkDelegate.processLegacyHook` interface.
 
 The `LegacyDelegateImpl` translates the modern execution state (`OriginalInvoker`) into the legacy specification. It wraps the invocation state within `LegacyApiSupport` and performs the following execution loop:
 
@@ -76,40 +74,31 @@ The `LegacyDelegateImpl` translates the modern execution state (`OriginalInvoker
 
 The resource hooking implementation allows legacy modules to replace application assets, layout definitions, and string values at runtime. Because Android optimizes resource retrieval and XML parsing heavily in native C++ code, this subsystem requires a combination of framework-level injection, dynamic class generation, and direct memory manipulation of binary XML structures.
 
-
-To intercept resource queries, the system replaces the default OS-provided `Resources` instance with a custom `XResources` subclass. During framework startup, `XposedInit.hookResources()` intercepts the Android `android.app.ResourcesManager` component. It applies hooks to the resource factory methods (`createResources`, `createResourcesForActivity` on Android 12+, and `getOrCreateResources` on older versions). When an application requests a new resource object, the hook callback executes `cloneToXResources()`. This method instantiates a new `XResources` object and copies the underlying OS implementation by extracting `mResourcesImpl` via `HiddenApiBridge.Resources_setImpl`. The newly constructed `XResources` instance is then injected back into the operating system's internal tracking arrays (e.g., `mResourceReferences` or the `ActivityResource` struct), encapsulated within a `WeakReference` to prevent memory leaks.
+To intercept resource queries, the system replaces the default OS-provided `Resources` instance with a custom `XResources` subclass. During framework startup, `XposedInit.hookResources()` intercepts the Android `android.app.ResourcesManager` component, by applying hooks to the resource factory methods (`createResources`, `createResourcesForActivity` on Android 12+, and `getOrCreateResources` on older versions). When an application requests a new resource object, the hook callback executes `cloneToXResources()`. This method instantiates a new `XResources` object and copies the underlying OS implementation by extracting `mResourcesImpl` via `HiddenApiBridge.Resources_setImpl`. The newly constructed `XResources` instance is then injected back into the operating system's internal tracking arrays (e.g., `mResourceReferences` or the `ActivityResource` struct), encapsulated within a `WeakReference` to prevent memory leaks.
 
 ### Dynamic Class Hierarchy Generation
 
-To intercept resource queries effectively, the framework must replace the OS-provided resource instances with `XResources` and `XTypedArray`. However, Android OEMs frequently replace `android.content.res.Resources` and `android.content.res.TypedArray` with proprietary subclasses (e.g., `miui.content.res.MiuiResources`). Hardcoding `XResources` to inherit directly from the base AOSP `Resources` class would result in fatal `ClassCastException` aborts when the heavily modified OEM framework attempts to cast the injected object back to its expected proprietary type.
+To intercept resource queries effectively, the framework must replace the OS-provided resource instances with `XResources` and `XTypedArray`. However, hardcoding `XResources` to inherit directly from the base AOSP `Resources` class would result in fatal `ClassCastException` aborts when the heavily modified OEM framework attempts to cast the injected object back to its expected proprietary type. To resolve this runtime polymorphism requirement without triggering `ClassNotFoundException` during initial loading, the framework dynamically generates an intermediate class hierarchy.
 
-To resolve this runtime polymorphism requirement without triggering `ClassNotFoundException` during initial loading, the framework dynamically generates an intermediate class hierarchy.
-
-During initialization, `XposedBridge.initXResources` within the `legacy` module inspects the exact runtime class of the system resources and typed arrays. It then invokes the `native` bridge `ResourcesHook.makeInheritable` to strip the final modifier from these OEM classes at the ART level, ensuring they can be subclassed.
-
-Subsequently, it invokes `ResourcesHook.buildDummyClassLoader`. The `native` implementation utilizes the `dex_builder` library to construct a DEX file directly within a memory buffer. It generates dummy classes named `xposed.dummy.XResourcesSuperClass` and `xposed.dummy.XTypedArraySuperClass`, dynamically setting their superclasses to the exact OEM classes detected earlier. This memory buffer is then loaded into the runtime via `dalvik.system.InMemoryDexClassLoader`.
-
-Finally, the `legacy` module manipulates the parent chain of its own classloader by overriding the parent field to point to the in-memory dummy classloader. At compile time, `XResources` is declared as extending the `XResourcesSuperClass` stub. At runtime, when Dalvik/ART resolves `XResources`, the manipulated classloader chain provides the dynamically generated dummy class. This mechanism guarantees that `XResources` safely inherits all OEM-specific methods and fields, successfully passing any internal type checks performed by the vendor framework.
+During initialization, `XposedBridge.initXResources` within the `legacy` module inspects the exact runtime class of the system resources and typed arrays. It then invokes the `native` bridge `ResourcesHook.makeInheritable` to strip the final modifier from these OEM classes at the ART level, ensuring they can be subclassed. Subsequently, it invokes `ResourcesHook.buildDummyClassLoader`. The `native` implementation utilizes the `dex_builder` library to construct a DEX file directly within a memory buffer. It generates dummy classes named `xposed.dummy.XResourcesSuperClass` and `xposed.dummy.XTypedArraySuperClass`, dynamically setting their superclasses to the exact OEM classes detected earlier. This memory buffer is then loaded into the runtime via `dalvik.system.InMemoryDexClassLoader`. Finally, the `legacy` module manipulates the parent chain of its own classloader by overriding the parent field to point to the in-memory dummy classloader. At compile time, `XResources` is declared as extending the `XResourcesSuperClass` stub. At runtime, when Dalvik/ART resolves `XResources`, the manipulated classloader chain provides the dynamically generated dummy class. This mechanism guarantees that `XResources` safely inherits all OEM-specific methods and fields, successfully passing any internal type checks performed by the vendor framework.
 
 On Lenovo ZUI devices, the OEM modified the `obtainTypedArray` implementation to query the device configuration from `android.app.ActivityThread.sCurrentActivityThread`. Accessing this field during Zygote startup returns null, resulting in a fatal `NullPointerException` that crashes the boot process. The legacy module circumvents this by reflecting an empty, uninitialized `ActivityThread` object, injecting it into the static `sCurrentActivityThread` field, invoking `obtainTypedArray`, and immediately nullifying the field in a finally block.
 
 ### Replacement Caching and Native Binary XML Mutation
 
-Intercepting high-frequency rendering paths (such as `getDrawable` or `getColor`) and querying a standard hash map for module replacements causes severe lock contention and degrades UI thread performance.
-To prevent this, `XResources` utilizes a lock-free bitmask cache to validate the existence of a replacement in O(1) time before querying the main `sReplacements` hash map.
+Intercepting high-frequency rendering paths (such as `getDrawable` or `getColor`) and querying a standard hash map for module replacements causes severe lock contention and degrades UI thread performance. To prevent this, `XResources` utilizes a lock-free bitmask cache to validate the existence of a replacement in O(1) time before querying the main `sReplacements` hash map.
+- `sSystemReplacementsCache`: A static 256-byte array tracking framework resource IDs (values below `0x7f000000`).
+- `mReplacementsCache`: A 128-byte array tracking application-specific resource IDs (values greater than or equal to `0x7f000000`).
 
-- `sSystemReplacementsCache`: A static 256-byte array tracking framework resource IDs (values below 0x7f000000).
-- `mReplacementsCache`: A 128-byte array tracking application-specific resource IDs (values greater than or equal to 0x7f000000).
-
-When a legacy module registers a replacement via `XResources.setReplacement`, the framework computes a bitwise cache key using `(id & 0x00070000) >> 11 | (id & 0xf8) >> 3` and sets the corresponding bit via `1 << (id & 7)`. During resource retrieval, `getReplacement(id)` evaluates this bitmask. If the bit is zero, the method returns immediately, bypassing monitor acquisition entirely for unmodified resources.
+The bitmask acts as a high-performance fast-path rejection filter to prevent synchronized map lookups for unmodified resources. During registration, the framework maps the resource ID to an index in a byte array—harvesting entropy from the Type and Entry Index fields—and sets a specific bit using the ID's lowest three bits. Upon resource retrieval, `getReplacement` performs a bitwise check; if the bit is zero, the framework immediately returns `null` without acquiring a monitor. This O(1) check ensures that the majority of resource requests bypass the global `sReplacements` lock, maintaining UI thread performance.
 
 When an application inflates a layout via `LayoutInflater`, the Android OS parses compiled AAPT binary XML files utilizing the native `android::ResXMLParser` C++ class. Standard Java hooks cannot intercept the internal ID resolution performed by this parser. To inject custom module layouts, the framework mutates the binary XML tree in memory.
 
-1. In `resources_hook.cpp`, the `PrepareSymbols` function utilizes the `ElfImage` utility to parse `libframework.so` in memory. It resolves unexported, mangled C++ symbols for `android::ResXMLParser::next`, `restart`, and `getAttributeNameID`, caching their memory addresses in global function pointers.
+1. In [resources_hook.cpp](../native/src/jni/resources_hook.cpp), the `PrepareSymbols` function utilizes the `ElfImage` utility to parse `libandroidfw.so` in memory. It resolves unexported, mangled C++ symbols for `android::ResXMLParser::next`, `restart`, and `getAttributeNameID`, caching their memory addresses in global function pointers.
 
 2. If a requested layout is not already cached, `XResources` extracts the native pointer (`mParseState`) and passes it to the JNI bridge `rewriteXmlReferencesNative`. The native code casts the `jlong` back to an `android::ResXMLParser*` and executes a loop, manually invoking `ResXMLParser_next`.
 
-3. When the parser encounters an `android::ResXMLParser::START_TAG` token, it extracts the attribute count and iterates over the tag's attributes. For each attribute, it resolves the `attrNameID` via the cached `getAttributeNameID` pointer. If the ID belongs to the application package namespace (0x7f000000), it queries the Java layer via JNI (`XResources.translateAttrId`) to check if a module provided a replacement. If a replacement ID is returned, the native code performs an in-place mutation of the binary XML tree by directly overwriting the integer in the parser's memory allocation (`mResIds[attrNameID] = attrResID`). It repeats this evaluation and mutation logic for the attribute's value reference via `XResources.translateResId`.
+3. When the parser encounters an `android::ResXMLParser::START_TAG` token, it extracts the attribute count and iterates over the tag's attributes. For each attribute, it resolves the `attrNameID` via the cached `getAttributeNameID` pointer. If the ID belongs to the application package namespace (`0x7f000000`), it queries the Java layer via JNI (`XResources.translateAttrId`) to check if a module provided a replacement. If a replacement ID is returned, the native code performs an in-place mutation of the binary XML tree by directly overwriting the integer in the parser's memory allocation (`mResIds[attrNameID] = attrResID`). It repeats this evaluation and mutation logic for the attribute's value reference via `XResources.translateResId`.
 
 4. Upon reaching the `END_DOCUMENT` token, the native loop exits and invokes `ResXMLParser_restart`. When the native bridge returns and the Android framework resumes the inflation process, it unknowingly parses the mutated binary XML tree, correctly resolving the module-provided layout IDs.
 
@@ -119,7 +108,7 @@ The classic Xposed API relied on the `Context.MODE_WORLD_READABLE` flag, allowin
 
 To restore `XSharedPreferences` functionality without compromising system stability, the framework implements a coordinated bypass utilizing the out-of-process daemon and runtime path redirection.
 
-The `daemon` module operates with elevated privileges and provisions a specialized safe-zone directory for module configuration sharing. When resolving the module directory, the daemon executes `setSelinuxContextRecursive` to apply the `u:object_r:xposed_data:s0` SELinux context. This specific context is universally readable across standard application domains. The daemon subsequently invokes `Os.chmod` to enforce 755 Unix permissions and adjusts directory ownership. This creates a filesystem bridge that both the module and target applications can legally access without violating SELinux isolation.
+The `daemon` module operates with elevated privileges and provisions a specialized safe-zone directory for module configuration sharing. When resolving the module directory, the daemon executes `setSelinuxContextRecursive` to apply the [u:object_r:xposed_data:s0](../zygisk/module/sepolicy.rule) SELinux context. This specific context is universally readable across standard application domains. The daemon subsequently invokes `Os.chmod` to enforce `755` Unix permissions and adjusts directory ownership. This creates a filesystem bridge that both the module and target applications can legally access without violating SELinux isolation.
 
 ### Interception and Redirection
 
@@ -136,7 +125,7 @@ When a target application is hooked and instantiates `XSharedPreferences`, the f
 
 In the original [Xposed framework](https://github.com/rovo89/XposedBridge), circumventing SELinux at read-time required synchronous IPC via BinderService or native root access via ZygoteService. In the Vector framework, these IPC mechanisms have been removed. Because the daemon pre-emptively assigns a permissive SELinux context to the safe-zone, the target application process possesses the necessary permissions to read the file directly. The SELinuxHelper component unconditionally returns DirectAccessService, an implementation of BaseService. This service acts purely as a structural API shim to maintain compatibility with the internal caching logic of XSharedPreferences, performing raw reads utilizing standard `FileInputStream` and `BufferedInputStream` operations without IPC overhead.
 
-Because standard Android inter-process communication mechanisms (such as broadcast intents or content providers) are unreliable or overly visible for cross-process preference tracking, `XSharedPreferences` implements an in-process filesystem watcher to handle live updates. When an `OnSharedPreferenceChangeListener` is registered, the framework spawns an internal daemon thread (`sWatcherDaemon`). This thread utilizes `java.nio.file.WatchService` (an abstraction over the Linux `inotify` subsystem) to monitor the safe-zone directory. The thread blocks on `sWatcher.take()`, and upon receiving an `ENTRY_MODIFY` or `ENTRY_DELETE` event for the target XML file, it validates the file hash and natively dispatches the legacy preference change callbacks to the registered listeners.
+Since standard Android inter-process communication mechanisms (such as broadcast intents or content providers) are overly visible for cross-process preference tracking, `XSharedPreferences` implements an in-process filesystem watcher to handle live updates. When an `OnSharedPreferenceChangeListener` is registered, the framework spawns an internal daemon thread (`sWatcherDaemon`). This thread utilizes `java.nio.file.WatchService` (an abstraction over the Linux `inotify` subsystem) to monitor the safe-zone directory. The thread blocks on `sWatcher.take()`, and upon receiving an `ENTRY_MODIFY` or `ENTRY_DELETE` event for the target XML file, it validates the file hash and natively dispatches the legacy preference change callbacks to the registered listeners.
 
 ## Developer References
 
