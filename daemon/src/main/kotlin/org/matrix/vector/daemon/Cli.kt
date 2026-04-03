@@ -304,7 +304,7 @@ class ScopeCommand {
   }
 
   @Command(name = "rm", description = ["Remove apps from scope (format: pkg/user_id)"])
-  fun set(
+  fun rm(
       @Parameters(index = "0", paramLabel = "MODULE_PKG") modulePkg: String,
       @Parameters(index = "1..*") apps: List<String>
   ): Int {
