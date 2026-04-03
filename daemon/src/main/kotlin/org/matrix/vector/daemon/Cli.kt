@@ -198,6 +198,7 @@ object OutputFormatter {
             ModulesCommand::class,
             ScopeCommand::class,
             ConfigCommand::class,
+            DatabaseCommand::class,
             LogCommand::class])
 class Cli : Callable<Int> {
 
@@ -329,6 +330,41 @@ class ConfigCommand {
       @Parameters(index = "1", paramLabel = "VALUE") value: String
   ): Int {
     val req = CliRequest(command = "config", action = "set", targets = listOf(key, value))
+    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+  }
+}
+
+@Command(name = "db", description = ["Database maintenance"])
+class DatabaseCommand {
+  @ParentCommand lateinit var parent: Cli
+
+  @Command(name = "backup", description = ["Backup the database to a file"])
+  fun backup(@Parameters(paramLabel = "PATH") path: String): Int {
+    val req = CliRequest(command = "db", action = "backup", targets = listOf(path))
+    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+  }
+
+  @Command(name = "restore", description = ["Restore the database from a file"])
+  fun restore(@Parameters(paramLabel = "PATH") path: String): Int {
+    val req = CliRequest(command = "db", action = "restore", targets = listOf(path))
+    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+  }
+
+  @Command(name = "reset", description = ["Wipe all data and recreate the database schema"])
+  fun reset(
+      @Option(names = ["--force", "-f"], description = ["Skip confirmation"]) force: Boolean = false
+  ): Int {
+    if (!force) {
+      print(
+          "Are you sure you want to RESET the database? All modules and scopes will be lost. (y/N): ")
+      val input = readLine()
+      if (input?.lowercase() != "y") {
+        println("Operation cancelled.")
+        return 0
+      }
+    }
+
+    val req = CliRequest(command = "db", action = "reset")
     return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
   }
 }

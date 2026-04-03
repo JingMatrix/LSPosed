@@ -1,5 +1,8 @@
 package org.matrix.vector.daemon.ipc
 
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
 import org.lsposed.lspd.models.Application
 import org.matrix.vector.daemon.BuildConfig
 import org.matrix.vector.daemon.CliRequest
@@ -23,6 +26,7 @@ object CliHandler {
             "modules" -> handleModules(request)
             "scope" -> handleScope(request)
             "config" -> handleConfig(request)
+            "db" -> handleDatabase(request)
             "log" -> handleLog(request)
             else -> throw IllegalArgumentException("Unknown command: ${request.command}")
           }
@@ -189,6 +193,65 @@ object CliHandler {
         "Successfully set $key to $value."
       }
       else -> throw IllegalArgumentException("Unknown config action: ${request.action}")
+    }
+  }
+
+  private fun handleDatabase(request: CliRequest): Any {
+    val action = request.action
+
+    return when (action) {
+      "backup" -> {
+        val path =
+            request.targets.firstOrNull()
+                ?: throw IllegalArgumentException(
+                    "Target path is required for database operations.")
+        val dbFile = File(path)
+        if (dbFile.exists()) dbFile.delete()
+
+        // VACUUM INTO creates a consistent, defragmented copy without long-term locking.
+        ConfigCache.dbHelper.writableDatabase.execSQL("VACUUM INTO '$path'")
+        "Database backed up successfully to: $path"
+      }
+      "restore" -> {
+        val path =
+            request.targets.firstOrNull()
+                ?: throw IllegalArgumentException(
+                    "Target path is required for database operations.")
+        val sourceFile = File(path)
+        if (!sourceFile.exists()) throw FileNotFoundException("Source file does not exist: $path")
+
+        val currentDbPath = ConfigCache.dbHelper.readableDatabase.path
+        ConfigCache.dbHelper.close()
+        sourceFile.copyTo(File(currentDbPath), overwrite = true)
+
+        ConfigCache.requestCacheUpdate()
+        val miscPath = ConfigCache.state.miscPath
+        if (miscPath != null)
+            PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", miscPath.toString())
+
+        "Database restored from $path. Daemon state is being refreshed."
+      }
+      "reset" -> {
+        val currentDbPath = ConfigCache.dbHelper.readableDatabase.path
+        ConfigCache.dbHelper.close()
+
+        val dbFile = File(currentDbPath)
+        val walFile = File("$currentDbPath-wal")
+        val shmFile = File("$currentDbPath-shm")
+
+        val deleted = dbFile.delete()
+        if (walFile.exists()) walFile.delete()
+        if (shmFile.exists()) shmFile.delete()
+        if (!deleted) throw IOException("Failed to delete database file.")
+
+        ConfigCache.requestCacheUpdate()
+        val miscPath = ConfigCache.state.miscPath
+        if (miscPath != null)
+            PreferenceStore.updateModulePref("lspd", 0, "config", "misc_path", miscPath.toString())
+
+        "Database reset successfully. Schema recreated."
+      }
+      else -> throw IllegalArgumentException("Unknown database action: ${request.action}")
     }
   }
 
