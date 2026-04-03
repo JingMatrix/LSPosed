@@ -198,6 +198,7 @@ private fun IPackageManager.getInstalledPackagesReflect(
         val result = method.invoke(this, flags, userId)
         @Suppress("UNCHECKED_CAST") (result as? ParceledListSlice<PackageInfo>)?.list
       }
+      .onFailure { Log.e(TAG, "Reflection call failed", it.cause ?: it) }
       .getOrNull() ?: emptyList()
 }
 
