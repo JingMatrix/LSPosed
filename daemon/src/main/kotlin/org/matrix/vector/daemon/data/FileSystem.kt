@@ -292,7 +292,7 @@ object FileSystem {
       runCatching {
             setSelinuxContextRecursive(path, "u:object_r:xposed_data:s0")
             if (uid != -1) Os.chown(path.toString(), uid, uid)
-            Os.chmod(path.toString(), 0x1ed) // 0755
+            Os.chmod(path.toString(), "755".toInt(8))
           }
           .onFailure { throw RemoteException("Failed to set SELinux context: ${it.message}") }
     }
