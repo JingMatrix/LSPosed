@@ -30,6 +30,9 @@
         android:id="@+id/menu_repo"
         android:title="@string/view_in_repo" />
     <item
+        android:id="@+id/menu_ignore_update"
+        android:title="@string/ignore_updates" />
+    <item
         android:id="@+id/menu_app_info"
         android:title="@string/module_app_info" />
     <item
