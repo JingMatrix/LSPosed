@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import org.lsposed.lspd.models.Application
 
-private const val TAG = "VectorModuleDb"
+private const val TAG = "VectorModuleDatabase"
 
 object ModuleDatabase {
 

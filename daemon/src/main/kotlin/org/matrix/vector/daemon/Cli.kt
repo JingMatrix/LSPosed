@@ -302,6 +302,15 @@ class ScopeCommand {
     val req = CliRequest(command = "scope", action = "set", targets = listOf(modulePkg) + apps)
     return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
   }
+
+  @Command(name = "rm", description = ["Remove apps from scope (format: pkg/user_id)"])
+  fun set(
+      @Parameters(index = "0", paramLabel = "MODULE_PKG") modulePkg: String,
+      @Parameters(index = "1..*") apps: List<String>
+  ): Int {
+    val req = CliRequest(command = "scope", action = "rm", targets = listOf(modulePkg) + apps)
+    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+  }
 }
 
 @Command(name = "config", description = ["Manage daemon preferences natively"])
