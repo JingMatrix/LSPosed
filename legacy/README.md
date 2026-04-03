@@ -6,14 +6,14 @@ This document details the architecture and implementation of the `legacy` module
 
 The legacy compatibility subsystem spans multiple compilation boundaries to enforce strict separation between the API surface, the Dalvik/ART runtime, and the native execution environment.
 
-- [legacy](.): Contains the Java/Kotlin API surface (`de.robv.android.xposed.*`), state translation handlers (`LegacyDelegateImpl`), reflection caching mechanisms, and resource/shared preference overrides.
+- [legacy](.): Contains the Java API surface (`de.robv.android.xposed.*`), state translation handlers (`LegacyDelegateImpl`), reflection caching mechanisms, and resource/shared preference overrides.
 - [xposed](../xposed): Manages the isolated classloaders (`VectorModuleClassLoader`), the Ahead-Of-Time (AOT) compiler deoptimizer (`VectorDeopter`), and the Dependency Injection (DI) framework.
 - [native](../native): Houses the JNI bridges (`hook_bridge.cpp`, `resources_hook.cpp`), concurrent hook registries, stack-allocated invocation logic, in-memory DEX generation, and binary XML mutation routines.
 - [daemon](../daemon): Operates out-of-process with elevated privileges to provision SELinux-permissive directories and manage filesystem contexts for cross-process file sharing.
 
 ### Dependency Injection and Bootstrap
 
-During process startup, `Startup.initXposed` is invoked by the `zygisk` module. This routine establishes the DI (Dependency Injection) contract by instantiating `LegacyDelegateImpl` and injecting it into the `xposed` module via `VectorBootstrap.INSTANCE.init()`.
+During process startup, `Startup.initXposed` is invoked in the `zygisk` module. This routine establishes the DI (Dependency Injection) contract by instantiating `LegacyDelegateImpl` and injecting it into the `xposed` module via `VectorBootstrap.INSTANCE.init()`.
 
 The `LegacyDelegateImpl` satisfies the `LegacyFrameworkDelegate` interface, acting as the sole translation boundary for:
 
@@ -29,8 +29,8 @@ Legacy modules are loaded during the initialization phase via `XposedInit.loadLe
 Modules are not loaded using standard Android mechanism. To prevent detection via `ClassLoader.getParent()` chain-walking and to eliminate residual file descriptors, `XposedInit.loadModule` utilizes `VectorModuleClassLoader`. This classloader loads the module APK directly into memory, isolating the module's execution environment from the host application's classpath.
 
 Once mapped into memory, the framework parses two specific manifest files within the APK:
-1.  **`assets/native_init`**: The framework reads this file to locate native library dependencies, invoking `NativeAPI.recordNativeEntrypoint` to queue the libraries for memory-mapped loading.
-2.  **`assets/xposed_init`**: The framework reads the declared entrypoint classes, loading each via the `VectorModuleClassLoader`.
+1.  **`assets/native_init`**: native hooks, invoking `NativeAPI.recordNativeEntrypoint` to queue the libraries for memory-mapped loading.
+2.  **`assets/xposed_init`**: entrypoint class, loading each via the `VectorModuleClassLoader`.
 
 For each loaded entrypoint class, the framework checks for implementations of the `IXposedMod` marker interfaces:
 - `IXposedHookZygoteInit`: Invoked immediately with a `StartupParam` structure containing the module path and system server status.
