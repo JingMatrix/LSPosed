@@ -67,11 +67,22 @@ object PreferenceStore {
     }
   }
 
-  fun deleteModulePrefs(moduleName: String, userId: Int, group: String) {
-    ConfigCache.dbHelper.writableDatabase.delete(
-        "configs",
-        "module_pkg_name=? AND user_id=? AND `group`=?",
-        arrayOf(moduleName, userId.toString(), group))
+  fun deleteModulePrefs(moduleName: String, userId: Int? = null, group: String? = null) {
+    val db = ConfigCache.dbHelper.writableDatabase
+    val whereClause = StringBuilder("module_pkg_name = ?")
+    val whereArgs = mutableListOf(moduleName)
+
+    if (userId != null) {
+      whereClause.append(" AND user_id = ?")
+      whereArgs.add(userId.toString())
+    }
+
+    if (group != null) {
+      whereClause.append(" AND `group` = ?")
+      whereArgs.add(group)
+    }
+
+    db.delete("configs", whereClause.toString(), whereArgs.toTypedArray())
   }
 
   fun isStatusNotificationEnabled(): Boolean =

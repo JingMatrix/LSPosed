@@ -256,10 +256,14 @@ object VectorService : IDaemonService.Stub() {
 
     when (action) {
       Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
-        // When a package is gone, we can't check metadata.
-        // If it was in our DB and we successfully removed it, we treat it as an Xposed module.
-        if (moduleName != null && isRemovedForAllUsers) {
-          if (ModuleDatabase.removeModule(moduleName)) {
+        if (moduleName != null) {
+          // When a package is gone, we can't check metadata.
+          // If it's gone for everyone, wipe the package from all users in the DB.
+          // Otherwise, only wipe it for the user that just uninstalled it.
+          val targetUser = if (isRemovedForAllUsers) null else userId
+          PreferenceStore.deleteModulePrefs(moduleName, userId, group = null)
+          if (isRemovedForAllUsers && ModuleDatabase.removeModule(moduleName)) {
+            // If it was in our DB and we successfully removed it, we treat it as an Xposed module.
             isXposedModule = true
           }
         }
