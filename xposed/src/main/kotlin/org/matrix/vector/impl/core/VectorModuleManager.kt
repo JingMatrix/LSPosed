@@ -94,7 +94,7 @@ object VectorModuleManager {
                             }
                         )
                     }
-                    .onFailure { e -> Log.e(TAG, "    Failed to instantiate class $className", e) }
+                    .onFailure { e -> Log.e(TAG, "Failed to instantiate class $className", e) }
             }
 
             // Register any native JNI entrypoints declared by the module

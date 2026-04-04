@@ -195,13 +195,13 @@ object FileSystem {
               }
             }
 
-            readList("META-INF/xposed/java_init.list", moduleClassNames)
+            readList("assets/xposed_init", moduleClassNames)
             if (moduleClassNames.isEmpty()) {
-              isLegacy = true
-              readList("assets/xposed_init", moduleClassNames)
-              readList("assets/native_init", moduleLibraryNames)
-            } else {
               readList("META-INF/xposed/native_init.list", moduleLibraryNames)
+              readList("META-INF/xposed/java_init.list", moduleClassNames)
+            } else {
+              isLegacy = true
+              readList("assets/native_init", moduleLibraryNames)
             }
           }
         }
