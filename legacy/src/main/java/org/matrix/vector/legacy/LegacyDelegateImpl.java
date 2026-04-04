@@ -54,7 +54,9 @@ public class LegacyDelegateImpl implements LegacyFrameworkDelegate {
         XposedInit.loadedPackagesInProcess.add("android");
         XC_LoadPackage.LoadPackageParam lpparam = new XC_LoadPackage.LoadPackageParam(XposedBridge.sLoadedPackageCallbacks);
         lpparam.packageName = "android";
-        lpparam.processName = "system_server";
+        // For comptibility, we set the process name of `system_server` as `android`.
+        // https://github.com/rovo89/XposedBridge/blob/art/app/src/main/java/de/robv/android/xposed/XposedInit.java
+        lpparam.processName = "android";
         lpparam.classLoader = classLoader;
         lpparam.isFirstApplication = true;
         XC_LoadPackage.callAll(lpparam);

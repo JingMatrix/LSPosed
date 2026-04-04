@@ -57,7 +57,7 @@ private object PackageContextHelper {
             packageName = "system"
         }
 
-        return ContextInfo(packageName!!, processName!!, isFirstPackage)
+        return ContextInfo(packageName, processName, isFirstPackage)
     }
 }
 
