@@ -380,7 +380,7 @@ object FileSystem {
             addFile("modules_config.db", dbPath)
             runCatching {
                   val scopes = ConfigCache.state.scopes
-                  Log.d(TAG, "Exporting module scopes ${scopes.size}")
+                  Log.d(TAG, "Exporting scopes for ${scopes.size} targets")
                   os.putNextEntry(ZipEntry("scopes.txt"))
                   scopes.forEach { (scope, modules) ->
                     os.write("${scope.processName}/${scope.uid}\n".toByteArray())
