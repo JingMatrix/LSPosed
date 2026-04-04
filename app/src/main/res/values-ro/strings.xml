@@ -140,7 +140,6 @@
     <string name="no_scope_selected">Nu ați selectat nicio aplicație. Continuați?</string>
     <string name="menu_show_games">Jocuri</string>
     <string name="menu_show_modules">Module</string>
-    <string name="menu_show_denylist">Aplicații din lista neagră</string>
     <string name="failed_to_save_scope_list">Actualizarea configurației a eșuat</string>
     <string name="app_version">Versiune: %1$s</string>
     <string name="menu_select">Selectați</string>
@@ -164,8 +163,6 @@
     <string name="reboot_required">Repornirea este necesară pentru ca modificarea să aibă efect</string>
     <string name="reboot">Repornire</string>
     <string name="menu_hide">Ascundeți</string>
-    <string name="deny_list">%s este în lista neagră. S-ar putea să nu aibă efect.</string>
-    <string name="deny_list_info">În lista neagră</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Vizualizați în altă aplicație</string>
     <string name="module_app_info">Informații aplicație</string>

@@ -136,7 +136,6 @@
     <string name="no_scope_selected">Et valinnut yhtään sovellusta. Jatketaanko?</string>
     <string name="menu_show_games">Pelit</string>
     <string name="menu_show_modules">Moduulit</string>
-    <string name="menu_show_denylist">Denylist</string>
     <string name="failed_to_save_scope_list">Valmistelulistan tallentaminen epäonnistui</string>
     <string name="app_version">Versio: %1$s</string>
     <string name="use_recommended">Suositeltu</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Uudelleenkäynnistys vaaditaan tämän muutoksen käyttöönottamiseksi</string>
     <string name="reboot">Reboot</string>
     <string name="menu_hide">Piilota</string>
-    <string name="deny_list">%s on denylistissä. Se ei ehkä tule voimaan.</string>
-    <string name="deny_list_info">On denylist</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Näytä toisessa sovelluksessa</string>
     <string name="module_app_info">Sovelluksen tiedot</string>

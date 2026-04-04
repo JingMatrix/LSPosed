@@ -137,7 +137,6 @@ Nên gỡ cài đặt ứng dụng hiện tại.</string>
     <string name="no_scope_selected">Bạn đã không lựa chọn bất kỳ ứng dụng nào. Tiếp tục chứ?</string>
     <string name="menu_show_games">Trò chơi</string>
     <string name="menu_show_modules">Mô-đun</string>
-    <string name="menu_show_denylist">Danh sách từ chối</string>
     <string name="failed_to_save_scope_list">Lưu danh sách phạm vi thất bại</string>
     <string name="app_version">Phiên bản: %1$s</string>
     <string name="use_recommended">Được khuyến cáo</string>
@@ -157,8 +156,6 @@ Nên gỡ cài đặt ứng dụng hiện tại.</string>
     <string name="reboot_required">Khởi động lại là bắt buộc cho thay đổi này</string>
     <string name="reboot">Khởi động lại</string>
     <string name="menu_hide">Ẩn</string>
-    <string name="deny_list">%s đã trong danh sách từ chối. Nó có thể không có hiệu lực.</string>
-    <string name="deny_list_info">Trong danh sách từ chối</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Xem trong ứng dụng khác</string>
     <string name="module_app_info">Thông tin ứng dụng</string>

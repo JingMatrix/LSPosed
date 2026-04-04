@@ -136,7 +136,6 @@
     <string name="no_scope_selected">No heu seleccionat cap aplicació. Continuar?</string>
     <string name="menu_show_games">Jocs</string>
     <string name="menu_show_modules">Mòduls</string>
-    <string name="menu_show_denylist">Llista de denegació</string>
     <string name="failed_to_save_scope_list">No s\'ha pogut desar la llista d\'àmbits</string>
     <string name="app_version">Versió: %1$s</string>
     <string name="use_recommended">Recomanat</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Cal reiniciar perquè s\'apliqui aquest canvi</string>
     <string name="reboot">Reinicieu</string>
     <string name="menu_hide">Amaga</string>
-    <string name="deny_list">%s és a la llista denegada. És possible que no tingui efecte.</string>
-    <string name="deny_list_info">A la llista denegada</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Veure en una altra aplicació</string>
     <string name="module_app_info">Informació de l\'aplicació</string>

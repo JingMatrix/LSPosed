@@ -443,6 +443,4 @@ object ConfigCache {
     }
     return path.toString()
   }
-
-  fun getDenyListPackages(): List<String> = emptyList() // TODO: implement it
 }

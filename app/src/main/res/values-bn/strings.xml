@@ -136,7 +136,6 @@
     <string name="no_scope_selected">আপনি কোনো অ্যাপ নির্বাচন করেননি। চালিয়ে যান?</string>
     <string name="menu_show_games">গেমস</string>
     <string name="menu_show_modules">মডিউল</string>
-    <string name="menu_show_denylist">অস্বীকারকারী</string>
     <string name="failed_to_save_scope_list">সুযোগ তালিকা সংরক্ষণ করতে ব্যর্থ হয়েছে</string>
     <string name="app_version">সংস্করণ: %1$s</string>
     <string name="use_recommended">প্রস্তাবিত</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">এই পরিবর্তনটি প্রয়োগ করার জন্য রিবুট প্রয়োজন</string>
     <string name="reboot">রিবুট করুন</string>
     <string name="menu_hide">লুকান</string>
-    <string name="deny_list">%s ডিনালিস্টে রয়েছে। এটি কার্যকর নাও হতে পারে।</string>
-    <string name="deny_list_info">ডিনালিস্টে</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">অন্য অ্যাপে দেখুন</string>
     <string name="module_app_info">অ্যাপের তথ্য</string>

@@ -138,7 +138,6 @@
     <string name="no_scope_selected">No seleccionaste ninguna aplicación. ¿Quieres continuar?</string>
     <string name="menu_show_games">Juegos</string>
     <string name="menu_show_modules">Módulos</string>
-    <string name="menu_show_denylist">Lista de denegación</string>
     <string name="failed_to_save_scope_list">Fallo al guardar la lista de scopes</string>
     <string name="app_version">Versión: %1$s</string>
     <string name="menu_select">Seleccionar</string>
@@ -162,8 +161,6 @@
     <string name="reboot_required">Necesitas reiniciar la aplicación para aplicar este cambio</string>
     <string name="reboot">Reiniciar</string>
     <string name="menu_hide">Ocultar</string>
-    <string name="deny_list">%s está en la lista de negación. Puede no tener efecto.</string>
-    <string name="deny_list_info">En lista de denegación</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Ver en otra aplicación</string>
     <string name="module_app_info">Información de la aplicación</string>

@@ -138,7 +138,6 @@
     <string name="no_scope_selected">Niste odabrali nijednu aplikaciju. Nastaviti?</string>
     <string name="menu_show_games">Igre</string>
     <string name="menu_show_modules">Moduli</string>
-    <string name="menu_show_denylist">Lista zabrane</string>
     <string name="failed_to_save_scope_list">Spremanje popisa opsega primjene nije uspjelo</string>
     <string name="app_version">Verzija: %1$s</string>
     <string name="use_recommended">Preporučeno</string>
@@ -158,8 +157,6 @@
     <string name="reboot_required">Za primjenu ove promjene potrebno je ponovno pokretanje</string>
     <string name="reboot">Ponovno podizanje sustava</string>
     <string name="menu_hide">Sakrij</string>
-    <string name="deny_list">%s je na listi zabrane. Možda neće imati efekta.</string>
-    <string name="deny_list_info">Na popisu zabrane</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Pogledaj u drugoj aplikaciji</string>
     <string name="module_app_info">Informacije o aplikaciji</string>

@@ -146,7 +146,6 @@
     <string name="no_scope_selected">أنت لم تحدد أي تطبيق. المتابعة؟</string>
     <string name="menu_show_games">ألعاب</string>
     <string name="menu_show_modules">وحدات</string>
-    <string name="menu_show_denylist">قائمة الرفض</string>
     <string name="failed_to_save_scope_list">فشل في حفظ قائمة النطاق</string>
     <string name="app_version">الإصدار: %1$s</string>
     <string name="use_recommended">مُوصى به</string>
@@ -166,8 +165,6 @@
     <string name="reboot_required">إعادة التشغيل مطلوبة لتطبيق هذا التغيير</string>
     <string name="reboot">إعادة تشغيل</string>
     <string name="menu_hide">إخفاء</string>
-    <string name="deny_list">%s على قائمة الرفض. قد لا يكون ساري المفعول.</string>
-    <string name="deny_list_info">في قائمة الرفض</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">عرض في تطبيق آخر</string>
     <string name="module_app_info">معلومات التطبيق</string>

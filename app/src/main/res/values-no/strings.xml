@@ -136,7 +136,6 @@
     <string name="no_scope_selected">Du valgte ingen app. Fortsette?</string>
     <string name="menu_show_games">Spill</string>
     <string name="menu_show_modules">Moduler</string>
-    <string name="menu_show_denylist">Denylist</string>
     <string name="failed_to_save_scope_list">Kan ikke lagre områdeliste</string>
     <string name="app_version">Versjon: %1$s</string>
     <string name="use_recommended">Anbefalt</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Omstart kreves for at denne endringen skal gjelde</string>
     <string name="reboot">Reboot</string>
     <string name="menu_hide">Skjul</string>
-    <string name="deny_list">%s er på denylist. Det kan ikke tre i kraft.</string>
-    <string name="deny_list_info">På denylist</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Se i andre app</string>
     <string name="module_app_info">Info om app</string>

@@ -22,9 +22,7 @@ import android.view.IWindowManager
 import hidden.HiddenApiBridge
 import io.github.libxposed.service.IXposedService
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.lsposed.lspd.ILSPManagerService
 import org.lsposed.lspd.models.Application
 import org.lsposed.lspd.models.UserInfo
@@ -417,40 +415,6 @@ object ManagerService : ILSPManagerService.Stub() {
   }
 
   override fun restartFor(intent: Intent) {} // No-op matching original
-
-  override fun getDenyListPackages() = ConfigCache.getDenyListPackages()
-
-  /**
-   * Executes Magisk via ProcessBuilder and redirects output directly to the passed
-   * ParcelFileDescriptor using the /proc/self/fd/ pseudo-filesystem.
-   */
-  override fun flashZip(zipPath: String, outputStream: ParcelFileDescriptor) {
-    val fdFile = File("/proc/self/fd/${outputStream.fd}")
-    val processBuilder =
-        ProcessBuilder("magisk", "--install-module", zipPath)
-            .redirectOutput(ProcessBuilder.Redirect.appendTo(fdFile))
-
-    runCatching {
-          outputStream.use { _ ->
-            FileOutputStream(fdFile, true).use { fdw ->
-              val proc = processBuilder.start()
-              if (proc.waitFor(10, TimeUnit.SECONDS)) {
-                if (proc.exitValue() == 0) {
-                  fdw.write("- Reboot after 5s\n".toByteArray())
-                  Thread.sleep(5000)
-                  reboot()
-                } else {
-                  fdw.write("! Flash failed, exit with ${proc.exitValue()}\n".toByteArray())
-                }
-              } else {
-                proc.destroy()
-                fdw.write("! Timeout, abort\n".toByteArray())
-              }
-            }
-          }
-        }
-        .onFailure { Log.e(TAG, "flashZip failed", it) }
-  }
 
   override fun clearApplicationProfileData(packageName: String) {
     packageManager?.clearApplicationProfileData(packageName)

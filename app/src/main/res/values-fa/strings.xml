@@ -138,7 +138,6 @@
     <string name="no_scope_selected">برنامه ای انتخاب نکردی، ادامه میدی؟</string>
     <string name="menu_show_games">بازی ها</string>
     <string name="menu_show_modules">ماژول ها</string>
-    <string name="menu_show_denylist">لیست مسدود</string>
     <string name="failed_to_save_scope_list">ذخیره لیست ناموفق بود</string>
     <string name="app_version">نسخه: %1$s</string>
     <string name="menu_select">انتخاب</string>
@@ -162,8 +161,6 @@
     <string name="reboot_required">برای اعمال تغییر باید ری استارت کنی</string>
     <string name="reboot">ری استارت</string>
     <string name="menu_hide">مخفی کن</string>
-    <string name="deny_list">%s در لیست مسدود است. ممکن است کار نکند.</string>
-    <string name="deny_list_info">در لیست مسدود</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">مشاهده در برنامه دیگر</string>
     <string name="module_app_info">اطلاعات برنامه</string>

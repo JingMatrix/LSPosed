@@ -142,7 +142,6 @@
     <string name="no_scope_selected">Вы не выбрали ни одного приложения. Продолжить?</string>
     <string name="menu_show_games">Игры</string>
     <string name="menu_show_modules">Модули</string>
-    <string name="menu_show_denylist">DenyList</string>
     <string name="failed_to_save_scope_list">Ошибка сохранения списка «охвата»</string>
     <string name="app_version">Версия: %1$s</string>
     <string name="menu_select">Выберите</string>
@@ -166,8 +165,6 @@
     <string name="reboot_required">Для применения требуется перезагрузка</string>
     <string name="reboot">Перезагрузить</string>
     <string name="menu_hide">Скрыть</string>
-    <string name="deny_list">%s находится в DenyList. Это может ни к чему не привести.</string>
-    <string name="deny_list_info">В DenyList</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Посмотреть в другом приложении</string>
     <string name="module_app_info">О приложении</string>

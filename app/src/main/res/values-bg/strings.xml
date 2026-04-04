@@ -136,7 +136,6 @@
     <string name="no_scope_selected">Не сте избрали нито едно приложение. Продължете?</string>
     <string name="menu_show_games">Игри</string>
     <string name="menu_show_modules">Модули</string>
-    <string name="menu_show_denylist">Denylist</string>
     <string name="failed_to_save_scope_list">Неуспешно запазване на списъка с обхвата</string>
     <string name="app_version">Версия: %1$s</string>
     <string name="use_recommended">Препоръчителен</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Необходимо е рестартиране, за да се приложи тази промяна.</string>
     <string name="reboot">Рестартиране на</string>
     <string name="menu_hide">Скрий</string>
-    <string name="deny_list">%s е в denylist. Възможно е той да не влезе в сила.</string>
-    <string name="deny_list_info">На denylist</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Преглед в друго приложение</string>
     <string name="module_app_info">Информация за приложението</string>

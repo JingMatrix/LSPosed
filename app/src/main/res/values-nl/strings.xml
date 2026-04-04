@@ -136,7 +136,6 @@
     <string name="no_scope_selected">U heeft geen app geselecteerd. Doorgaan?</string>
     <string name="menu_show_games">Games</string>
     <string name="menu_show_modules">Modules</string>
-    <string name="menu_show_denylist">Weigerlijst</string>
     <string name="failed_to_save_scope_list">Scopelijst opslaan is mislukt</string>
     <string name="app_version">Versie: %1$s</string>
     <string name="use_recommended">Aanbevolen</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Opnieuw opstarten is vereist om deze wijziging door te voeren</string>
     <string name="reboot">Herstart</string>
     <string name="menu_hide">Verbergen</string>
-    <string name="deny_list">%s staat op de weigerlijst en kan geen effect hebben.</string>
-    <string name="deny_list_info">Op weigerlijst</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Bekijk in andere app</string>
     <string name="module_app_info">App informatie</string>

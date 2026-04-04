@@ -68,11 +68,7 @@ interface ILSPManagerService {
 
     void restartFor(in Intent intent) = 35;
 
-    oneway void flashZip(String zipPath, in ParcelFileDescriptor outputStream) = 39;
-
     boolean performDexOptMode(String packageName) = 40;
-
-    List<String> getDenyListPackages() = 41;
 
     int getDex2OatWrapperCompatibility() = 44;
 

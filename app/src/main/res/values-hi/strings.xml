@@ -136,7 +136,6 @@
     <string name="no_scope_selected">आपने कोई ऐप नहीं चुना है। जारी रखें?</string>
     <string name="menu_show_games">खेल</string>
     <string name="menu_show_modules">मॉड्यूल</string>
-    <string name="menu_show_denylist">इनकार करनेवाला</string>
     <string name="failed_to_save_scope_list">कार्यक्षेत्र सूची सहेजने में विफल</string>
     <string name="app_version">संस्करण: %1$s</string>
     <string name="use_recommended">अनुशंसित</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">इस परिवर्तन को लागू करने के लिए रीबूट की आवश्यकता है</string>
     <string name="reboot">रीबूट</string>
     <string name="menu_hide">छिपाना</string>
-    <string name="deny_list">%s अस्वीकृत सूची में है। यह प्रभावी नहीं हो सकता है।</string>
-    <string name="deny_list_info">अस्वीकृत सूची पर</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">अन्य ऐप में देखें</string>
     <string name="module_app_info">अनुप्रयोग की जानकारी</string>

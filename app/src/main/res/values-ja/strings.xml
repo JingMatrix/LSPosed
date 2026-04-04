@@ -136,7 +136,6 @@
     <string name="no_scope_selected">アプリが選択されていません。よろしいですか？</string>
     <string name="menu_show_games">ゲーム</string>
     <string name="menu_show_modules">モジュール</string>
-    <string name="menu_show_denylist">Denylist</string>
     <string name="failed_to_save_scope_list">スコープリストの保存に失敗しました</string>
     <string name="app_version">バージョン: %1$s</string>
     <string name="menu_select">選択</string>
@@ -160,8 +159,6 @@
     <string name="reboot_required">この設定を適用するには再起動が必要です</string>
     <string name="reboot">再起動</string>
     <string name="menu_hide">非表示</string>
-    <string name="deny_list">%s が DenyList に登録されています。効果がないかもしれません。</string>
-    <string name="deny_list_info">DenyList に登録されています</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">他のアプリで表示</string>
     <string name="module_app_info">アプリの情報</string>

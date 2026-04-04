@@ -140,7 +140,6 @@ JingMatrix</string>
     <string name="no_scope_selected">Vous n\'avez sélectionné aucune application. Continuer ?</string>
     <string name="menu_show_games">Jeux</string>
     <string name="menu_show_modules">Modules</string>
-    <string name="menu_show_denylist">Liste de refus</string>
     <string name="failed_to_save_scope_list">Échec de l\'enregistrement de la liste des périmètres d\'applications</string>
     <string name="app_version">Version : %1$s</string>
     <string name="menu_select">Choisir</string>
@@ -164,8 +163,6 @@ JingMatrix</string>
     <string name="reboot_required">Un redémarrage est requis pour appliquer les changements</string>
     <string name="reboot">Redémarrer</string>
     <string name="menu_hide">Masquage</string>
-    <string name="deny_list">%s est sur la liste de refus. Cela pourrait ne pas avoir d\'effet.</string>
-    <string name="deny_list_info">Sur liste de refus</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Afficher dans une autre application</string>
     <string name="module_app_info">Informations d\’application</string>

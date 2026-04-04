@@ -137,11 +137,4 @@ public class UpdateUtil {
         }
         return zip;
     }
-
-    public static boolean canInstall() {
-        if (!ConfigManager.isBinderAlive()) return false;
-        var pref = App.getPreferences();
-        var zip = pref.getString("zip_file", null);
-        return zip != null && new File(zip).isFile();
-    }
 }

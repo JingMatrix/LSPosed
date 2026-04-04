@@ -136,7 +136,6 @@
     <string name="no_scope_selected">Você não selecionou nenhum aplicativo. Deseja continuar?</string>
     <string name="menu_show_games">Jogos</string>
     <string name="menu_show_modules">Módulos</string>
-    <string name="menu_show_denylist">Lista de Negação</string>
     <string name="failed_to_save_scope_list">Falha ao salvar lista de escopos</string>
     <string name="app_version">Versão: %1$s</string>
     <string name="use_recommended">Recomendações</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Necessário reiniciar para aplicar alteração</string>
     <string name="reboot">Reiniciar</string>
     <string name="menu_hide">Esconder</string>
-    <string name="deny_list">%s está na lista de negação. Pode não ter efeito.</string>
-    <string name="deny_list_info">Na lista de negação</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Ver na Play Store</string>
     <string name="module_app_info">Informações do app</string>

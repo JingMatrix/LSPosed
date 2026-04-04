@@ -138,7 +138,6 @@
     <string name="no_scope_selected">Non hai selezionato nessuna app. Continuare?</string>
     <string name="menu_show_games">Giochi</string>
     <string name="menu_show_modules">Moduli</string>
-    <string name="menu_show_denylist">Lista di blocco</string>
     <string name="failed_to_save_scope_list">Impossibile salvare l\'elenco delle attivazioni</string>
     <string name="app_version">Versione: %1$s</string>
     <string name="use_recommended">Seleziona consigliate</string>
@@ -158,8 +157,6 @@
     <string name="reboot_required">È necessario riavviare per applicare questa modifica</string>
     <string name="reboot">Riavvia</string>
     <string name="menu_hide">Nascondi</string>
-    <string name="deny_list">%s è nella lista di blocco. Potrebbe non avere effetto.</string>
-    <string name="deny_list_info">Nella lista di blocco</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Mostra in un\'altra app</string>
     <string name="module_app_info">Informazioni app</string>

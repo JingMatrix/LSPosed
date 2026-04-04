@@ -47,7 +47,6 @@ import org.lsposed.manager.R;
 import org.lsposed.manager.databinding.DialogAboutBinding;
 import org.lsposed.manager.databinding.FragmentHomeBinding;
 import org.lsposed.manager.ui.dialog.BlurBehindDialogBuilder;
-import org.lsposed.manager.ui.dialog.FlashDialogBuilder;
 import org.lsposed.manager.ui.dialog.WelcomeDialog;
 import org.lsposed.manager.util.NavUtil;
 import org.lsposed.manager.util.UpdateUtil;
@@ -116,11 +115,7 @@ public class HomeFragment extends BaseFragment implements MenuProvider {
                 binding.updateSummary.setText(getString(R.string.please_update_summary));
                 binding.statusIcon.setImageResource(R.drawable.ic_round_update_24);
                 binding.updateBtn.setOnClickListener(v -> {
-                    if (UpdateUtil.canInstall()) {
-                        new FlashDialogBuilder(activity, null).show();
-                    } else {
-                        NavUtil.startURL(activity, getString(R.string.latest_url));
-                    }
+                    NavUtil.startURL(activity, getString(R.string.latest_url));
                 });
                 binding.updateCard.setVisibility(View.VISIBLE);
             } else {
@@ -160,11 +155,7 @@ public class HomeFragment extends BaseFragment implements MenuProvider {
                 binding.updateSummary.setText(R.string.install_summary);
                 binding.statusIcon.setImageResource(R.drawable.ic_round_error_outline_24);
                 binding.updateBtn.setOnClickListener(v -> {
-                    if (UpdateUtil.canInstall()) {
-                        new FlashDialogBuilder(activity, null).show();
-                    } else {
-                        NavUtil.startURL(activity, getString(R.string.install_url));
-                    }
+                    NavUtil.startURL(activity, getString(R.string.install_url));
                 });
                 binding.updateCard.setVisibility(View.VISIBLE);
             } else {

@@ -136,7 +136,6 @@
     <string name="no_scope_selected">Jy het geen toepassing gekies nie. Aanhou?</string>
     <string name="menu_show_games">Speletjies</string>
     <string name="menu_show_modules">Modules</string>
-    <string name="menu_show_denylist">Ontkenlys</string>
     <string name="failed_to_save_scope_list">Kon nie omvanglys stoor nie</string>
     <string name="app_version">weergawe: %1$s</string>
     <string name="use_recommended">Aanbeveel</string>
@@ -156,8 +155,6 @@
     <string name="reboot_required">Herselflaai word vereis vir hierdie verandering om van toepassing te wees</string>
     <string name="reboot">Herlaai</string>
     <string name="menu_hide">Versteek</string>
-    <string name="deny_list">%s is op ontkenlys. Dit mag dalk nie in werking tree nie.</string>
-    <string name="deny_list_info">Op ontkenlys</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">Bekyk in \'n ander toepassing</string>
     <string name="module_app_info">App inligting</string>

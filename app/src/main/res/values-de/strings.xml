@@ -139,7 +139,6 @@ JJ108</string>
     <string name="no_scope_selected">Du hast keine App ausgewählt. Weiter?</string>
     <string name="menu_show_games">Spiele</string>
     <string name="menu_show_modules">Module</string>
-    <string name="menu_show_denylist">Verweigerungsliste</string>
     <string name="failed_to_save_scope_list">Scope-Liste speichern fehlgeschlagen</string>
     <string name="app_version">Version: %1$s</string>
     <string name="menu_select">Auswählen</string>
@@ -163,8 +162,6 @@ JJ108</string>
     <string name="reboot_required">Neustart erforderlich, um diese Änderung zu übernehmen</string>
     <string name="reboot">Neustart</string>
     <string name="menu_hide">Ausblenden</string>
-    <string name="deny_list">%s ist auf Verweigerungsliste. Dies könnte ohne Auswirkung bleiben.</string>
-    <string name="deny_list_info">Auf Verweigerungsliste</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">In anderer App anzeigen</string>
     <string name="module_app_info">App-Information</string>

@@ -136,7 +136,6 @@
     <string name="no_scope_selected">未選擇任何應用程式，是否繼續？</string>
     <string name="menu_show_games">遊戲</string>
     <string name="menu_show_modules">模組</string>
-    <string name="menu_show_denylist">Magisk 排除清單</string>
     <string name="failed_to_save_scope_list">作用範圍清單儲存失敗</string>
     <string name="app_version">版本：%1$s</string>
     <string name="menu_select">選擇</string>
@@ -160,8 +159,6 @@
     <string name="reboot_required">重啟以套用變更</string>
     <string name="reboot">重啟系統</string>
     <string name="menu_hide">隱藏</string>
-    <string name="deny_list">%s 在排除清單中，模組可能無法生效。</string>
-    <string name="deny_list_info">在排除清單內</string>
     <!-- ModulesActivity and AppListActivity -->
     <string name="modules_other_app">在其他應用程式中檢視</string>
     <string name="module_app_info">應用程式資訊</string>
