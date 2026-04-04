@@ -210,7 +210,8 @@ object ManagerService : ILSPManagerService.Stub() {
     return this
   }
 
-  fun isRunningManager(pid: Int, uid: Int): Boolean = pid == managerPid && ConfigCache.isManager(uid)
+  fun isRunningManager(pid: Int, uid: Int): Boolean =
+      pid == managerPid && ConfigCache.isManager(uid)
 
   override fun getXposedApiVersion() = IXposedService.LIB_API
 

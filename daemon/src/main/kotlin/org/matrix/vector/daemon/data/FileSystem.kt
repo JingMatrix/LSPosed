@@ -314,15 +314,15 @@ object FileSystem {
             fun addFile(name: String, file: File) {
               if (!file.exists() || !file.isFile) return
               runCatching {
-                os.putNextEntry(ZipEntry(name))
-                file.inputStream().use { it.copyTo(os) }
-                os.closeEntry()
-              }
+                    os.putNextEntry(ZipEntry(name))
+                    file.inputStream().use { it.copyTo(os) }
+                    os.closeEntry()
+                  }
+                  .onFailure { Log.e(TAG, "Failed to export $file as $name", it) }
             }
 
             fun addDir(basePath: String, dir: File) {
               if (!dir.exists() || !dir.isDirectory) return
-              // Kotlin's walkTopDown elegantly replaces Files.walkFileTree
               dir.walkTopDown()
                   .filter { it.isFile }
                   .forEach { file ->
@@ -342,22 +342,21 @@ object FileSystem {
               }
             }
 
-            // 1. Gather daemon logs and system crash traces
-            addDir("log", logDirPath.toFile())
-            addDir("log.old", oldLogDirPath.toFile())
+            // Gather system crash traces
             addDir("tombstones", File("/data/tombstones"))
             addDir("anr", File("/data/anr"))
             addDir(
-                "crash1", File("/data/data/${BuildConfig.MANAGER_INJECTED_PKG_NAME}/cache/crash"))
+                "crash_shell",
+                File("/data/data/${BuildConfig.MANAGER_INJECTED_PKG_NAME}/cache/crash"))
             addDir(
-                "crash2",
+                "crash_manager",
                 File("/data/data/${BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME}/cache/crash"))
 
-            // 2. Gather system logs directly via shell
+            // Gather system logs directly via shell
             addProcOutput("full.log", "logcat", "-b", "all", "-d")
             addProcOutput("dmesg.log", "dmesg")
 
-            // 3. Gather Magisk module states safely
+            // Gather system module states safely
             val magiskDataDir = File("/data/adb/modules")
             if (magiskDataDir.exists() && magiskDataDir.isDirectory) {
               magiskDataDir.listFiles()?.forEach { moduleDir ->
@@ -368,7 +367,7 @@ object FileSystem {
               }
             }
 
-            // 4. Gather memory/mount info for daemon and caller
+            // Gather memory/mount info for daemon and caller
             val proc = File("/proc")
             arrayOf("self", Binder.getCallingPid().toString()).forEach { pid ->
               val pidPath = File(proc, pid)
@@ -377,22 +376,31 @@ object FileSystem {
               }
             }
 
-            // 5. Gather Database and Scopes
+            // Gather Database and Scopes
             addFile("modules_config.db", dbPath)
             runCatching {
-              os.putNextEntry(ZipEntry("scopes.txt"))
-              ConfigCache.state.scopes.forEach { (scope, modules) ->
-                os.write("${scope.processName}/${scope.uid}\n".toByteArray())
-                modules.forEach { mod ->
-                  os.write("\t${mod.packageName}\n".toByteArray())
-                  mod.file?.moduleClassNames?.forEach { cn -> os.write("\t\t$cn\n".toByteArray()) }
-                  mod.file?.moduleLibraryNames?.forEach { ln ->
-                    os.write("\t\t$ln\n".toByteArray())
+                  val scopes = ConfigCache.state.scopes
+                  Log.d(TAG, "Exporting module scopes ${scopes.size}")
+                  os.putNextEntry(ZipEntry("scopes.txt"))
+                  scopes.forEach { (scope, modules) ->
+                    os.write("${scope.processName}/${scope.uid}\n".toByteArray())
+                    modules.forEach { mod ->
+                      os.write("\t${mod.packageName}\n".toByteArray())
+                      mod.file?.moduleClassNames?.forEach { cn ->
+                        os.write("\t\t$cn\n".toByteArray())
+                      }
+                      mod.file?.moduleLibraryNames?.forEach { ln ->
+                        os.write("\t\t$ln\n".toByteArray())
+                      }
+                    }
                   }
+                  os.closeEntry()
                 }
-              }
-              os.closeEntry()
-            }
+                .onFailure { Log.e(TAG, "Failed to export module scopes", it) }
+
+            // Gather daemon logs
+            addDir("log", logDirPath.toFile())
+            addDir("log.old", oldLogDirPath.toFile())
           }
         }
         .onFailure { Log.e(TAG, "Failed to export logs", it) }

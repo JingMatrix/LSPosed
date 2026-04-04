@@ -217,9 +217,15 @@ object ConfigCache {
             val modPkg = cursor.getString(1)
             val userId = cursor.getInt(2)
 
-            if (appPkg == "system") continue
-
             val module = newModules[modPkg] ?: continue
+
+            if (appPkg == "system") {
+              newScopes
+                  .getOrPut(ProcessScope("system_server", 1000)) { mutableListOf() }
+                  .add(module)
+              continue
+            }
+
             val pkgInfo =
                 packageManager?.getPackageInfoWithComponents(appPkg, MATCH_ALL_FLAGS, userId)
             if (pkgInfo?.applicationInfo == null) continue
@@ -308,6 +314,10 @@ object ConfigCache {
 
   fun getModulesForProcess(processName: String, uid: Int): List<Module> {
     ensureCacheReady()
+    if (processName == "system_server") {
+      Log.w(TAG, "Skip unexpected module queries for $processName")
+      return emptyList()
+    }
     return state.scopes[ProcessScope(processName, uid)] ?: emptyList()
   }
 
