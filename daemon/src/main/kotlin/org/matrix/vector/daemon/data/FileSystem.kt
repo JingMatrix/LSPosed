@@ -173,16 +173,32 @@ object FileSystem {
 
     runCatching {
           ZipFile(file).use { zip ->
-            // Read all classes*.dex files
-            var secondary = 1
-            while (true) {
-              val entryName = if (secondary == 1) "classes.dex" else "classes$secondary.dex"
-              val dexEntry = zip.getEntry(entryName) ?: break
-              zip.getInputStream(dexEntry).use { preLoadedDexes.add(readDex(it, obfuscate)) }
-              secondary++
-            }
+            // Parse module.prop to get targetApiVersion
+            val props =
+                zip.getEntry("META-INF/xposed/module.prop")?.let { entry ->
+                  zip.getInputStream(entry).bufferedReader().useLines { lines ->
+                    lines
+                        .filter { it.contains("=") }
+                        .associate {
+                          val parts = it.split("=", limit = 2)
+                          parts[0].trim() to parts[1].trim()
+                        }
+                  }
+                } ?: emptyMap()
 
-            // Read initialization lists
+            val targetApi = props["targetApiVersion"]?.toIntOrNull() ?: 0
+            val hasLegacyFile = zip.getEntry("assets/xposed_init") != null
+
+            // Determine Loading Strategy based on Priority: API 101+ > Legacy > API 100
+            val strategy =
+                when {
+                  targetApi >= 101 -> "MODERN"
+                  hasLegacyFile -> "LEGACY"
+                  targetApi == 100 -> "UNSUPPORTED" // API 100 is dropped
+                  else -> "NONE"
+                }
+
+            // Helper to read the list files
             fun readList(name: String, dest: MutableList<String>) {
               zip.getEntry(name)?.let { entry ->
                 zip.getInputStream(entry).bufferedReader().useLines { lines ->
@@ -194,13 +210,33 @@ object FileSystem {
               }
             }
 
-            readList("assets/xposed_init", moduleClassNames)
-            if (moduleClassNames.isEmpty()) {
-              readList("META-INF/xposed/native_init.list", moduleLibraryNames)
-              readList("META-INF/xposed/java_init.list", moduleClassNames)
-            } else {
-              isLegacy = true
-              readList("assets/native_init", moduleLibraryNames)
+            when (strategy) {
+              "MODERN" -> {
+                isLegacy = false
+                readList("META-INF/xposed/java_init.list", moduleClassNames)
+                readList("META-INF/xposed/native_init.list", moduleLibraryNames)
+              }
+              "LEGACY" -> {
+                isLegacy = true
+                readList("assets/xposed_init", moduleClassNames)
+                readList("assets/native_init", moduleLibraryNames)
+              }
+              "UNSUPPORTED" -> {
+                Log.w(TAG, "Module $apkPath uses API 100 which is no longer supported.")
+                return null
+              }
+              else -> return null // No valid init files found
+            }
+
+            if (moduleClassNames.isEmpty()) return null
+
+            // Read DEX files
+            var secondary = 1
+            while (true) {
+              val entryName = if (secondary == 1) "classes.dex" else "classes$secondary.dex"
+              val dexEntry = zip.getEntry(entryName) ?: break
+              zip.getInputStream(dexEntry).use { preLoadedDexes.add(readDex(it, obfuscate)) }
+              secondary++
             }
           }
         }
@@ -209,9 +245,9 @@ object FileSystem {
           return null
         }
 
-    if (preLoadedDexes.isEmpty() || moduleClassNames.isEmpty()) return null
+    if (preLoadedDexes.isEmpty()) return null
 
-    // 3. Apply obfuscation to class names if required
+    // Apply obfuscation
     if (obfuscate) {
       val signatures = ObfuscationManager.getSignatures()
       for (i in moduleClassNames.indices) {
@@ -222,10 +258,12 @@ object FileSystem {
       }
     }
 
-    preLoadedApk.preLoadedDexes = preLoadedDexes
-    preLoadedApk.moduleClassNames = moduleClassNames
-    preLoadedApk.moduleLibraryNames = moduleLibraryNames
-    preLoadedApk.legacy = isLegacy
+    preLoadedApk.apply {
+      this.preLoadedDexes = preLoadedDexes
+      this.moduleClassNames = moduleClassNames
+      this.moduleLibraryNames = moduleLibraryNames
+      this.legacy = isLegacy
+    }
 
     return preLoadedApk
   }
