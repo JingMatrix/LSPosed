@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import java.io.File
 import org.matrix.vector.daemon.utils.FakeContext
 
 private const val TAG = "VectorDatabase"
@@ -66,6 +67,90 @@ class Database(context: Context? = FakeContext()) :
     db.execSQL(
         "INSERT OR IGNORE INTO modules (module_pkg_name, apk_path) VALUES ('lspd', ?)",
         arrayOf(FileSystem.managerApkPath.toString()))
+  }
+
+  override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    Log.w(TAG, "Downgrading database from $oldVersion to $newVersion")
+
+    // If it's not the known LSPosed version, wipe and start fresh
+    if (oldVersion < 101) {
+      Log.i(TAG, "Unknown high version ($oldVersion). Resetting database from scratch.")
+      wipeDatabase(db)
+      onCreate(db)
+      return
+    }
+
+    Log.i(TAG, "Detected LSPosed database (v$oldVersion). Starting data migration.")
+
+    // Backup existing database file
+    runCatching {
+      val backupFile = File(FileSystem.dbPath.parent, "modules_config_lsposed.db")
+      FileSystem.dbPath.copyTo(backupFile, overwrite = true)
+      Log.i(TAG, "LSPosed backup created: ${backupFile.absolutePath}")
+    }
+
+    // Prepare migration by renaming LSPosed tables to avoid name collisions
+    val lspTables = listOf("modules", "modules_state", "scope", "module_configs")
+    for (table in lspTables) {
+      runCatching { db.execSQL("ALTER TABLE `$table` RENAME TO `lsp_$table`;") }
+    }
+
+    // Create Vector schema
+    onCreate(db)
+
+    // Perform Data Migration
+    try {
+      // Migrate Modules (merging state from modules_state)
+      db.execSQL(
+          """
+            INSERT OR IGNORE INTO modules (module_pkg_name, apk_path, enabled)
+            SELECT m.module_pkg_name, m.apk_path, MAX(COALESCE(s.enabled, 0))
+            FROM lsp_modules m
+            LEFT JOIN lsp_modules_state s ON m.module_pkg_name = s.module_pkg_name
+            GROUP BY m.module_pkg_name;
+        """)
+
+      // Migrate Scope (Mapping pkg_name to the new auto-increment 'mid')
+      db.execSQL(
+          """
+            INSERT OR IGNORE INTO scope (mid, app_pkg_name, user_id)
+            SELECT m.mid, ls.app_pkg_name, ls.user_id
+            FROM lsp_scope ls
+            JOIN modules m ON ls.module_pkg_name = m.module_pkg_name;
+        """)
+
+      // Migrate Configs
+      db.execSQL(
+          """
+            INSERT OR IGNORE INTO configs (module_pkg_name, user_id, `group`, `key`, data)
+            SELECT module_pkg_name, user_id, group_name, key_name, data
+            FROM lsp_module_configs;
+        """)
+
+      Log.i(TAG, "Migration from LSPosed successful.")
+    } catch (e: Exception) {
+      Log.e(TAG, "Migration failed, resetting to clean state.", e)
+      wipeDatabase(db)
+      onCreate(db)
+    } finally {
+      // Cleanup leftover LSPosed tables
+      val cleanUp =
+          lspTables.map { "lsp_$it" } + listOf("android_metadata", "app_configs", "lspd_configs")
+      for (table in cleanUp) {
+        runCatching { db.execSQL("DROP TABLE IF EXISTS `$table`;") }
+      }
+    }
+  }
+
+  private fun wipeDatabase(db: SQLiteDatabase) {
+    db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'", null)
+        .use { cursor ->
+          while (cursor.moveToNext()) {
+            val tableName = cursor.getString(0)
+            db.execSQL("DROP TABLE IF EXISTS `$tableName`")
+          }
+        }
   }
 
   override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

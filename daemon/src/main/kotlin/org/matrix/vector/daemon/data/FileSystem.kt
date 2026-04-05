@@ -48,7 +48,6 @@ object FileSystem {
   val managerApkPath: Path = daemonApkPath.parent.resolve("manager.apk")
   val configDirPath: Path = basePath.resolve("config")
   val dbPath: File = configDirPath.resolve("modules_config.db").toFile()
-  val magiskDbPath = File("/data/adb/magisk.db")
 
   @Volatile private var preloadDex: SharedMemory? = null
 
