@@ -424,22 +424,41 @@ object ConfigCache {
 
   fun getPrefsPath(packageName: String, uid: Int): String {
     ensureCacheReady()
-    val currentState = state
     val basePath = state.miscPath ?: throw IllegalStateException("Fatal: miscPath not initialized!")
 
     val userId = uid / PER_USER_RANGE
     val userSuffix = if (userId == 0) "" else userId.toString()
     val path = basePath.resolve("prefs$userSuffix").resolve(packageName)
 
-    val module = currentState.modules[packageName]
+    val module = state.modules[packageName]
     if (module != null && module.appId == uid % PER_USER_RANGE) {
       runCatching {
-            val perms =
-                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
-            Files.createDirectories(path, perms)
-            Files.walk(path).forEach { p -> Os.chown(p.toString(), uid, uid) }
+            // Ensure the directory exists first
+            if (!Files.exists(path)) {
+              Files.createDirectories(path)
+            }
+
+            Files.walk(path).use { stream ->
+              stream.forEach { p ->
+                val pathStr = p.toString()
+
+                // Change Owner
+                Os.chown(pathStr, uid, uid)
+
+                // Set Permissions using Octal
+                // Root folder must be word-readable for monitoring
+                val mode =
+                    when {
+                      p == path -> "755".toInt(8) // Root folder: 755
+                      Files.isDirectory(p) -> "711".toInt(8) // Sub-folders: 711
+                      else -> "744".toInt(8) // Files: 744
+                    }
+
+                Os.chmod(pathStr, mode)
+              }
+            }
           }
-          .onFailure { Log.e(TAG, "Failed to prepare prefs path", it) }
+          .onFailure { Log.e(TAG, "Failed to prepare prefs path: $path", it) }
     }
     return path.toString()
   }
