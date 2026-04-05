@@ -183,8 +183,8 @@ void Logcat::ProcessBuffer(struct log_msg* buf) {
     bool match_exact = std::binary_search(kExactTags.begin(), kExactTags.end(), tag);
     bool match_prefix = std::any_of(kPrefixTags.begin(), kPrefixTags.end(),
                                     [&](auto p) { return tag.starts_with(p); });
-    if (verbose_enabled_ &&
-        (is_module || buf->id() == LOG_ID_CRASH || match_exact || match_prefix)) {
+    if (verbose_enabled_ && (entry.pid == my_pid_ || is_module || buf->id() == LOG_ID_CRASH ||
+                             match_exact || match_prefix)) {
         verbose_written_ += FastWrite(entry, verbose_fd_);
     }
 
